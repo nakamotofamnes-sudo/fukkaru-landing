@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "mv_problems",
+			"type": "shell",
+			"command": "mv /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/components/Problems2.tsx /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/components/Problems.tsx"
+		},
+		{
+			"label": "tsc_check",
+			"type": "shell",
+			"command": "npx tsc --noEmit"
+		},
+		{
+			"label": "npm_build",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "npm_build_log",
+			"type": "shell",
+			"command": "npm run build > build_log.txt 2>&1 ; cat build_log.txt"
+		},
+		{
+			"label": "npm_build_2",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "mv_services",
+			"type": "shell",
+			"command": "mv /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/components/Services2.tsx /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/components/Services.tsx"
+		}
+	]
+}

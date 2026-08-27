@@ -1,0 +1,79 @@
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes glow-loop {
+  0% { opacity: 0.4; filter: blur(8px); }
+  50% { opacity: 0.8; filter: blur(16px); }
+  100% { opacity: 0.4; filter: blur(8px); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2.2s infinite;
+}
+.animate-glow-green {
+  position: relative;
+}
+.animate-glow-loop > span:last-child {
+  pointer-events: none;
+  animation: glow-loop 2.5s infinite;
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+@layer utilities {
+  .animate-slide-bg {
+    animation: slideBg 60s linear infinite;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+}
+
+@keyframes slideBg {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== モバイルビュー改善用カスタム ===== */
+@layer utilities {
+  .mobile-px {
+    @apply px-3 sm:px-4;
+  }
+  .mobile-py {
+    @apply py-4 sm:py-6;
+  }
+  .mobile-section {
+    @apply py-10 sm:py-16;
+  }
+  .mobile-title {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold leading-tight;
+  }
+  .mobile-card {
+    @apply p-4 sm:p-6 rounded-xl shadow-sm;
+  }
+  .mobile-btn {
+    @apply px-6 py-3 text-base sm:text-lg rounded-lg;
+  }
+  .mobile-gap {
+    @apply gap-4 sm:gap-6;
+  }
+}

@@ -1,0 +1,76 @@
+
+> fuji-sumai-support@1.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 3 modules transformed.
+x Build failed in 300ms
+error during build:
+[vite:esbuild] Transform failed with 6 errors:
+/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:212:16: ERROR: Unexpected closing "div" tag does not match opening "h2" tag
+/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:258:12: ERROR: Unexpected closing "section" tag does not match opening "div" tag
+/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:261:10: ERROR: Unexpected closing fragment tag does not match opening "section" tag
+/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:264:7: ERROR: The character "}" is not valid inside a JSX element
+/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:265:6: ERROR: Unexpected closing "main" tag does not match opening fragment tag
+...
+file: /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/src/App.tsx:212:16
+
+Unexpected closing "div" tag does not match opening "h2" tag
+210|                  <h2 className="text-3xl md:text-5xl font-extrabold text-brand-blue mb-4 leading-tight drop-shadow-lg whitespace-normal lg:whitespace-nowrap">旦那さんに頼まなくても、定額ですべて解決。
+211|                  <p className="text-xl md:text-2xl font-bold text-gray-800 mb-6 leading-relaxed drop-shadow">月額2,980円からの定額サポートで、主婦のストレスをゼロに。<br />地域密着・損害保険完備で安心のサブスクリプション。</p>
+212|                </div>
+   |                  ^
+213|                <div className="flex flex-col md:flex-row gap-10 md:gap-16 mb-10 justify-center items-center max-w-7xl mx-auto">
+214|                  {/* ライト会員 */}
+
+Unexpected closing "section" tag does not match opening "div" tag
+256|                <div className="text-sm text-gray-600 mt-2 font-semibold">損害賠償補償制度加入・丁寧な事前見積もり</div>
+257|              </div>
+258|            </section>
+   |              ^
+259|            <StickyCallBar />
+260|            <Footer onNavigate={handleNavigate} />
+
+Unexpected closing fragment tag does not match opening "section" tag
+259|            <StickyCallBar />
+260|            <Footer onNavigate={handleNavigate} />
+261|          </>
+   |            ^
+262|        ) : (
+263|          <ConsultationPage onBack={() => handleNavigate('home')} />
+
+The character "}" is not valid inside a JSX element
+262|        ) : (
+263|          <ConsultationPage onBack={() => handleNavigate('home')} />
+264|        )}
+   |         ^
+265|      </main>
+266|    );
+
+Unexpected closing "main" tag does not match opening fragment tag
+263|          <ConsultationPage onBack={() => handleNavigate('home')} />
+264|        )}
+265|      </main>
+   |        ^
+266|    );
+267|  };
+
+Expected ":" but found ";"
+264|        )}
+265|      </main>
+266|    );
+   |     ^
+267|  };
+268|  
+
+    at failureErrorWithLog (/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/node_modules/esbuild/lib/main.js:1472:15)
+    at /Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/Users/nakamotoshimpei/Downloads/フッ軽-ランディングページ/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
