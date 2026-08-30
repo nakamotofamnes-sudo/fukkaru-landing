@@ -15,6 +15,7 @@ import Reservation from '../components/Reservation';
 import Partners from '../components/Partners';
 import CouponSlider from '../components/CouponSlider';
 import YouTubeVideos from '../components/YouTubeVideos';
+import BlogTeaser from '../components/BlogTeaser';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 
 // よくある質問アコーディオンコンポーネント
@@ -193,6 +194,7 @@ const App: React.FC = () => {
             </div>
           </section>
           <div className="-mt-8 md:-mt-16"></div>
+          <BlogTeaser />
           <Contact />
           {/* サブスクリプション紹介セクション */}
           <section
