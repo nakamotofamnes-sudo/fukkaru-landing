@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Phone, MessageCircle, HelpCircle, Wrench, Calendar, Star, User, FileText, Users, Youtube, Instagram, Music, AtSign } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle, HelpCircle, Wrench, Calendar, Star, User, FileText, Users, Youtube, Instagram, Music, AtSign, BookOpen } from 'lucide-react';
 
 interface HeaderProps {
   currentView: 'home' | 'consultation';
@@ -25,6 +25,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
     { name: 'Web予約', href: '#reservation', icon: <Calendar size={16} /> },
     { name: '実績', href: '#testimonials', icon: <Star size={16} /> },
     { name: '代表挨拶', href: '#founder', icon: <User size={16} /> },
+    // ブログは同じサイト内だが SPA のアンカー遷移ではないので external として扱う
+    { name: 'ブログ', href: '/blog/', icon: <BookOpen size={16} />, external: true },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {

@@ -149,6 +149,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <li><a href="#reservation" onClick={(e) => handleLinkClick(e, '#reservation')} className="hover:text-brand-orange">Web予約</a></li>
                 <li><a href="#reasons" onClick={(e) => handleLinkClick(e, '#reasons')} className="hover:text-brand-orange">選ばれる理由</a></li>
                 <li><a href="#contact" onClick={(e) => handleLinkClick(e, '#contact')} className="hover:text-brand-orange">お問い合わせ</a></li>
+                <li><a href="/blog/" className="hover:text-brand-orange">お役立ちブログ</a></li>
               </ul>
             </div>
 
