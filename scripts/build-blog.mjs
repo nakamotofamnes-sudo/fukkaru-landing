@@ -204,7 +204,7 @@ function renderArticlePage(article) {
   const bodyBlocks = article.blocks.map(renderBlock).join('\n');
   const dateStr = article.publishDate;
   const heroStyle = article.heroImage
-    ? ` style="background-image:linear-gradient(160deg,rgba(30,58,138,.82),rgba(6,28,47,.9)),url('${esc(article.heroImage)}');background-size:cover;background-position:center"`
+    ? ` style="background-image:linear-gradient(160deg,rgba(30,58,138,.6),rgba(6,28,47,.78)),url('${esc(article.heroImage)}');background-size:cover;background-position:center"`
     : '';
   const bodyHtml = `
 <div class="hero"${heroStyle}>
