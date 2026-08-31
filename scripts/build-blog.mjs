@@ -228,7 +228,11 @@ function renderArticlePage(article) {
     canonical: articleUrl(article.slug),
     ogType: 'article',
     extraHead: jsonLd(article),
-    ogImage: article.heroImage ? `${SITE_URL}${article.heroImage}` : '',
+    // SNSに貼ったとき出る絵は、題を焼き込んだ ogImage を優先する。
+    // 見出しの背景（heroImage）は題なしの絵なので、無ければそちらで代用する。
+    ogImage: article.ogImage || article.heroImage
+      ? `${SITE_URL}${article.ogImage || article.heroImage}`
+      : '',
     bodyHtml,
   });
 }
