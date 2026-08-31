@@ -156,7 +156,7 @@ footer.site a{color:#cbd5e1}
 @media(max-width:480px){.hero{padding:32px 0 24px}.wrap{padding:0 16px}}
 `;
 
-function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml }) {
+function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml, ogImage }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -170,7 +170,11 @@ function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml 
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta name="twitter:card" content="summary">
+${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">` : ''}
+<meta name="twitter:card" content="${ogImage ? 'summary_large_image' : 'summary'}">
+${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -199,8 +203,11 @@ ${bodyHtml}
 function renderArticlePage(article) {
   const bodyBlocks = article.blocks.map(renderBlock).join('\n');
   const dateStr = article.publishDate;
+  const heroStyle = article.heroImage
+    ? ` style="background-image:linear-gradient(160deg,rgba(30,58,138,.82),rgba(6,28,47,.9)),url('${esc(article.heroImage)}');background-size:cover;background-position:center"`
+    : '';
   const bodyHtml = `
-<div class="hero">
+<div class="hero"${heroStyle}>
   <div class="wrap">
     <span class="cat">${esc(article.category || 'コラム')}</span>
     <h1>${esc(article.title)}</h1>
@@ -221,6 +228,7 @@ function renderArticlePage(article) {
     canonical: articleUrl(article.slug),
     ogType: 'article',
     extraHead: jsonLd(article),
+    ogImage: article.heroImage ? `${SITE_URL}${article.heroImage}` : '',
     bodyHtml,
   });
 }
