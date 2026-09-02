@@ -29,7 +29,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 HOME = Path.home()
@@ -539,25 +539,20 @@ def main() -> int:
         log("✓ dryモードなので、gitには触りません")
         return 0
 
-    branch = "blog/auto-%s" % today[:7].replace("-", "")   # 月ごとに1本
+    # 1本ごとに新しい枝を作る（2026-09-02）。
+    #
+    # 以前は月ごとに1本の枝へ積んでいた。毎日マージを待つ前提だったので、
+    # ひと月ぶんをまとめて見られるようにするためだった。
+    # いまは書いたその場で自動マージするので、積む意味がない。
+    # そして**残っている枝へ切り替えると、書いたばかりの記事とぶつかって落ちる**
+    # （2026-09-02、GitHub Actions で実際に落ちた）。
+    # 現在地から枝を作れば作業中のファイルはそのまま残るので、ぶつからない。
+    branch = "blog/auto-%s" % datetime.now().strftime("%Y%m%d-%H%M%S")
     rel = str(dest.relative_to(REPO))
+    force = False
     try:
         # main は記事を書く前に最新にしてある（上の「書く前に」を参照）
-        # その月のブランチが既にあれば続きから、無ければ作る
-        remote = git("ls-remote", "--heads", "origin", branch)
-        force = False
-        if remote:
-            git("fetch", "origin", branch)
-            # 前のPRがマージ済みなら、枝の中身はもう main に入っている。
-            # そのまま積むと古い土台の上に記事が乗り、プレビューが古い姿で出てしまう。
-            # 取り込み済みのときだけ main から作り直す（未マージの記事は捨てない）。
-            if git_ok("merge-base", "--is-ancestor", "origin/" + branch, "origin/main"):
-                git("checkout", "-B", branch, "origin/main")
-                force = True
-            else:
-                git("checkout", "-B", branch, "origin/" + branch)
-        else:
-            git("checkout", "-B", branch)
+        git("checkout", "-b", branch)
         # 前に失敗して置き去りになった記事があれば、これも一緒に拾う
         git("add", "content/articles")
         git("add", "public/blog")
