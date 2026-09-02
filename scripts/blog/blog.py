@@ -563,10 +563,14 @@ def main() -> int:
         git("add", "public/blog")
         # 狙いの位置がリポジトリの中にあるなら（GitHub Actions で走るとき）、
         # 記事と一緒に残す。そうしないと毎回1番目に戻ってしまう
-        try:
-            git("add", str(CURSOR.relative_to(REPO)))
-        except (ValueError, RuntimeError, subprocess.CalledProcessError):
-            pass          # Mac のときは REPO の外にあるので、そのままでよい
+        for extra in (CURSOR, LOGF):
+            # 狙いの位置と記録。リポジトリの中にあるなら（GitHub Actions で走るとき）、
+            # 記事と一緒に残す。そうしないと次回まっさらに戻り、
+            # 管制画面からもブログの様子が見えなくなる
+            try:
+                git("add", str(extra.relative_to(REPO)))
+            except (ValueError, RuntimeError, subprocess.CalledProcessError):
+                pass      # Mac のときは REPO の外にあるので、そのままでよい
         git("commit", "-m", "ブログ記事の下書き：%s" % art["title"])
         if force:
             # 中身がmainに入りきっている枝の置き換えなので、失うものは無い

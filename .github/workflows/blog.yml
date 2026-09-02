@@ -56,7 +56,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_PAT: ${{ secrets.BLOG_PAT }}
           FUKKARU_REPO: ${{ github.workspace }}
-          FUKKARU_STATE: ${{ github.workspace }}/.blogstate
+          FUKKARU_STATE: ${{ github.workspace }}/scripts/blog/state
           FUKKARU_TARGETS: ${{ github.workspace }}/scripts/blog/狙い.txt
           FUKKARU_CURSOR: ${{ github.workspace }}/scripts/blog/狙い_いまの位置.txt
           FUKKARU_HEROIMG: ${{ github.workspace }}/scripts/blog/heroimg.py
@@ -70,7 +70,7 @@ jobs:
 
       - name: 記録を出す
         if: always()
-        run: cat .blogstate/_ログ.txt 2>/dev/null || echo "記録がありません"
+        run: cat scripts/blog/state/_ログ.txt 2>/dev/null || echo "記録がありません"
 
       - name: 入っている日本語の書体を見る
         if: always()
