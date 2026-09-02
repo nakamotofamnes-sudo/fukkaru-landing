@@ -29,13 +29,14 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 z-10 bg-ink-900/70" />
       <div className="absolute inset-0 z-10 bg-ink-900/40 md:bg-transparent" />
 
-      {/* 人物写真。スマホでは文字とボタンに重なってしまうので出しません。
+      {/* 人物写真。スマホでは文字とボタンの下に帯を作って、そこに置きます
+          （文字の高さぶんは下の shell 側で pb を取っています）。
           実在の従業員ではなくモデルの写真なので、飾りとして扱い alt は空にしています。 */}
-      <div className="pointer-events-none absolute bottom-0 right-0 z-20 hidden items-end justify-end sm:flex sm:h-[70vh] md:h-[82vh] lg:h-[94vh]">
+      <div className="pointer-events-none absolute bottom-0 right-0 z-20 flex h-[34vh] items-end justify-end sm:h-[70vh] md:h-[82vh] lg:h-[94vh]">
         <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto object-contain object-bottom" />
       </div>
 
-      <div className="shell relative z-30 pt-24 pb-16">
+      <div className="shell relative z-30 pt-24 pb-[35vh] sm:pb-16">
         <div className="w-full lg:w-[66%]">
           <p className="mb-6 inline-flex items-center rounded border border-white/20 bg-white/10 px-3 py-1.5 text-[12px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
             富士市・富士宮市エリア対応（市外もご相談ください）
