@@ -72,7 +72,7 @@ const Services: React.FC = () => {
   const indoorServices = [
     { title: "軽引越し", price: "15,000円〜", desc: "単身の方・少量のお引越しに", icon: Truck, popular: true },
     { title: "法人向け緊急運搬", price: "要お見積り", desc: "緊急時の配送・運送対応", icon: Truck },
-    { title: "不用品回収", price: "5,000円〜", desc: "不要な家具・家電等の回収", icon: Truck, popular: true },
+    { title: "不用品の運搬・買取", price: "5,000円〜", desc: "まだ使えるものは買取、運び出しもお任せ", icon: Truck, popular: true },
     { title: "家具の移動・模様替え", price: "8,000円〜", desc: "室内移動・階層移動", icon: Home },
     { title: "家具・デスク組み立て", price: "8,000円〜", desc: "複雑な家具・昇降デスク等", icon: Hammer },
   ];
