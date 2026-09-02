@@ -101,59 +101,108 @@ function jsonLd(article) {
 }
 
 const PAGE_CSS = `
-:root{--blue:#1e3a8a;--orange:#f59e0b;--green:#06c755;--ink:#1f2937;--sub:#4b5563;--line:#e5e7eb;--bg:#fff}
+/* トップページと同じ決めごとで書いています。
+   地色はほんのり灰色の白、段差は1pxの線、角丸は8px、差し色は琥珀1色だけ。 */
+:root{
+  --canvas:#F8FAFC; --surface:#FFFFFF; --hairline:#E2E8F0;
+  --ink-900:#0F172A; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748B;
+  --ink-300:#CBD5E1;
+  --accent:#B45309; --accent-soft:#FEF3C7; --accent-line:#FDE68A;
+  --line-green:#0A8138; --line-hover:#08682D;
+  --r:8px;
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;color:var(--ink);background:#fafafa;line-height:1.9;-webkit-font-smoothing:antialiased}
-img{max-width:100%;height:auto;border-radius:10px}
-a{color:var(--blue)}
-.wrap{max-width:760px;margin:0 auto;padding:0 20px}
-header.site{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{
+  margin:0;
+  font-family:Inter,"Noto Sans JP",-apple-system,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+  color:var(--ink-700);background:var(--canvas);line-height:1.85;
+  font-feature-settings:"palt" 1;
+}
+img{max-width:100%;height:auto;border-radius:var(--r)}
+a{color:var(--accent);text-decoration:underline}
+h1,h2,h3,h4{color:var(--ink-900);letter-spacing:-0.02em;line-height:1.4}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px}
+
+/* ヘッダー */
+header.site{background:var(--surface);border-bottom:1px solid var(--hairline);position:sticky;top:0;z-index:10}
 header.site .wrap{max-width:960px;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
-.brand{font-weight:900;color:var(--blue);text-decoration:none;font-size:18px;letter-spacing:.02em}
-.brand span{color:var(--orange)}
-.backlink{font-size:13px;color:var(--sub);text-decoration:none}
-.hero{background:linear-gradient(160deg,#1e3a8a,#2c4fa0);color:#fff;padding:44px 0 34px}
-.hero .wrap{max-width:760px}
-.hero .cat{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;padding:3px 12px;border-radius:20px;margin-bottom:14px}
-.hero h1{font-size:clamp(22px,4.4vw,32px);line-height:1.5;margin:0 0 14px;font-weight:900}
-.hero .meta{font-size:12.5px;color:#cfe0ff;letter-spacing:.03em}
-main{background:#fff;padding:38px 0 10px}
+.brand{font-weight:700;color:var(--ink-900);text-decoration:none;font-size:17px;letter-spacing:-0.02em}
+.brand span{color:var(--ink-500);font-weight:400;font-size:13px;margin-left:6px}
+.backlink{font-size:13px;color:var(--ink-500);text-decoration:none}
+.backlink:hover{color:var(--ink-900)}
+
+/* 記事の見出し */
+.hero{background:var(--ink-900);color:#fff;padding:56px 0 48px;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.28}
+.hero .wrap{max-width:720px;position:relative;z-index:1}
+.hero .cat{display:inline-block;border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:500;letter-spacing:.04em;padding:4px 10px;border-radius:var(--r);margin-bottom:16px}
+.hero h1{font-size:clamp(24px,4.2vw,34px);line-height:1.45;margin:0 0 16px;font-weight:700;color:#fff}
+.hero .meta{font-size:12.5px;color:rgba(255,255,255,.6)}
+
+/* 本文 */
+main{background:var(--surface);border-bottom:1px solid var(--hairline);padding:48px 0 16px}
 main .wrap{font-size:16px}
-.lead{font-size:17px;color:var(--sub);background:#f8fafc;border-left:4px solid var(--orange);padding:16px 18px;border-radius:4px;margin:0 0 30px}
-h2{font-size:22px;font-weight:900;color:var(--blue);margin:42px 0 16px;padding-bottom:8px;border-bottom:3px solid #eef2ff;letter-spacing:.01em}
-h3{font-size:18px;font-weight:800;color:var(--ink);margin:26px 0 12px}
-p{margin:0 0 16px}
-ul,ol{margin:0 0 18px;padding-left:1.4em}
-li{margin:0 0 8px}
-.table-wrap{overflow-x:auto;margin:0 0 20px}
+.lead{font-size:16.5px;color:var(--ink-600);border-left:2px solid var(--accent);padding:2px 0 2px 18px;margin:0 0 34px}
+h2{font-size:22px;font-weight:700;margin:48px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--hairline)}
+h3{font-size:17px;font-weight:700;margin:32px 0 12px}
+p{margin:0 0 18px}
+ul,ol{margin:0 0 20px;padding-left:1.4em}
+li{margin:0 0 10px}
+strong{color:var(--ink-900);font-weight:700}
+
+/* 表 */
+.table-wrap{overflow-x:auto;margin:0 0 24px;border:1px solid var(--hairline);border-radius:var(--r)}
 table{border-collapse:collapse;width:100%;min-width:420px;font-size:14.5px}
-th,td{border:1px solid var(--line);padding:10px 12px;text-align:left}
-th{background:#f1f5f9;font-weight:700;color:var(--blue)}
-.note{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin:0 0 24px}
-.note strong{color:#b45309;display:block;margin-bottom:4px;font-size:14px}
-.note p{margin:0;font-size:14.5px;color:#7c4a11}
-.faq-item{border-bottom:1px solid var(--line);padding:14px 0}
-.faq-q{font-weight:800;color:var(--blue);margin:0 0 6px}
-.faq-a{margin:0;color:var(--sub)}
-.cta-box{background:#eef4ff;border:1px solid #c7d9ff;border-radius:14px;padding:26px 22px;margin:36px 0;text-align:center}
-.cta-heading{font-size:18px;font-weight:900;color:var(--blue);margin:0 0 6px}
-.cta-sub{font-size:13.5px;color:var(--sub);margin:0 0 18px}
-.cta-buttons{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto}
-.btn{display:block;padding:13px 18px;border-radius:8px;font-weight:800;text-decoration:none;font-size:14.5px}
-.btn-line{background:var(--green);color:#fff}
-.btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
-.article-footer{max-width:760px;margin:30px auto 0;padding:20px 20px 0;border-top:1px solid var(--line)}
-.related{font-size:13px;color:var(--sub)}
-footer.site{background:#0f172a;color:#94a3b8;padding:34px 0;margin-top:50px;font-size:12.5px}
-footer.site .wrap{max-width:760px}
-footer.site a{color:#cbd5e1}
+th,td{border-bottom:1px solid var(--hairline);padding:12px 14px;text-align:left}
+tr:last-child td{border-bottom:0}
+th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
+
+/* メモ */
+.note{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:18px 20px;margin:0 0 26px}
+.note strong{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}
+.note p{margin:0;font-size:14.5px;color:var(--ink-600)}
+
+/* よくある質問 */
+.faq-item{border-top:1px solid var(--hairline);padding:18px 0}
+.faq-q{font-weight:600;color:var(--ink-900);margin:0 0 8px}
+.faq-a{margin:0;color:var(--ink-600);font-size:15px}
+
+/* 相談への誘い */
+.cta-box{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:28px 24px;margin:40px 0}
+.cta-heading{font-size:17px;font-weight:700;color:var(--ink-900);margin:0 0 8px;letter-spacing:-0.02em}
+.cta-sub{font-size:13.5px;color:var(--ink-500);margin:0 0 20px}
+.cta-buttons{display:flex;flex-direction:column;gap:10px;max-width:420px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:var(--r);font-weight:600;text-decoration:none;font-size:14.5px;transition:background-color .15s,border-color .15s}
+.btn-line{background:var(--line-green);color:#fff}
+.btn-line:hover{background:var(--line-hover)}
+.btn-outline{background:var(--surface);color:var(--ink-900);border:1px solid var(--ink-300)}
+.btn-outline:hover{border-color:var(--ink-900)}
+
+.article-footer{max-width:720px;margin:0 auto;padding:24px 20px 40px}
+.related{font-size:13.5px;color:var(--ink-500)}
+.related a{color:var(--ink-900);text-decoration:none}
+.related a:hover{text-decoration:underline}
+
+/* フッター */
+footer.site{background:var(--ink-900);color:rgba(255,255,255,.6);padding:40px 0;font-size:13px;line-height:1.9}
+footer.site .wrap{max-width:720px}
+footer.site p{margin:0 0 6px}
+footer.site a{color:rgba(255,255,255,.85);text-decoration:none}
+footer.site a:hover{color:#fff}
+
+/* 記事一覧 */
 .index-list{list-style:none;margin:0;padding:0}
-.index-list li{border-bottom:1px solid var(--line);padding:20px 0}
-.index-list a{text-decoration:none;color:var(--ink);display:block}
-.index-list h2{border:0;margin:0 0 6px;font-size:18px;padding:0}
-.index-list p{color:var(--sub);font-size:14px;margin:0}
-.index-date{font-size:12px;color:#9ca3af}
-@media(max-width:480px){.hero{padding:32px 0 24px}.wrap{padding:0 16px}}
+.index-list li{border-top:1px solid var(--hairline)}
+.index-list li:last-child{border-bottom:1px solid var(--hairline)}
+.index-list a{text-decoration:none;color:var(--ink-700);display:block;padding:24px 0;transition:opacity .15s}
+.index-list a:hover h2{color:var(--accent)}
+.index-list h2{border:0;margin:6px 0 8px;font-size:18px;padding:0;transition:color .15s}
+.index-list p{color:var(--ink-500);font-size:14px;margin:0}
+.index-date{font-size:12px;color:var(--ink-500);font-variant-numeric:tabular-nums}
+
+@media(max-width:480px){.hero{padding:40px 0 32px}.wrap{padding:0 18px}main{padding:36px 0 12px}}
+@media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
 `;
 
 function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml, ogImage }) {
@@ -177,14 +226,15 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">
 ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#F8FAFC">
 <style>${PAGE_CSS}</style>
 ${extraHead || ''}
 </head>
 <body>
 <header class="site">
   <div class="wrap">
-    <a class="brand" href="/">フッ軽<span>（ふっかる）</span></a>
+    <a class="brand" href="/">フッ軽<span>ふっかる</span></a>
     <a class="backlink" href="/">← トップページへ</a>
   </div>
 </header>
@@ -203,11 +253,13 @@ ${bodyHtml}
 function renderArticlePage(article) {
   const bodyBlocks = article.blocks.map(renderBlock).join('\n');
   const dateStr = article.publishDate;
-  const heroStyle = article.heroImage
-    ? ` style="background-image:linear-gradient(160deg,rgba(30,58,138,.6),rgba(6,28,47,.78)),url('${esc(article.heroImage)}');background-size:cover;background-position:center"`
+  // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
+  const heroBg = article.heroImage
+    ? `<div class="hero-bg" style="background-image:url('${esc(article.heroImage)}')"></div>`
     : '';
   const bodyHtml = `
-<div class="hero"${heroStyle}>
+<div class="hero">
+  ${heroBg}
   <div class="wrap">
     <span class="cat">${esc(article.category || 'コラム')}</span>
     <h1>${esc(article.title)}</h1>

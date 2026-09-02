@@ -1,152 +1,141 @@
 import React, { useState } from 'react';
-import { 
-  Warehouse, Shovel, Monitor, 
-  Home, Hammer, FileText,
-  Leaf, Truck, Droplets, ShoppingBag,
-  ChevronDown
-} from 'lucide-react';
+import { ChevronDown, MessageCircle } from 'lucide-react';
 
-const ServiceCard: React.FC<{ title: string, price: string, desc: string, icon: any, popular?: boolean }> = ({ title, price, desc, icon: Icon, popular }) => {
+type Service = { title: string; price: string; desc: string; popular?: boolean };
+type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean };
+
+const groups: Group[] = [
+  {
+    id: 'garden',
+    title: '庭・外まわりのお手入れ',
+    note: '草むしりから伐採、防草シートまで',
+    defaultOpen: true,
+    services: [
+      { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true },
+      { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します' },
+      { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業' },
+      { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途' },
+      { title: '落ち葉の清掃', price: '6,000円〜', desc: 'お庭をきれいに保ちます' },
+      { title: '庭の水やり', price: '3,000円〜', desc: '留守のあいだの水やりも承ります' },
+    ],
+  },
+  {
+    id: 'indoor',
+    title: '室内・引越しのお手伝い',
+    note: '家具の組立・移動、軽貨物での運搬',
+    defaultOpen: true,
+    services: [
+      { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' },
+      { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動' },
+      { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true },
+      { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true },
+      { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します' },
+    ],
+  },
+  {
+    id: 'cleaning',
+    title: '清掃・洗浄',
+    note: '高圧洗浄、側溝の泥上げなど',
+    services: [
+      { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true },
+      { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true },
+      { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃' },
+      { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します' },
+      { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' },
+    ],
+  },
+  {
+    id: 'other',
+    title: 'その他の代行',
+    note: '物置の設置、買い物やお墓参りの代行',
+    services: [
+      { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true },
+      { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも' },
+      { title: 'お墓参り代行', price: '7,000円〜', desc: '清掃と献花を含みます' },
+    ],
+  },
+];
+
+const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
+  const [isOpen, setIsOpen] = useState(Boolean(group.defaultOpen));
+  // 開け閉めのボタンと、開く中身を結びつけるための名前。
+  const panelId = `services-${group.id}`;
+
   return (
-    <div className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl hover:bg-white hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-100/50 bg-white/60 backdrop-blur-sm group">
-      <div className={`p-3 sm:p-3.5 rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-110 ${popular ? 'bg-gradient-to-br from-orange-50 to-orange-100 text-brand-orange border border-orange-200/50' : 'bg-gradient-to-br from-blue-50 to-blue-100 text-brand-blue border border-blue-200/50'}`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
-      </div>
-      <div className="flex-1 pt-1 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
-          <h4 className="font-bold text-gray-800 text-[15px] sm:text-base tracking-tight flex items-center gap-2 flex-wrap truncate text-wrap">
-            {title}
-            {popular && (
-              <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-bold tracking-wider shadow-sm flex-shrink-0">人気</span>
-            )}
-          </h4>
-          <span className="font-black text-red-500 text-base sm:text-lg tracking-tight whitespace-nowrap drop-shadow-sm">
-            {price}
-          </span>
-        </div>
-        <p className="text-[13px] text-gray-500 font-medium leading-relaxed">{desc}</p>
-      </div>
+    <div className="card overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-canvas sm:px-6 sm:py-5"
+      >
+        <span className="min-w-0">
+          <span className="block text-[16px] font-semibold tracking-tight text-ink-900">{group.title}</span>
+          <span className="mt-0.5 block truncate text-[13px] text-ink-500">{group.note}</span>
+        </span>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-ink-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <dl id={panelId} className="rule-list border-t border-hairline">
+          {group.services.map((s) => (
+            <div key={s.title} className="flex flex-wrap items-baseline justify-between gap-x-4 px-5 py-4 sm:px-6">
+              <dt className="min-w-0 flex-1 flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
+                {s.title}
+                {s.popular && <span className="chip chip-accent">人気</span>}
+              </dt>
+              <dd className="shrink-0 text-[15px] font-semibold tabular-nums tracking-tight text-ink-900">
+                {s.price}
+              </dd>
+              {/* 説明は幅いっぱいにして、項目名と料金の下の行に回します。 */}
+              <dd className="mt-1 w-full text-[13px] leading-relaxed text-ink-500">{s.desc}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 };
 
-const ServiceSectionAccordion: React.FC<{
-    title: string, colorClass: string, bgClass: string, services: any[], defaultOpen?: boolean
-}> = ({ title, colorClass, bgClass, services, defaultOpen = false }) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-
-    return (
-      <div className={`rounded-3xl border border-gray-100 shadow-sm transition-all overflow-hidden ${isOpen ? bgClass : 'bg-white'}`}>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between p-5 md:p-6 bg-white/50 backdrop-blur-sm hover:bg-black/5 transition-colors focus:outline-none"
-        >
-            <h3 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-3">
-              <span className={`flex items-center justify-center w-8 h-8 rounded-full ${colorClass}`}>●</span> {title}
-            </h3>
-            <ChevronDown className={`w-6 h-6 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <div 
-          className={`transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
-        >
-            <div className="p-4 pt-0 md:p-6 md:pt-0 space-y-3">
-              {services.map((item, index) => (
-                <ServiceCard key={index} {...item} />
-              ))}
-            </div>
-        </div>
-      </div>
-    );
-};
-
 const Services: React.FC = () => {
-  const gardenServices = [
-    { title: "草むしり（手作業）", price: "8,000円〜", desc: "根元から丁寧に除去", icon: Leaf, popular: true },
-    { title: "草刈り（機械使用）", price: "10,000円〜", desc: "草刈機で広範囲に対応", icon: Leaf },
-    { title: "木の伐採", price: "9,000円〜", desc: "高さ3m未満・地上作業", icon: Shovel },
-    { title: "防草シート・砂利敷き", price: "10,000円〜", desc: "資材費別途", icon: Shovel },
-    { title: "落ち葉清掃", price: "6,000円〜", desc: "お庭を綺麗に保ちます", icon: Leaf },
-    { title: "庭の水やり", price: "3,000円〜", desc: "留守中の水やりもお任せ", icon: Droplets },
-  ];
-
-  const indoorServices = [
-    { title: "軽引越し", price: "15,000円〜", desc: "単身の方・少量のお引越しに", icon: Truck, popular: true },
-    { title: "法人向け緊急運搬", price: "要お見積り", desc: "緊急時の配送・運送対応", icon: Truck },
-    { title: "不用品の運搬・買取", price: "5,000円〜", desc: "まだ使えるものは買取、運び出しもお任せ", icon: Truck, popular: true },
-    { title: "家具の移動・模様替え", price: "8,000円〜", desc: "室内移動・階層移動", icon: Home },
-    { title: "家具・デスク組み立て", price: "8,000円〜", desc: "複雑な家具・昇降デスク等", icon: Hammer },
-  ];
-
-  const cleaningServices = [
-    { title: "高圧洗浄", price: "15,000円〜", desc: "家の外回り洗浄・駐車場", icon: Droplets, popular: true },
-    { title: "カーポート洗浄", price: "12,000円〜", desc: "カーポートの屋根や柱の汚れ落とし", icon: Droplets, popular: true },
-    { title: "出張洗車", price: "8,000円〜", desc: "手洗い・車内清掃", icon: Droplets },
-    { title: "側溝掃除・泥上げ", price: "10,000円〜", desc: "詰まりを解消", icon: Shovel },
-    { title: "汚水枡の洗浄", price: "6,000円〜", desc: "家庭用・小型店舗用", icon: Droplets },
-  ];
-
-  const otherServices = [
-    { title: "物置の設置・解体", price: "15,000円〜", desc: "お庭のスペース有効活用", icon: Warehouse, popular: true },
-    { title: "買い物代行", price: "7,000円〜", desc: "重量物・遠方対応", icon: ShoppingBag },
-    { title: "お墓参り代行", price: "7,000円〜", desc: "清掃・献花含む", icon: Home },
-  ];
-
   return (
-    <section id="services" className="mobile-section bg-transparent pt-12 md:pt-20">
-      <div className="container mx-auto mobile-px">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-black text-brand-blue tracking-tight relative inline-block pb-3 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-16 after:h-1.5 after:bg-gradient-to-r after:from-brand-blue after:to-brand-orange after:rounded-full">
-            サービス・料金一覧
-          </h2>
-          <p className="mt-6 text-gray-500 font-medium md:text-lg">一軒家のお庭の手入れから重い物の移動まで、幅広く対応</p>
-          <div className="mt-8 flex justify-center">
-            <p className="text-[15px] md:text-[17px] text-brand-orange font-bold px-6 md:px-8 py-4 rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100/50 inline-block border border-orange-200/50 shadow-sm leading-relaxed">
-              ご高齢の方、力仕事にご不安がある方はお気軽にお電話ください！<br className="md:hidden"/>礼儀正しく丁寧なスタッフが、皆様の暮らしを安全にサポートいたします。
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 max-w-6xl mx-auto items-start">
-          <ServiceSectionAccordion
-            title="庭・外回りのお手入れ"
-            colorClass="bg-brand-green/10 text-brand-green"
-            bgClass="bg-gradient-to-b from-green-50/50 to-white"
-            services={gardenServices}
-            defaultOpen={true}
-          />
-          <ServiceSectionAccordion
-            title="室内・引越しサポート"
-            colorClass="bg-brand-orange/10 text-brand-orange"
-            bgClass="bg-gradient-to-b from-orange-50/50 to-white"
-            services={indoorServices}
-            defaultOpen={true}
-          />
-          <ServiceSectionAccordion
-            title="清掃・洗浄サービス"
-            colorClass="bg-blue-500/10 text-blue-500"
-            bgClass="bg-gradient-to-b from-blue-50/50 to-white"
-            services={cleaningServices}
-            defaultOpen={false}
-          />
-          <ServiceSectionAccordion
-            title="その他・代行サービス"
-            colorClass="bg-purple-500/10 text-purple-500"
-            bgClass="bg-gradient-to-b from-purple-50/50 to-white"
-            services={otherServices}
-            defaultOpen={false}
-          />
-        </div>
-
-        <div className="mt-8 max-w-6xl mx-auto bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 text-center">
-          <h4 className="text-lg font-bold text-brand-blue mb-4">お見積もり・ご相談は完全無料です</h4>
-          <p className="text-sm text-gray-600 leading-relaxed font-medium">
-            作業内容や状況によって適切なプラン・料金をご案内しております。<br/>
-            お電話またはLINEから、まずはお気軽に「こんなこと頼める？」とご相談ください。<br/>
-            ※ 記載のない作業も柔軟に対応いたします。
+    <section id="services" className="section border-t border-hairline bg-canvas">
+      <div className="shell">
+        <div className="max-w-2xl">
+          <span className="eyebrow">Services</span>
+          <h2 className="h-section">サービスと料金</h2>
+          <p className="lede">
+            お庭の手入れから重い物の移動まで。記載のない作業も、できるかぎり柔軟に対応します。
           </p>
-          <div className="mt-4 flex justify-center gap-4">
-            <a href="#contact" className="inline-flex items-center gap-2 bg-brand-orange hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform hover:scale-105">
-              今すぐ無料相談する
+        </div>
+
+        <div className="mt-12 grid items-start gap-5 lg:grid-cols-2">
+          {groups.map((group) => (
+            <ServiceGroup key={group.id} group={group} />
+          ))}
+        </div>
+
+        <div className="mt-6 card p-6 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-[17px] font-semibold tracking-tight text-ink-900">
+                お見積もり・ご相談は無料です
+              </h3>
+              <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-500">
+                作業の内容や現場の状況によって、適切なプランと料金をご案内します。
+                まずは「こんなこと頼める？」とお声がけください。富士市・富士宮市エリアなら、出張費もいただきません。
+              </p>
+              <p className="mt-3 max-w-2xl text-[14px] leading-[1.85] text-ink-600">
+                ご高齢の方、力仕事にご不安がある方はお気軽にお電話ください。
+                礼儀正しく丁寧なスタッフが、皆様の暮らしを安全にサポートいたします。
+              </p>
+            </div>
+            <a href="#contact" className="btn btn-primary shrink-0">
+              <MessageCircle size={17} />
+              無料で相談する
             </a>
           </div>
         </div>

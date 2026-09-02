@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
+import { ArrowUpRight } from 'lucide-react';
 
 interface Partner {
   name: string;
@@ -44,135 +45,51 @@ const partners: Partner[] = [
   },
 ];
 
+// 以前は横に流れ続けるスライダーでしたが、
+// 6社なら並べて置いたほうが読めますし、動き続けるものは目が休まりません。
 const Partners: React.FC = () => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const isInteracting = useRef(false);
-  const currentPos = useRef(0);
-  const startX = useRef(0);
-  const startPos = useRef(0);
-  const dragDistance = useRef(0);
-
-  // 画面幅が広い場合でもシームレスにループするように複製
-  const duplicateTimes = 6;
-  const singleSet = Array.from({ length: duplicateTimes }).flatMap(() => partners);
-  const slideItems = [...singleSet, ...singleSet];
-
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-
-    let animationFrameId: number;
-    let lastTime = Date.now();
-
-    const scroll = () => {
-      const now = Date.now();
-      let dt = now - lastTime;
-      // タブが裏側に回った時のカクつきを防止
-      if (dt > 100) dt = 16;
-      lastTime = now;
-
-      // インタラクトされていない時に等速で自動スクロール
-      if (!isInteracting.current) {
-        currentPos.current += dt * 0.03; // スクロール速度
-      }
-
-      const halfWidth = el.scrollWidth / 2;
-
-      // 無限ループ処理：半分を超えたら最初に戻す
-      if (currentPos.current >= halfWidth && halfWidth > 0) {
-        currentPos.current -= halfWidth;
-      } else if (currentPos.current < 0 && halfWidth > 0) {
-        // 逆方向にスクロールした場合の処理
-        currentPos.current += halfWidth;
-      }
-
-      // GPUアクセラレーションを使用して小数点以下のピクセルまで滑らかに移動
-      el.style.transform = `translate3d(-${currentPos.current}px, 0, 0)`;
-
-      animationFrameId = requestAnimationFrame(scroll);
-    };
-
-    animationFrameId = requestAnimationFrame(scroll);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, []);
-
-  const getClientX = (e: React.MouseEvent | React.TouchEvent) => {
-    return 'touches' in e ? e.touches[0].clientX : e.clientX;
-  };
-
-  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
-    isInteracting.current = true;
-    dragDistance.current = 0;
-    startX.current = getClientX(e);
-    startPos.current = currentPos.current;
-  };
-
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isInteracting.current) return;
-    const x = getClientX(e);
-    const deltaX = x - startX.current;
-    dragDistance.current += Math.abs(x - startX.current); // 移動したトータル距離をざっくり追跡
-    currentPos.current = startPos.current - deltaX;
-  };
-
-  const handleEnd = () => {
-    isInteracting.current = false;
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    // 指やマウスで画面を大きく引っ張った（ドラッグした）場合は
-    // 間違えてリンクをクリックしてしまうのを防ぐ
-    if (dragDistance.current > 10) {
-      e.preventDefault();
-    }
-  };
-
   return (
-    <section id="partners" className="bg-gray-50 py-12 border-t border-b border-gray-200 overflow-hidden select-none">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-8 mt-2">
-        <h2 className="text-xl md:text-2xl font-bold text-center text-gray-800 relative pb-3 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-16 after:h-1 after:bg-brand-orange">
-          協力会社様一覧
-        </h2>
-      </div>
+    <section id="partners" className="section border-t border-hairline bg-canvas">
+      <div className="shell">
+        <div className="max-w-2xl">
+          <span className="eyebrow">Partners</span>
+          <h2 className="h-section">協力会社</h2>
+          <p className="lede">
+            フッ軽だけでは手が届かない工事や専門作業は、信頼できる会社におつなぎしています。
+          </p>
+        </div>
 
-      <div className="relative w-full py-4 cursor-grab active:cursor-grabbing overflow-hidden">
-        {/* レール(translate3dで丸ごと動かす) */}
-        <div 
-          ref={trackRef}
-          className="flex w-max"
-          onMouseDown={handleStart}
-          onMouseMove={handleMove}
-          onMouseUp={handleEnd}
-          onMouseLeave={handleEnd}
-          onTouchStart={handleStart}
-          onTouchMove={handleMove}
-          onTouchEnd={handleEnd}
-          onTouchCancel={handleEnd}
-          onClick={handleClick}
-        >
-          {slideItems.map((partner, index) => (
-            <a 
-              key={index} 
-              href={partner.url} 
-              target="_blank" 
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {partners.map((partner) => (
+            <a
+              key={partner.name}
+              href={partner.url}
+              target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 w-64 md:w-72 mx-3 block group/item overflow-hidden rounded-xl bg-white transition-colors border border-gray-100 hover:border-brand-blue hover:shadow-lg p-4 flex flex-col items-center text-center"
-              draggable={false} // ネイティブのドラッグによる画像のゴーストを防ぐ
+              className="card card-hover group flex flex-col overflow-hidden"
             >
-              <div className="w-full h-24 mb-3 overflow-hidden rounded flex items-center justify-center bg-gray-50 border border-gray-50 pointer-events-none">
+              <div className="flex h-28 items-center justify-center border-b border-hairline bg-canvas p-4">
                 {partner.imageUrl ? (
-                  <img 
-                    src={partner.imageUrl} 
-                    alt={`${partner.name}のロゴ・画像`} 
-                    className="max-w-full max-h-full object-contain group-hover/item:scale-105 transition-transform duration-300 pointer-events-none" 
-                    draggable={false}
+                  <img
+                    src={partner.imageUrl}
+                    alt=""
+                    className="max-h-full max-w-full object-contain"
+                    loading="lazy"
                   />
                 ) : (
-                  <div className="text-gray-400 font-bold text-sm tracking-widest leading-tight px-2 pointer-events-none">{partner.name}</div>
+                  <span className="px-3 text-center text-[13px] font-medium leading-snug text-ink-500">
+                    {partner.name}
+                  </span>
                 )}
               </div>
-              <h3 className="font-bold text-brand-blue text-[15px] mb-2 pointer-events-none">{partner.name}</h3>
-              <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed w-full pointer-events-none">{partner.description}</p>
+
+              <div className="flex flex-1 flex-col p-5">
+                <h3 className="flex items-start justify-between gap-2 text-[15px] font-semibold text-ink-900">
+                  {partner.name}
+                  <ArrowUpRight size={16} className="mt-0.5 shrink-0 text-ink-500 transition-colors group-hover:text-ink-900" />
+                </h3>
+                <p className="mt-2 text-[13px] leading-[1.8] text-ink-500">{partner.description}</p>
+              </div>
             </a>
           ))}
         </div>

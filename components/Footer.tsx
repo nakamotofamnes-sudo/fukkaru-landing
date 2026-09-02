@@ -1,7 +1,45 @@
-import React, { useState } from 'react';
-import { X, Youtube, Instagram, Music, AtSign, MessageCircle, FileText } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { X, Youtube, Instagram, Music2, AtSign, MessageCircle, FileText } from 'lucide-react';
+import Modal from './Modal';
 
 type ModalType = 'operator' | 'privacy' | 'cookie' | null;
+
+/**
+ * フッターの3つの小窓は、見出し・本文・閉じるボタンの形がそろっています。
+ * スクロール止めや焦点まわりの世話は、共通部品の Modal がまとめて見ます。
+ */
+const InfoModal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
+  title,
+  onClose,
+  children,
+}) => (
+  <Modal
+    onClose={onClose}
+    labelledBy="footer-modal-title"
+    panelClassName="flex max-h-[80vh] w-full max-w-2xl flex-col"
+  >
+    <div className="flex items-center justify-between gap-4 border-b border-hairline px-6 py-4">
+      <h3 id="footer-modal-title" className="text-[17px] font-bold tracking-tight text-ink-900">
+        {title}
+      </h3>
+      <button
+        onClick={onClose}
+        aria-label="閉じる"
+        className="-mr-2 rounded p-2 text-ink-500 transition-colors hover:bg-canvas hover:text-ink-900"
+      >
+        <X size={18} />
+      </button>
+    </div>
+    <div className="space-y-4 overflow-y-auto px-6 py-6 text-[14px] leading-[1.9] text-ink-600">
+      {children}
+    </div>
+    <div className="flex justify-end border-t border-hairline px-6 py-4">
+      <button onClick={onClose} className="btn btn-outline">
+        閉じる
+      </button>
+    </div>
+  </Modal>
+);
 
 interface FooterProps {
   onNavigate: (view: 'home' | 'consultation', hash?: string) => void;
@@ -10,55 +48,12 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
-  const openModal = (type: ModalType) => {
-    setActiveModal(type);
-    document.body.style.overflow = 'hidden'; // 背景スクロール固定
-  };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    document.body.style.overflow = 'auto'; // 解除
-  };
+  const openModal = (type: ModalType) => setActiveModal(type);
+  const closeModal = useCallback(() => setActiveModal(null), []);
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
     onNavigate('home', hash);
-  };
-
-  const Modal: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
-    if (!activeModal) return null;
-    return (
-      <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-        onClick={closeModal}
-      >
-        <div 
-          className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col relative"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex justify-between items-center p-5 border-b border-gray-100">
-            <h3 className="font-bold text-xl text-gray-800">{title}</h3>
-            <button 
-              onClick={closeModal}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={24} className="text-gray-500" />
-            </button>
-          </div>
-          <div className="p-6 overflow-y-auto text-gray-600 text-sm leading-relaxed space-y-4">
-            {children}
-          </div>
-          <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
-            <button 
-              onClick={closeModal}
-              className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-bold transition-colors"
-            >
-              閉じる
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // SEOタグリスト（網戸張替えは除外）
@@ -78,28 +73,28 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
   return (
     <>
-      <footer className="bg-gray-800 text-gray-300 mobile-section pb-24 md:pb-12">
-        <div className="container mx-auto mobile-px">
-          <div className="grid grid-cols-1 md:grid-cols-3 mobile-gap mb-8 border-b border-gray-700 pb-8">
+      <footer className="bg-ink-900 text-ink-400 pt-16 pb-28 md:pb-16">
+        <div className="shell">
+          <div className="grid grid-cols-1 gap-10 border-b border-white/10 pb-12 md:grid-cols-3">
             
             {/* Company Info */}
             <div>
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-5 flex items-center gap-3">
                 <img 
                   src="https://res.cloudinary.com/dyclm0vti/image/upload/v1772689454/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_le0bo3.png" 
                   alt="フッ軽 ロゴ" 
-                  className="w-12 h-12 object-contain bg-white rounded-full p-1"
+                  className="h-10 w-10 rounded bg-white object-contain p-1"
                 />
                 <div>
-                  <span className="block text-sm text-gray-400 mb-1">フッ軽合同会社</span>
-                  <h3 className="text-white font-bold text-lg sm:text-xl">
-                    フッ軽 <span className="text-sm font-normal text-gray-400 ml-2">フッカル/富士市の便利屋</span>
+                  <span className="block text-[11px] tracking-[0.08em] text-white/65">フッ軽合同会社</span>
+                  <h3 className="mt-1 text-[18px] font-bold tracking-tight text-white">
+                    フッ軽 <span className="ml-2 text-[12px] font-normal text-white/65">フッカル/富士市の便利屋</span>
                   </h3>
                 </div>
               </div>
-              <p className="mb-4">〒417-0855<br/>静岡県富士市三ツ沢 390-9</p>
+              <p className="mb-5 text-[13px] leading-[1.9]">〒417-0855<br/>静岡県富士市三ツ沢 390-9</p>
               
-              <p className="mb-4 text-sm text-gray-400 leading-relaxed">
+              <p className="mb-6 text-[12px] leading-[1.9] text-white/60">
                 【法人情報】<br />
                 法人番号：6080103003564<br />
                 インボイス登録番号：T6080103003564<br />
@@ -118,47 +113,48 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </p>
               
               {/* SNS Links */}
-              <div className="flex flex-wrap items-center gap-4">
-                <a href="https://youtube.com/@fukkaru_fuji-benriya" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500 transition-colors" title="YouTube">
-                  <Youtube size={24} />
+              <div className="flex flex-wrap items-center gap-5">
+                <a href="https://youtube.com/@fukkaru_fuji-benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="YouTube">
+                  <Youtube size={20} />
                 </a>
-                <a href="https://tiktok.com/@fukkaru_fuji?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" title="TikTok">
-                  <Music size={24} />
+                <a href="https://tiktok.com/@fukkaru_fuji?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="TikTok">
+                  <Music2 size={20} />
                 </a>
-                <a href="https://instagram.com/fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors" title="Instagram">
-                  <Instagram size={24} />
+                <a href="https://instagram.com/fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="Instagram">
+                  <Instagram size={20} />
                 </a>
-                <a href="https://threads.net/@fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" title="Threads">
-                  <AtSign size={24} />
+                <a href="https://threads.net/@fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="Threads">
+                  <AtSign size={20} />
                 </a>
-                <a href="https://lin.ee/qXlO1gC" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#06C755] transition-colors" title="LINE">
-                  <MessageCircle size={24} />
+                <a href="https://lin.ee/qXlO1gC" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="LINE">
+                  <MessageCircle size={20} />
                 </a>
-                <a href="https://note.com/fukkaru_co_jp" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-500 transition-colors" title="note">
-                  <FileText size={24} />
+                <a href="https://note.com/fukkaru_co_jp" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="note">
+                  <FileText size={20} />
                 </a>
               </div>
             </div>
 
             {/* Links */}
             <div>
-              <h4 className="text-white font-bold mb-3">メニュー</h4>
-              <ul className="space-y-1">
-                <li><a href="#problems" onClick={(e) => handleLinkClick(e, '#problems')} className="hover:text-brand-orange">お悩み解決</a></li>
-                <li><a href="#services" onClick={(e) => handleLinkClick(e, '#services')} className="hover:text-brand-orange">サービス一覧</a></li>
-                <li><a href="#reservation" onClick={(e) => handleLinkClick(e, '#reservation')} className="hover:text-brand-orange">Web予約</a></li>
-                <li><a href="#reasons" onClick={(e) => handleLinkClick(e, '#reasons')} className="hover:text-brand-orange">選ばれる理由</a></li>
-                <li><a href="#contact" onClick={(e) => handleLinkClick(e, '#contact')} className="hover:text-brand-orange">お問い合わせ</a></li>
-                <li><a href="/blog/" className="hover:text-brand-orange">お役立ちブログ</a></li>
+              <h4 className="mb-4 text-[12px] font-semibold tracking-[0.08em] text-white/65">メニュー</h4>
+              <ul className="space-y-2.5 text-[14px]">
+                <li><a href="#problems" onClick={(e) => handleLinkClick(e, '#problems')} className="transition-colors hover:text-white">お悩み解決</a></li>
+                <li><a href="#services" onClick={(e) => handleLinkClick(e, '#services')} className="transition-colors hover:text-white">サービス一覧</a></li>
+                <li><a href="#reservation" onClick={(e) => handleLinkClick(e, '#reservation')} className="transition-colors hover:text-white">Web予約</a></li>
+                <li><a href="#reasons" onClick={(e) => handleLinkClick(e, '#reasons')} className="transition-colors hover:text-white">選ばれる理由</a></li>
+                <li><a href="#partners" onClick={(e) => handleLinkClick(e, '#partners')} className="transition-colors hover:text-white">協力会社</a></li>
+                <li><a href="#contact" onClick={(e) => handleLinkClick(e, '#contact')} className="transition-colors hover:text-white">お問い合わせ</a></li>
+                <li><a href="/blog/" className="transition-colors hover:text-white">お役立ちブログ</a></li>
               </ul>
             </div>
 
             {/* SEO Keywords Area */}
             <div>
-              <h4 className="text-white font-bold mb-3">対応エリア・業務</h4>
-              <div className="flex flex-wrap gap-1 text-xs">
+              <h4 className="mb-4 text-[12px] font-semibold tracking-[0.08em] text-white/65">対応エリア・業務</h4>
+              <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag, index) => (
-                  <span key={index} className="bg-gray-700 px-2 py-1 rounded hover:bg-gray-600 transition-colors cursor-default">
+                  <span key={index} className="rounded border border-white/10 px-2 py-1 text-[11px] text-white/60">
                     {tag}
                   </span>
                 ))}
@@ -166,11 +162,11 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between mobile-gap text-sm opacity-70">
-            <div className="flex gap-4 flex-wrap justify-center">
-              <button onClick={() => openModal('operator')} className="hover:text-white hover:underline">運営者情報</button>
-              <button onClick={() => openModal('privacy')} className="hover:text-white hover:underline">プライバシーポリシー</button>
-              <button onClick={() => openModal('cookie')} className="hover:text-white hover:underline">クッキーポリシー</button>
+          <div className="flex flex-col items-center justify-between gap-5 pt-8 text-[13px] text-white/60 md:flex-row">
+            <div className="flex flex-wrap justify-center gap-6">
+              <button onClick={() => openModal('operator')} className="transition-colors hover:text-white">運営者情報</button>
+              <button onClick={() => openModal('privacy')} className="transition-colors hover:text-white">プライバシーポリシー</button>
+              <button onClick={() => openModal('cookie')} className="transition-colors hover:text-white">クッキーポリシー</button>
             </div>
             <div className="text-center md:text-right">
               &copy; {new Date().getFullYear()} フッ軽合同会社. All Rights Reserved.
@@ -181,32 +177,32 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
       {/* Modals */}
       {activeModal === 'operator' && (
-        <Modal title="運営者情報">
+        <InfoModal title="運営者情報" onClose={closeModal}>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">会社名</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">会社名</div>
               <div className="sm:col-span-2">フッ軽合同会社</div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">代表</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">代表</div>
               <div className="sm:col-span-2">中元 晋平</div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">所在地</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">所在地</div>
               <div className="sm:col-span-2">〒417-0855 静岡県富士市三ツ沢 390-9</div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">電話番号</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">電話番号</div>
               <div className="sm:col-span-2">0545-78-3704</div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">メール</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">メール</div>
               <div className="sm:col-span-2">
-                <a href="mailto:nakamoto.famnes@gmail.com" className="text-brand-orange hover:underline">nakamoto.famnes@gmail.com</a>
+                <a href="mailto:nakamoto.famnes@gmail.com" className="text-accent hover:underline">nakamoto.famnes@gmail.com</a>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 pb-4">
-              <div className="font-bold text-gray-800">事業内容</div>
+            <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
+              <div className="font-semibold text-ink-900">事業内容</div>
               <div className="sm:col-span-2">
                 <ul className="list-disc pl-5 space-y-1">
                   <li>住まいのトラブル解決（修繕、メンテナンス）</li>
@@ -217,24 +213,24 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </div>
             </div>
           </div>
-        </Modal>
+        </InfoModal>
       )}
 
       {activeModal === 'privacy' && (
-        <Modal title="プライバシーポリシー">
-          <h4 className="font-bold text-gray-800 mb-2">1. 個人情報の利用目的</h4>
+        <InfoModal title="プライバシーポリシー" onClose={closeModal}>
+          <h4 className="font-semibold text-ink-900">1. 個人情報の利用目的</h4>
           <p className="mb-4">
             当方は、お客様から収集した個人情報を、お問い合わせへの回答、サービスの提供、および当方のサービス向上を目的として利用いたします。
             法令に基づく場合を除き、お客様の同意なく第三者に提供することはありません。
           </p>
           
-          <h4 className="font-bold text-gray-800 mb-2">2. 個人情報の管理</h4>
+          <h4 className="font-semibold text-ink-900">2. 個人情報の管理</h4>
           <p className="mb-4">
             当方は、お客様の個人情報を正確かつ最新の状態に保ち、個人情報への不正アクセス・紛失・破損・改ざん・漏洩などを防止するため、
             セキュリティシステムの維持・管理体制の整備等の必要な措置を講じ、安全対策を実施し個人情報の厳重な管理を行ないます。
           </p>
 
-          <h4 className="font-bold text-gray-800 mb-2">3. 個人情報の第三者への開示・提供の禁止</h4>
+          <h4 className="font-semibold text-ink-900">3. 個人情報の第三者への開示・提供の禁止</h4>
           <p className="mb-4">
             当方は、お客さまよりお預かりした個人情報を適切に管理し、次のいずれかに該当する場合を除き、個人情報を第三者に開示いたしません。
           </p>
@@ -244,37 +240,37 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <li>法令に基づき開示することが必要である場合</li>
           </ul>
 
-          <h4 className="font-bold text-gray-800 mb-2">4. ご本人の照会</h4>
+          <h4 className="font-semibold text-ink-900">4. ご本人の照会</h4>
           <p className="mb-4">
             お客さまがご本人の個人情報の照会・修正・削除などをご希望される場合には、ご本人であることを確認の上、対応させていただきます。
           </p>
 
-          <h4 className="font-bold text-gray-800 mb-2">5. お問い合わせ窓口</h4>
+          <h4 className="font-semibold text-ink-900">5. お問い合わせ窓口</h4>
           <p>
             本ポリシーに関するお問い合わせは、当サイトのお問い合わせフォームまたはお電話にてお願いいたします。
           </p>
-        </Modal>
+        </InfoModal>
       )}
 
       {activeModal === 'cookie' && (
-        <Modal title="クッキーポリシー">
+        <InfoModal title="クッキーポリシー" onClose={closeModal}>
           <p className="mb-4">
             当サイトでは、サービスの向上およびお客様により適したサービスを提供するため、Cookie（クッキー）を使用しています。
             Cookieとは、お客様がWebサイトを閲覧した際に、お客様のブラウザに保存される小さなデータファイルのことです。
           </p>
           
-          <h4 className="font-bold text-gray-800 mb-2">1. 使用するCookieの種類</h4>
+          <h4 className="font-semibold text-ink-900">1. 使用するCookieの種類</h4>
           <p className="mb-4">
             当サイトでは、主にアクセス解析ツール（Google Analytics等）を利用して、サイトの利用状況を把握するためにCookieを使用する場合があります。
             これにより収集される情報は匿名であり、個人を特定するものではありません。
           </p>
 
-          <h4 className="font-bold text-gray-800 mb-2">2. Cookieの無効化</h4>
+          <h4 className="font-semibold text-ink-900">2. Cookieの無効化</h4>
           <p>
             お客様は、ブラウザの設定を変更することでCookieを無効にすることができます。
             ただし、Cookieを無効にした場合、当サイトの一部の機能が正常に動作しない可能性がありますのでご注意ください。
           </p>
-        </Modal>
+        </InfoModal>
       )}
     </>
   );
