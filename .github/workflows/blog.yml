@@ -1,0 +1,71 @@
+name: ブログを1本書く
+
+# Mac が眠っていても記事が出るようにするための入口（2026-09-02）。
+#
+# ⚠ いまは **手動でしか動きません**。まだ Mac 側が本番です。
+#    毎朝走らせるときは、下の schedule の行の # を外し、
+#    **同時に Mac の autoupload.sh から blog を外してください**（両方動くと1日2本出ます）。
+#
+# on:
+#   schedule:
+#     - cron: '0 1 * * *'      # 毎日 10:00（日本時間）
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '試し運転（dry）なら公開しません'
+        type: choice
+        options: [dry, on]
+        default: dry
+      target:
+        description: '狙いを1回だけ指定（例 物置組立:富士市）。空なら狙い.txt の順番どおり'
+        type: string
+        default: ''
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BLOG_PAT }}
+
+      - name: 日本語の書体を入れる
+        # Ubuntu にはヒラギノが無い。トップ画像の文字が豆腐になるので必ず入れる
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 画像の道具を入れる
+        run: pip install --quiet Pillow
+
+      - name: 誰がコミットするか決める
+        run: |
+          git config user.name  "フッ軽の自動投稿"
+          git config user.email "nakamoto.famnes@gmail.com"
+
+      - name: 記事を書く
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_PAT: ${{ secrets.BLOG_PAT }}
+          FUKKARU_REPO: ${{ github.workspace }}
+          FUKKARU_STATE: ${{ github.workspace }}/.blogstate
+          FUKKARU_TARGETS: ${{ github.workspace }}/scripts/blog/狙い.txt
+          FUKKARU_CURSOR: ${{ github.workspace }}/scripts/blog/狙い_いまの位置.txt
+          FUKKARU_HEROIMG: ${{ github.workspace }}/scripts/blog/heroimg.py
+          FUKKARU_FONT: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
+          FUKKARU_BLOG_MODE: ${{ inputs.mode || 'on' }}
+          FUKKARU_BLOG_FORCE: '1'
+          FUKKARU_BLOG_TARGET: ${{ inputs.target }}
+        run: python3 scripts/blog/blog.py
+
+      - name: 記録を出す
+        if: always()
+        run: cat .blogstate/_ログ.txt 2>/dev/null || echo "記録がありません"
