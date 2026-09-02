@@ -49,7 +49,7 @@ const News: React.FC = () => {
 
           <dl className="rule-list border-t border-hairline">
             {items.map((item) => (
-              <div key={item.date} className="flex flex-col gap-1.5 py-4 sm:flex-row sm:gap-6">
+              <div key={`${item.date}-${item.label}`} className="flex flex-col gap-1.5 py-4 sm:flex-row sm:gap-6">
                 <dt className="flex shrink-0 items-center gap-3 sm:w-[190px]">
                   <time className="text-[13px] tabular-nums text-ink-500">{item.date}</time>
                   <span className={item.highlight ? 'chip chip-accent' : 'chip'}>{item.label}</span>

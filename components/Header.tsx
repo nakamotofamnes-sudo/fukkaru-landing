@@ -122,6 +122,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label={isMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
           aria-expanded={isMenuOpen}
+          aria-controls="header-menu"
         >
           {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -129,7 +130,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
 
       {/* スマホのメニュー */}
       {isMenuOpen && (
-        <div className="lg:hidden border-t border-hairline bg-surface animate-fade-in">
+        <div id="header-menu" className="lg:hidden border-t border-hairline bg-surface animate-fade-in">
           <nav className="shell py-2 rule-list flex flex-col">
             {navLinks.map((link) => (
               <a

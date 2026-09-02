@@ -36,14 +36,21 @@
     line-height: 1.35;
   }
 
-  /* 線アイコンは細く。太い線は「無料素材のアイコン」に見えます。 */
-  svg {
+  /* 線アイコンは細く。太い線は「無料素材のアイコン」に見えます。
+     塗りつぶしのアイコン（お客様の声の星など）まで線が乗ってしまうので、
+     線で描いているものだけに効かせます。lucide は線のアイコンに
+     fill="none" を出すので、そこを目印にしています。 */
+  svg[fill="none"] {
     stroke-width: 1.5;
   }
 
-  /* キーボード操作の人にだけ、はっきりした枠を出します。 */
+  /* キーボード操作の人にだけ、はっきりした枠を出します。
+     影（ring）で描くと、カードの overflow-hidden に切り取られて見えなくなり、
+     濃紺の節では枠の色が背景と同じになって消えていました。
+     outline は親に切り取られず、currentColor なので明るい面でも濃紺の面でも見えます。 */
   :focus-visible {
-    @apply outline-none ring-2 ring-ink-900 ring-offset-2 ring-offset-canvas;
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
   }
 
   ::selection {

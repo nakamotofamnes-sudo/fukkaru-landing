@@ -11,6 +11,20 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
+    // 角丸は8pxの1種類だけ。extend に足すと標準の rounded-sm（2px）などが
+    // 生き残ってしまうので、ここで丸ごと置き換えています。
+    // none と full は実際に使うので必ず残します
+    // （full はお客様の声のアバターと、送信後のチェック印）。
+    borderRadius: {
+      none: '0',
+      DEFAULT: '8px',
+      md: '8px',
+      lg: '8px',
+      xl: '8px',
+      '2xl': '8px',
+      '3xl': '8px',
+      full: '9999px',
+    },
     extend: {
       colors: {
         // 面と線。白は「カード」にだけ使い、地色はわずかに灰を混ぜた白にします。
@@ -48,15 +62,6 @@ export default {
           green: '#0A8138',
         },
       },
-      borderRadius: {
-        // 角丸は1種類だけ。DEFAULT を上書きしているので rounded = 8px です。
-        DEFAULT: '8px',
-        md: '8px',
-        lg: '8px',
-        xl: '8px',
-        '2xl': '8px',
-        '3xl': '8px',
-      },
       fontFamily: {
         sans: [
           'Inter',
@@ -72,9 +77,8 @@ export default {
         tight: '-0.02em',
       },
       boxShadow: {
-        // 影は「画面の上に浮いているもの」だけ。段差はふつう1pxの線で表します。
+        // 影は使いません。段差はすべて1pxの線で表します。
         none: 'none',
-        overlay: '0 1px 2px rgba(15, 23, 42, 0.06)',
       },
       maxWidth: {
         prose: '68ch',

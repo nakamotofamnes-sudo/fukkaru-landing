@@ -98,12 +98,15 @@ const reviews: Review[] = [
 
 const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
   const [isOpen, setIsOpen] = useState(false);
+  // 開け閉めのボタンと、開く中身を結びつけるための名前。
+  const panelId = `review-${review.id}`;
 
   return (
     <div className="card overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
+        aria-controls={panelId}
         className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-canvas"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-[13px] font-semibold text-ink-500">
@@ -113,7 +116,7 @@ const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-[15px] font-semibold text-ink-900">{review.author}</span>
-            <span className="flex gap-0.5 text-accent" aria-label="5段階評価のうち5">
+            <span className="flex gap-0.5 text-accent" role="img" aria-label="5段階評価のうち5">
               {[0, 1, 2, 3, 4].map((i) => (
                 <Star key={i} size={12} fill="currentColor" strokeWidth={0} />
               ))}
@@ -139,7 +142,7 @@ const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
       </button>
 
       {isOpen && (
-        <div className="border-t border-hairline px-5 py-5">
+        <div id={panelId} className="border-t border-hairline px-5 py-5">
           <p className="whitespace-pre-wrap text-[14px] leading-[1.9] text-ink-600">{review.text}</p>
 
           {review.reply && (

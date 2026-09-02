@@ -106,8 +106,9 @@ const PAGE_CSS = `
 :root{
   --canvas:#F8FAFC; --surface:#FFFFFF; --hairline:#E2E8F0;
   --ink-900:#0F172A; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748B;
+  --ink-300:#CBD5E1;
   --accent:#B45309; --accent-soft:#FEF3C7; --accent-line:#FDE68A;
-  --line-green:#0A8138;
+  --line-green:#0A8138; --line-hover:#08682D;
   --r:8px;
 }
 *{box-sizing:border-box}
@@ -119,7 +120,7 @@ body{
   font-feature-settings:"palt" 1;
 }
 img{max-width:100%;height:auto;border-radius:var(--r)}
-a{color:var(--ink-900)}
+a{color:var(--accent);text-decoration:underline}
 h1,h2,h3,h4{color:var(--ink-900);letter-spacing:-0.02em;line-height:1.4}
 .wrap{max-width:720px;margin:0 auto;padding:0 20px}
 
@@ -174,8 +175,8 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .cta-buttons{display:flex;flex-direction:column;gap:10px;max-width:420px}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:var(--r);font-weight:600;text-decoration:none;font-size:14.5px;transition:background-color .15s,border-color .15s}
 .btn-line{background:var(--line-green);color:#fff}
-.btn-line:hover{background:#08682D}
-.btn-outline{background:var(--surface);color:var(--ink-900);border:1px solid #CBD5E1}
+.btn-line:hover{background:var(--line-hover)}
+.btn-outline{background:var(--surface);color:var(--ink-900);border:1px solid var(--ink-300)}
 .btn-outline:hover{border-color:var(--ink-900)}
 
 .article-footer{max-width:720px;margin:0 auto;padding:24px 20px 40px}

@@ -11,11 +11,7 @@ const getOptimizedImageUrl = (url: string) => {
   return url;
 };
 
-type HeroProps = {
-  onNavigate: (view: 'home' | 'consultation', hash?: string) => void;
-};
-
-const Hero: React.FC<HeroProps> = () => {
+const Hero: React.FC = () => {
   const bgImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/v1772757439/hi-ro-%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_w3lcfl.png';
   const womanImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/v1772757439/%E3%83%A2%E3%83%86%E3%82%99%E3%83%AB%E3%83%92%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_cqufdm.png';
 
@@ -33,9 +29,10 @@ const Hero: React.FC<HeroProps> = () => {
       <div className="absolute inset-0 z-10 bg-ink-900/70" />
       <div className="absolute inset-0 z-10 bg-ink-900/40 md:bg-transparent" />
 
-      {/* 人物写真。スマホでは文字とボタンに重なってしまうので出しません。 */}
+      {/* 人物写真。スマホでは文字とボタンに重なってしまうので出しません。
+          実在の従業員ではなくモデルの写真なので、飾りとして扱い alt は空にしています。 */}
       <div className="pointer-events-none absolute bottom-0 right-0 z-20 hidden items-end justify-end sm:flex sm:h-[70vh] md:h-[82vh] lg:h-[94vh]">
-        <img src={getOptimizedImageUrl(womanImageUrl)} alt="フッ軽のスタッフ" className="h-full w-auto object-contain object-bottom" />
+        <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto object-contain object-bottom" />
       </div>
 
       <div className="shell relative z-30 pt-24 pb-16">

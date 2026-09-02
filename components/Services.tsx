@@ -58,12 +58,15 @@ const groups: Group[] = [
 
 const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
   const [isOpen, setIsOpen] = useState(Boolean(group.defaultOpen));
+  // 開け閉めのボタンと、開く中身を結びつけるための名前。
+  const panelId = `services-${group.id}`;
 
   return (
     <div className="card overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
+        aria-controls={panelId}
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-canvas sm:px-6 sm:py-5"
       >
         <span className="min-w-0">
@@ -77,19 +80,18 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
       </button>
 
       {isOpen && (
-        <dl className="rule-list border-t border-hairline">
+        <dl id={panelId} className="rule-list border-t border-hairline">
           {group.services.map((s) => (
-            <div key={s.title} className="flex items-baseline justify-between gap-4 px-5 py-4 sm:px-6">
-              <div className="min-w-0">
-                <dt className="flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
-                  {s.title}
-                  {s.popular && <span className="chip chip-accent">人気</span>}
-                </dt>
-                <dd className="mt-1 text-[13px] leading-relaxed text-ink-500">{s.desc}</dd>
-              </div>
-              <span className="shrink-0 text-[15px] font-semibold tabular-nums tracking-tight text-ink-900">
+            <div key={s.title} className="flex flex-wrap items-baseline justify-between gap-x-4 px-5 py-4 sm:px-6">
+              <dt className="min-w-0 flex-1 flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
+                {s.title}
+                {s.popular && <span className="chip chip-accent">人気</span>}
+              </dt>
+              <dd className="shrink-0 text-[15px] font-semibold tabular-nums tracking-tight text-ink-900">
                 {s.price}
-              </span>
+              </dd>
+              {/* 説明は幅いっぱいにして、項目名と料金の下の行に回します。 */}
+              <dd className="mt-1 w-full text-[13px] leading-relaxed text-ink-500">{s.desc}</dd>
             </div>
           ))}
         </dl>

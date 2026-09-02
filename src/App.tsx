@@ -117,6 +117,7 @@ const Faq: React.FC = () => {
                     <button
                       onClick={() => setOpenIndex(isOpen ? null : idx)}
                       aria-expanded={isOpen}
+                      aria-controls={`faq-${idx}`}
                       className="flex w-full items-start justify-between gap-6 py-5 text-left"
                     >
                       <span className="text-[15px] font-semibold text-ink-900 sm:text-[16px]">{item.q}</span>
@@ -127,7 +128,9 @@ const Faq: React.FC = () => {
                     </button>
                   </dt>
                   {isOpen && (
-                    <dd className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">{item.a}</dd>
+                    <dd id={`faq-${idx}`} className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">
+                      {item.a}
+                    </dd>
                   )}
                 </div>
               );
@@ -237,17 +240,28 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'home' | 'consultation'>('home');
 
   const handleNavigate = (view: 'home' | 'consultation', hash?: string) => {
+    const wasHome = currentView === 'home';
     setCurrentView(view);
-    if (view === 'home') {
-      window.scrollTo(0, 0);
-      setTimeout(() => {
-        if (hash) {
-          document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 50);
+    if (view !== 'home') return;
+
+    const move = () => {
+      if (hash) {
+        document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    if (wasHome) {
+      // すでにホーム画面にいるので、そのまま飛び先へ1回だけ動かします。
+      // 先に一番上へ戻すと、なめらかスクロールが2回走って一度上に動きかけます。
+      move();
+      return;
     }
+
+    // 相談ページから戻るときは、ホームが描かれるのを待ってから動かします。
+    window.scrollTo(0, 0);
+    setTimeout(move, 50);
   };
 
   if (currentView === 'consultation') {
@@ -265,7 +279,7 @@ const App: React.FC = () => {
   return (
     <main className="w-full overflow-x-hidden">
       <Header currentView={currentView} onNavigate={handleNavigate} />
-      <Hero onNavigate={handleNavigate} />
+      <Hero />
       <CouponSlider />
       <News />
       <Problems />
