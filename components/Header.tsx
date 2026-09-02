@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Phone, MessageCircle, Youtube, Instagram, Music2, AtSign, FileText } from 'lucide-react';
 
 interface HeaderProps {
-  currentView: 'home' | 'consultation';
-  onNavigate: (view: 'home' | 'consultation', hash?: string) => void;
+  onNavigate: (hash?: string) => void;
 }
 
 // 並びは「見に来た人が知りたい順」。アイコンは付けません。
@@ -25,7 +24,7 @@ const socials = [
   { label: 'note', href: 'https://note.com/fukkaru_co_jp', Icon: FileText },
 ];
 
-const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -37,11 +36,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
   }, []);
 
   // ヒーローの上に重なっている間だけ透明。それ以外は白い帯に1pxの線。
-  const solid = isScrolled || isMenuOpen || currentView === 'consultation';
+  const solid = isScrolled || isMenuOpen;
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    onNavigate('home', href);
+    onNavigate(href);
     setIsMenuOpen(false);
   };
 
@@ -55,7 +54,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
         {/* ロゴ */}
         <a
           href="#"
-          onClick={(e) => { e.preventDefault(); onNavigate('home'); }}
+          onClick={(e) => { e.preventDefault(); onNavigate(); }}
           className="flex items-center gap-2.5 shrink-0"
         >
           <img
