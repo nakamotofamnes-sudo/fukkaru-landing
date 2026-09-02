@@ -1,55 +1,65 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+
+type Item = {
+  date: string;
+  label: string;
+  text: string;
+  /** 目立たせるのは本当に1件だけ。全部を強調すると、どれも目に入りません。 */
+  highlight?: boolean;
+};
+
+const items: Item[] = [
+  {
+    date: '2026.07.30',
+    label: 'キャンペーン',
+    text: '公式LINEのご登録と、お見積り後のご成約で、合計最大3,000円引きを実施中です。',
+    highlight: true,
+  },
+  {
+    date: '2026.07.01',
+    label: 'お知らせ',
+    text: '春のキャンペーンは終了いたしました。たくさんのお問い合わせをありがとうございました。',
+  },
+  {
+    date: '2026.05.13',
+    label: 'お休み',
+    text: '2026年5月13日は、急な事情によりお休みをいただきます。',
+  },
+  {
+    date: '2026.03.25',
+    label: 'サービス追加',
+    text: '新サービス「汚水枡の洗浄」を追加しました。見えないところの汚れもきれいにします。',
+  },
+  {
+    date: '2026.03.10',
+    label: 'お知らせ',
+    text: '暖かくなり、お庭の手入れのご依頼が増えています。予約が埋まりやすいため、お早めにご相談ください。',
+  },
+];
 
 const News: React.FC = () => {
   return (
-    <section className="bg-orange-50 py-6 md:py-10 border-b border-orange-100">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="flex items-center gap-3 mb-4 border-b border-orange-200 pb-2">
-          <Bell className="text-brand-orange animate-bounce-slow" size={24} />
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800">お知らせ</h2>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-orange-100 divide-y divide-gray-100 overflow-hidden">
-          <div className="p-4 hover:bg-orange-50/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 bg-red-50/30">
-            <div className="flex items-center gap-3 min-w-[140px]">
-              <span className="text-sm font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded">2026年7月30日</span>
-              <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded">キャンペーン</span>
-            </div>
-            <p className="text-sm md:text-base font-bold text-red-600">公式LINE登録してくれた方割引とお見積り後成約で最大で全部で3000円引きセール中！</p>
+    <section className="section-tight border-b border-hairline bg-surface">
+      <div className="shell">
+        <div className="grid gap-8 lg:grid-cols-[200px_1fr]">
+          <div>
+            <h2 className="text-[20px] font-bold tracking-tight text-ink-900">お知らせ</h2>
+            <p className="mt-1 text-[13px] text-ink-500">最新の5件</p>
           </div>
 
-          <div className="p-4 hover:bg-orange-50/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-            <div className="flex items-center gap-3 min-w-[140px]">
-              <span className="text-sm font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded">2026年7月1日</span>
-              <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">お知らせ</span>
-            </div>
-            <p className="text-sm md:text-base font-medium text-gray-700">春のキャンペーンは終了いたしました。沢山のお問い合わせ誠にありがとうございました。引き続きよろしくお願いいたします。</p>
-          </div>
-
-          <div className="p-4 hover:bg-orange-50/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-            <div className="flex items-center gap-3 min-w-[140px]">
-              <span className="text-sm font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded">2026年5月13日</span>
-              <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">お知らせ</span>
-            </div>
-            <p className="text-sm md:text-base font-medium text-red-600">2026年5月13日は緊急によりお休みさせていただきます。</p>
-          </div>
-
-          <div className="p-4 hover:bg-orange-50/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-            <div className="flex items-center gap-3 min-w-[140px]">
-              <span className="text-sm font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded">2026年3月25日</span>
-              <span className="text-xs font-bold text-white bg-brand-green px-2 py-0.5 rounded">サービス追加</span>
-            </div>
-            <p className="text-sm md:text-base font-medium text-gray-700">新サービス「汚水枡の洗浄」を追加しました！見えない所の汚れもスッキリ綺麗に。</p>
-          </div>
-          
-          <div className="p-4 hover:bg-orange-50/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-            <div className="flex items-center gap-3 min-w-[140px]">
-              <span className="text-sm font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded">2026年3月10日</span>
-              <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">お知らせ</span>
-            </div>
-            <p className="text-sm md:text-base text-gray-700">暖かくなりお庭のお手入れのご依頼が増えております。予約が埋まりやすいためお早めにご相談ください。</p>
-          </div>
+          <dl className="rule-list border-t border-hairline">
+            {items.map((item) => (
+              <div key={item.date} className="flex flex-col gap-1.5 py-4 sm:flex-row sm:gap-6">
+                <dt className="flex shrink-0 items-center gap-3 sm:w-[190px]">
+                  <time className="text-[13px] tabular-nums text-ink-500">{item.date}</time>
+                  <span className={item.highlight ? 'chip chip-accent' : 'chip'}>{item.label}</span>
+                </dt>
+                <dd className={`text-[14px] leading-[1.8] ${item.highlight ? 'font-medium text-ink-900' : 'text-ink-600'}`}>
+                  {item.text}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </div>
     </section>

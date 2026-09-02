@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Quote, Instagram, ChevronDown, ChevronUp, Star, User } from 'lucide-react';
+import { ChevronDown, Instagram, Star } from 'lucide-react';
 
 interface Review {
   id: number;
@@ -96,159 +96,111 @@ const reviews: Review[] = [
   }
 ];
 
-const ReviewAccordionItem = ({ review }: { review: Review }) => {
+const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div 
-      className={`bg-white rounded-xl shadow-md border mb-4 overflow-hidden transition-all duration-300 ${
-        isOpen 
-          ? 'border-brand-orange border-l-8 ring-4 ring-orange-50' 
-          : 'border-transperent border-l-8 hover:border-brand-orange/40 hover:shadow-lg'
-      }`}
-      style={{ borderLeftColor: isOpen ? '#f97316' : '#fcd34d' }}
-    >
-      <button 
-        className={`w-full px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between focus:outline-none transition-colors ${
-          isOpen ? 'bg-orange-50/30' : 'bg-white hover:bg-orange-50/10'
-        }`}
+    <div className="card overflow-hidden">
+      <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-canvas"
       >
-        <div className="flex flex-col items-start text-left gap-2 w-full pr-4">
-          
-          {/* Header Row: Avatar, Name, Date */}
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-brand-orange" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-gray-800 text-base sm:text-lg leading-tight">{review.author}</span>
-              <span className="text-xs text-gray-500">{review.date}</span>
-            </div>
-          </div>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-[13px] font-semibold text-ink-500">
+          {review.author.slice(0, 1)}
+        </span>
 
-          {/* Stars & Service label */}
-          <div className="flex items-center gap-3 flex-wrap ml-13 sm:ml-13 pl-[52px]">
-            <div className="flex text-yellow-400">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={16} fill="currentColor" />
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[15px] font-semibold text-ink-900">{review.author}</span>
+            <span className="flex gap-0.5 text-accent" aria-label="5段階評価のうち5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star key={i} size={12} fill="currentColor" strokeWidth={0} />
               ))}
-            </div>
-            {review.service && (
-              <span className="text-xs font-semibold text-brand-orange bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">
-                {review.service}
-              </span>
-            )}
-          </div>
-          
-          {/* Preview Text when Closed */}
-          {!isOpen && (
-            <p className="text-sm text-gray-500 line-clamp-1 mt-1 text-left w-full ml-13 sm:ml-13 pl-[52px]">
-              {review.text}
-            </p>
+            </span>
+            <span className="text-[12px] text-ink-500">{review.date}</span>
+          </span>
+
+          {review.service && (
+            <span className="mt-2 flex">
+              <span className="chip">{review.service}</span>
+            </span>
           )}
 
-        </div>
-        
-        {/* Toggle Icon */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-          isOpen ? 'bg-brand-orange text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-orange-100 group-hover:text-brand-orange'
-        }`}>
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </div>
+          {!isOpen && (
+            <span className="mt-2 block truncate text-[13px] text-ink-500">{review.text}</span>
+          )}
+        </span>
+
+        <ChevronDown
+          size={17}
+          className={`mt-1 shrink-0 text-ink-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
-      
-      {/* Expanded Content */}
-      <div 
-        className={`transition-all duration-300 ease-in-out origin-top ${
-          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
-        }`}
-      >
-        <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-gray-50 ml-0 sm:ml-13 sm:pl-[52px]">
-          <div className="relative pt-3">
-            <Quote className="absolute top-0 left-0 text-brand-orange opacity-10 transform -translate-x-2 -translate-y-1" size={32} />
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base relative z-10 whitespace-pre-wrap pl-3 font-medium">
-              {review.text}
-            </p>
-          </div>
-          
+
+      {isOpen && (
+        <div className="border-t border-hairline px-5 py-5">
+          <p className="whitespace-pre-wrap text-[14px] leading-[1.9] text-ink-600">{review.text}</p>
+
           {review.reply && (
-            <div className="mt-6 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-4 sm:p-5 border-l-4 border-brand-orange relative shadow-sm">
-              <div className="absolute -left-[14px] top-4 w-6 h-6 bg-brand-orange rounded-full border-4 border-white flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-800 mb-2 block">フッ軽合同会社 オーナーからの返信</span>
-              <p className="text-gray-600 text-sm whitespace-pre-wrap leading-relaxed">{review.reply}</p>
+            <div className="mt-5 border-l-2 border-accent pl-4">
+              <p className="text-[12px] font-semibold tracking-[0.04em] text-ink-500">
+                フッ軽合同会社からの返信
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-ink-500">{review.reply}</p>
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
 const Testimonials: React.FC = () => {
   return (
-    <section id="testimonials" className="py-20 relative overflow-hidden w-full max-w-full overflow-x-hidden bg-gray-50/50">
-      <div className="px-4 sm:px-6 relative z-10 w-full max-w-3xl mx-auto overflow-x-hidden">
-        <div className="text-center mb-12">
-          <a
-            href="https://instagram.com/fukkaru.fuji.benriya"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white px-5 py-2 rounded-full font-bold shadow-md hover:scale-105 transition-transform mb-6 text-sm sm:text-base animate-pulse-slow"
-          >
-            <Instagram size={20} />
-            <span>最新の実績をInstagramで限定公開中！</span>
-          </a>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-            お客様の声・実績
-          </h2>
-          <div className="w-16 h-1 bg-brand-orange mx-auto mt-4 rounded-full"></div>
-          <p className="text-gray-600 mt-6 max-w-2xl mx-auto">
-            多くのお客様から感謝のお言葉をいただいております。<br className="hidden sm:block" />
-            皆様の実際の声をご覧ください。
+    <section id="testimonials" className="section border-t border-hairline">
+      <div className="shell">
+        <div className="max-w-2xl">
+          <span className="eyebrow">Reviews</span>
+          <h2 className="h-section">お客様の声</h2>
+          <p className="lede">
+            実際にご依頼いただいた方から届いた口コミです。見出しを押すと全文が開きます。
           </p>
         </div>
 
-        {/* 2カラムにして縦幅を節約する */}
-        <div className="mb-16 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-12 grid gap-4 md:grid-cols-2">
           {reviews.map((review) => (
-            <ReviewAccordionItem key={review.id} review={review} />
+            <ReviewItem key={review.id} review={review} />
           ))}
         </div>
 
-        {/* Instagram Feed Section */}
-        <div className="mt-20 pt-12 border-t border-gray-200">
-          <div className="text-center mb-10">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center justify-center gap-3">
-              <Instagram className="text-pink-500" size={32} />
-              Instagramで最新の実績を公開中！
-            </h3>
-            <p className="text-gray-600 mt-4 leading-relaxed text-sm md:text-base max-w-2xl mx-auto">
-              日々の作業風景やお客様とのやり取りを随時更新しています。<br />
-              最新のサポート実績はぜひインフルエンサーでもある当社のInstagramをご覧ください。
-            </p>
-          </div>
-
-          {/* Instagram Feed Widget */}
-          <div className="max-w-4xl mx-auto min-h-[300px]">
-            <div className="elfsight-app-afdbcbf8-1651-498d-8fc2-09f4c139443b" data-elfsight-app-lazy></div>
-          </div>
-          
-          <div className="text-center mt-8">
-            <a 
-              href="https://instagram.com/fukkaru.fuji.benriya" 
-              target="_blank" 
+        {/* Instagram の最新実績 */}
+        <div className="mt-16 border-t border-hairline pt-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <span className="eyebrow">Instagram</span>
+              <h3 className="text-[22px] font-bold tracking-tight text-ink-900">
+                日々の作業の様子を載せています
+              </h3>
+              <p className="mt-2 text-[14px] leading-[1.85] text-ink-500">
+                作業前と作業後、現場でのやり取りを随時更新しています。
+              </p>
+            </div>
+            <a
+              href="https://instagram.com/fukkaru.fuji.benriya"
+              target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              className="btn btn-outline shrink-0"
             >
-              <Instagram size={20} />
-              公式Instagramでさらに見る
+              <Instagram size={17} />
+              @fukkaru.fuji.benriya
             </a>
           </div>
-        </div>
 
+          <div className="mt-8 min-h-[300px]">
+            <div className="elfsight-app-afdbcbf8-1651-498d-8fc2-09f4c139443b" data-elfsight-app-lazy></div>
+          </div>
+        </div>
       </div>
     </section>
   );

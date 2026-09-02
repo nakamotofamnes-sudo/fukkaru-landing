@@ -10,10 +10,13 @@
     <!-- Bing Webmaster Tools のサイト所有者確認 -->
     <meta name="msvalidate.01" content="F56B518FF8230B0044B6103F6DA20C9B" />
 
-    <!-- Google Fonts: Noto Sans JP for a premium, modern feel -->
+    <!-- 欧文は Inter、和文は Noto Sans JP。並び順が効くので Inter を先に書きます。 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- 画面の地色。読み込み中の白い一瞬を防ぎます。 -->
+    <meta name="theme-color" content="#F8FAFC" />
 
     <!-- Favicon & App Icon -->
     <link rel="icon" href="https://res.cloudinary.com/dyclm0vti/image/upload/v1772755587/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_t1ft1r.png" />
@@ -33,7 +36,7 @@
       gtag('config', 'G-Z092NPG2MW');
     </script>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased font-sans overflow-x-hidden">
+<body class="bg-canvas text-ink-700 antialiased font-sans overflow-x-hidden">
     <div id="root" class="overflow-x-hidden w-full m-0 p-0"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- Elfsight Instagram Feed -->

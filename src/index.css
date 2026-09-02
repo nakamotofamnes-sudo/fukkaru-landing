@@ -1,40 +1,170 @@
-@keyframes bounce-slow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-
-@keyframes glow-loop {
-  0% { opacity: 0.4; filter: blur(8px); }
-  50% { opacity: 0.8; filter: blur(16px); }
-  100% { opacity: 0.4; filter: blur(8px); }
-}
-
-.animate-bounce-slow {
-  animation: bounce-slow 2.2s infinite;
-}
-.animate-glow-green {
-  position: relative;
-}
-.animate-glow-loop > span:last-child {
-  pointer-events: none;
-  animation: glow-loop 2.5s infinite;
-}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html { scroll-behavior: smooth; }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+/* ============================================================
+   フッ軽 — 見た目の土台
+   ------------------------------------------------------------
+   決めごとは4つだけです。破らないでください。
+   1. 地色は canvas（ほんのり灰色の白）。カードだけが純白。
+   2. 段差は「1pxの線」で表す。影とグラデーションは使わない。
+   3. 角丸は 8px の1種類。丸なのは丸いもの（アイコンの器）だけ。
+   4. 差し色は accent（琥珀）1色。赤・ピンク・紫・原色の黄は使わない。
+   ============================================================ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-canvas text-ink-700;
+    /* 本文はゆったり。文字のまわりに呼吸できる余白をつくります。 */
+    line-height: 1.75;
+    font-feature-settings: "palt" 1;
+  }
+
+  /* 見出しは字間をわずかに詰める。これだけで作りの丁寧さが出ます。 */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-ink-900 font-bold;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+  }
+
+  /* 線アイコンは細く。太い線は「無料素材のアイコン」に見えます。 */
+  svg {
+    stroke-width: 1.5;
+  }
+
+  /* キーボード操作の人にだけ、はっきりした枠を出します。 */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ink-900 ring-offset-2 ring-offset-canvas;
+  }
+
+  ::selection {
+    @apply bg-ink-900 text-white;
+  }
+}
+
+@layer components {
+  /* --- 幅と余白 ------------------------------------------------ */
+  .shell {
+    @apply w-full max-w-6xl mx-auto px-5 sm:px-6 lg:px-8;
+  }
+  .shell-narrow {
+    @apply w-full max-w-3xl mx-auto px-5 sm:px-6;
+  }
+  .section {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+  .section-tight {
+    @apply py-12 sm:py-16;
+  }
+
+  /* --- 見出しのまとまり ---------------------------------------- */
+  .eyebrow {
+    @apply inline-block text-[12px] font-semibold uppercase text-accent mb-3;
+    letter-spacing: 0.08em;
+  }
+  .h-section {
+    @apply text-[26px] sm:text-[32px] lg:text-[36px] font-bold text-ink-900;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  .lede {
+    @apply mt-3 text-[15px] sm:text-base text-ink-500;
+    line-height: 1.8;
+  }
+
+  /* --- 面 ------------------------------------------------------- */
+  .card {
+    @apply bg-surface border border-hairline rounded;
+  }
+  .card-hover {
+    @apply transition-colors duration-150 hover:border-ink-300;
+  }
+
+  /* --- ボタン ---------------------------------------------------
+     色は単色。ホバーでほんの少しだけ暗くし、2px浮きます。
+     グラデーションと影は使いません。                              */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded font-semibold
+           text-[15px] px-5 py-3 transition-all duration-150 whitespace-nowrap;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+  .btn:active {
+    transform: translateY(0);
+  }
+  .btn-lg {
+    @apply text-base px-6 py-3.5;
+  }
+  .btn-primary {
+    @apply bg-ink-900 text-white hover:bg-ink-800;
+  }
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+  .btn-line {
+    @apply bg-line text-white hover:bg-line-hover;
+  }
+  .btn-outline {
+    @apply bg-surface text-ink-900 border border-ink-300 hover:border-ink-900;
+  }
+  .btn-quiet {
+    @apply text-ink-700 hover:text-ink-900 px-0;
+  }
+  .btn-quiet:hover {
+    transform: none;
+  }
+
+  /* --- 小さなラベル -------------------------------------------- */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded border border-hairline
+           bg-ink-100 px-2.5 py-1 text-[12px] font-medium text-ink-600;
+  }
+  .chip-accent {
+    @apply border-accent-line bg-accent-soft text-accent;
+  }
+
+  /* --- アイコンの器 --------------------------------------------
+     色を持たせません。線アイコンを文字と同じ濃さで置くのが
+     いちばん整って見えます。                                      */
+  .icon-frame {
+    @apply flex items-center justify-center w-10 h-10 rounded
+           border border-hairline bg-canvas text-ink-700 shrink-0;
+  }
+
+  /* --- 罫線で区切るリスト --------------------------------------- */
+  .rule-list > * + * {
+    @apply border-t border-hairline;
+  }
+}
 
 @layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   .animate-slide-bg {
     animation: slideBg 60s linear infinite;
   }
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.2s ease-out forwards;
   }
-  .animate-fade-in-up {
-    animation: fadeInUp 0.8s ease-out forwards;
+  /* 本文の字送り。日本語は詰めずに、ゆったり読ませます。 */
+  .measure {
+    @apply max-w-prose;
+    line-height: 1.85;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -48,32 +178,14 @@ html { scroll-behavior: smooth; }
   to { opacity: 1; }
 }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ===== モバイルビュー改善用カスタム ===== */
-@layer utilities {
-  .mobile-px {
-    @apply px-3 sm:px-4;
-  }
-  .mobile-py {
-    @apply py-4 sm:py-6;
-  }
-  .mobile-section {
-    @apply py-10 sm:py-16;
-  }
-  .mobile-title {
-    @apply text-2xl sm:text-3xl md:text-4xl font-bold leading-tight;
-  }
-  .mobile-card {
-    @apply p-4 sm:p-6 rounded-xl shadow-sm;
-  }
-  .mobile-btn {
-    @apply px-6 py-3 text-base sm:text-lg rounded-lg;
-  }
-  .mobile-gap {
-    @apply gap-4 sm:gap-6;
+/* 動きを減らす設定の人には、動かしません。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

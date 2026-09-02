@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
 // content/articles/*.json をビルド時に読み込む。
 // ブログ本体は scripts/build-blog.mjs が静的HTMLとして別に生成しているが、
@@ -27,51 +27,38 @@ const BlogTeaser: React.FC = () => {
   if (articles.length === 0) return null;
 
   return (
-    <section id="blog" className="py-16 md:py-20 bg-gray-50 border-t border-gray-200">
-      <div className="max-w-6xl mx-auto px-4 md:px-6">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 text-brand-orange font-bold mb-2">
-            <BookOpen size={20} />
-            <span>お役立ちブログ</span>
+    <section id="blog" className="section border-t border-hairline bg-canvas">
+      <div className="shell">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-xl">
+            <span className="eyebrow">Blog</span>
+            <h2 className="h-section">作業のコツと、業者の選び方</h2>
+            <p className="lede">
+              家具の組立や物置の設置、草刈りなど、頼む前に知っておくと得をする話をまとめています。
+            </p>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-            作業のコツと、業者の選び方
-          </h2>
-          <p className="mt-3 text-gray-600 text-sm md:text-base">
-            家具の組立や物置の設置、草刈りなど、頼む前に知っておくと得をする話をまとめています。
-          </p>
+          <a href="/blog/" className="btn btn-outline shrink-0">
+            記事の一覧を見る
+            <ArrowRight size={16} />
+          </a>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {articles.map((a) => (
-            <a
-              key={a.slug}
-              href={`/blog/${a.slug}/`}
-              className="group block bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-orange hover:shadow-md transition-all"
-            >
-              {a.category && (
-                <span className="inline-block text-xs font-bold text-brand-orange bg-orange-50 rounded px-2 py-1 mb-3">
-                  {a.category}
-                </span>
-              )}
-              <h3 className="font-bold text-gray-800 leading-snug mb-2 group-hover:text-brand-orange transition-colors">
-                {a.title}
+            <a key={a.slug} href={`/blog/${a.slug}/`} className="card card-hover group flex flex-col p-6">
+              {a.category && <span className="chip w-fit">{a.category}</span>}
+              <h3 className="mt-3 flex items-start justify-between gap-2 text-[16px] font-semibold leading-[1.6] text-ink-900">
+                <span>{a.title}</span>
+                <ArrowUpRight size={16} className="mt-1 shrink-0 text-ink-500 transition-colors group-hover:text-ink-900" />
               </h3>
               {a.metaDescription && (
-                <p className="text-sm text-gray-600 line-clamp-3">{a.metaDescription}</p>
+                <p className="mt-2.5 line-clamp-3 text-[13px] leading-[1.8] text-ink-500">{a.metaDescription}</p>
+              )}
+              {a.publishDate && (
+                <time className="mt-4 text-[12px] tabular-nums text-ink-500">{a.publishDate}</time>
               )}
             </a>
           ))}
-        </div>
-
-        <div className="text-center mt-8">
-          <a
-            href="/blog/"
-            className="inline-flex items-center gap-2 font-bold text-gray-800 hover:text-brand-orange transition-colors"
-          >
-            記事の一覧を見る
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </a>
         </div>
       </div>
     </section>
