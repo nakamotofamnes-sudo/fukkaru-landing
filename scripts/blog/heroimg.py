@@ -29,10 +29,19 @@ KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 IMG_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
 
 W, H = 1200, 630
-# Macではヒラギノ。GitHub Actions（Ubuntu）にはヒラギノが無いので、
-# 環境変数で差し替えられるようにしてある（2026-09-02）
+# Macではヒラギノ。GitHub Actions（Ubuntu）にはヒラギノが無いので差し替える（2026-09-02）
+#
+# ⚠ **太字の指定に注意。** ヒラギノは1つの .ttc の中に細字と太字が入っていて
+#   番号で選ぶ（W3=0 / W6=2）。ところが Ubuntu の NotoSansCJK-Regular.ttc は
+#   **番号が言語の違い**で、index=2 は「簡体字中国語」だった。
+#   そのまま使うと、太字にならないうえ漢字が中国式の字形で出る（実際にそうなっていた）。
+#   Noto は太字が別ファイル（NotoSansCJK-Bold.ttc）なので、そちらを指す。
 FONT = os.environ.get("FUKKARU_FONT") or "/System/Library/Fonts/Hiragino Sans GB.ttc"
-W3, W6 = 0, 2                       # ttc の中の書体番号（W3=細字 W6=太字）
+FONT_BOLD = os.environ.get("FUKKARU_FONT_BOLD") or FONT
+# 同じファイルの中で太字を選ぶときだけ番号が要る。別ファイルなら先頭（日本語）でよい
+W3 = int(os.environ.get("FUKKARU_FONT_INDEX") or 0)
+W6 = int(os.environ.get("FUKKARU_FONT_BOLD_INDEX")
+         or (2 if FONT_BOLD == FONT else 0))
 
 NAVY   = (11, 45, 74)
 NAVY_D = (6, 28, 47)
@@ -45,7 +54,8 @@ NAME = "便利屋フッ軽　富士市・富士宮市"
 
 
 def font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(FONT, size, index=W6 if bold else W3)
+    return ImageFont.truetype(FONT_BOLD if bold else FONT, size,
+                             index=W6 if bold else W3)
 
 
 def cover(img: Image.Image) -> Image.Image:

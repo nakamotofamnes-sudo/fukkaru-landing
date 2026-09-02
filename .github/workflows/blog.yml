@@ -60,7 +60,9 @@ jobs:
           FUKKARU_TARGETS: ${{ github.workspace }}/scripts/blog/狙い.txt
           FUKKARU_CURSOR: ${{ github.workspace }}/scripts/blog/狙い_いまの位置.txt
           FUKKARU_HEROIMG: ${{ github.workspace }}/scripts/blog/heroimg.py
+          # index は言語の違い。0 が日本語。太字は別ファイルにある
           FUKKARU_FONT: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
+          FUKKARU_FONT_BOLD: /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
           FUKKARU_BLOG_MODE: ${{ inputs.mode || 'on' }}
           FUKKARU_BLOG_FORCE: '1'
           FUKKARU_BLOG_TARGET: ${{ inputs.target }}
