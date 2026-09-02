@@ -30,10 +30,13 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 z-10 bg-ink-900/40 lg:bg-transparent" />
 
       {/* 人物写真。画面が狭いほど文字と重なるので、そのぶん薄くして背景になじませます。
-          パソコン（lg以上）は重ならないので、そのままの濃さで出します。
+          スマホでは大きく（95vh）、右にずらして（-48%）、顔だけが見出しの横に出て
+          左肩から先は画面の外へ逃がしています。max-w-none が無いと画面幅で頭打ちになり、
+          高さを増やしても大きくなりません。
+          パソコン（lg以上）は重ならないので、位置も濃さもそのままです。
           実在の従業員ではなくモデルの写真なので、飾りとして扱い alt は空にしています。 */}
-      <div className="pointer-events-none absolute bottom-0 right-0 z-20 flex h-[44vh] items-end justify-end opacity-30 sm:h-[70vh] sm:opacity-40 md:h-[82vh] md:opacity-40 lg:h-[94vh] lg:opacity-100">
-        <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto object-contain object-bottom" />
+      <div className="pointer-events-none absolute bottom-0 right-[-48%] z-20 flex h-[95vh] items-end justify-end opacity-30 sm:right-0 sm:h-[70vh] sm:opacity-40 md:h-[82vh] md:opacity-40 lg:h-[94vh] lg:opacity-100">
+        <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto max-w-none object-contain object-bottom" />
       </div>
 
       <div className="shell relative z-30 pt-24 pb-16">
