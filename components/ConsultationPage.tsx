@@ -91,7 +91,7 @@ const ConsultationPage: React.FC<ConsultationPageProps> = ({ onBack }) => {
                   <option value="">選択してください</option>
                   <option>物置の設置・撤去</option>
                   <option>お庭の手入れ（草むしり等）</option>
-                  <option>不用品回収・片付け</option>
+                  <option>不用品の運搬・買取・片付け</option>
                   <option>不動産売却・査定</option>
                   <option>リフォーム・修繕</option>
                   <option>その他</option>
