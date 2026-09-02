@@ -44,7 +44,7 @@ const News: React.FC = () => {
         <div className="grid gap-8 lg:grid-cols-[200px_1fr]">
           <div>
             <h2 className="text-[20px] font-bold tracking-tight text-ink-900">お知らせ</h2>
-            <p className="mt-1 text-[13px] text-ink-500">最新の5件</p>
+            <p className="mt-1 text-[13px] text-ink-500">最新の{items.length}件</p>
           </div>
 
           <dl className="rule-list border-t border-hairline">

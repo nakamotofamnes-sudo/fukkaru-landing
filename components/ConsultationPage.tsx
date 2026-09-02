@@ -85,6 +85,8 @@ const ConsultationPage: React.FC<ConsultationPageProps> = ({ onBack }) => {
                 <option>不用品の運搬・買取・片づけ</option>
                 <option>家具の組み立て・移動</option>
                 <option>清掃・洗浄</option>
+                <option>不動産売却・査定</option>
+                <option>リフォーム・修繕</option>
                 <option>その他</option>
               </select>
             </div>

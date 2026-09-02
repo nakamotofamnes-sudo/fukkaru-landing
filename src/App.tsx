@@ -37,7 +37,7 @@ const steps = [
   {
     icon: Wrench,
     title: '作業',
-    text: 'ご納得いただいてから着手します。追加のご要望がなければ、金額は変わりません。',
+    text: '経験豊富なスタッフが、丁寧かつ迅速に作業を行います。',
   },
   {
     icon: Wallet,
@@ -210,7 +210,9 @@ const Subscription: React.FC = () => (
         ))}
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <p className="mt-8 text-[13px] text-ink-500">損害賠償補償制度加入・丁寧な事前見積もり</p>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <a
           href="https://fuji.creo-sumai.jp/"
           target="_blank"

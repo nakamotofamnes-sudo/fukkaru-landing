@@ -19,8 +19,11 @@ const YouTubeVideos: React.FC = () => {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
             <span className="eyebrow">YouTube</span>
-            <h2 className="h-section">作業の様子を公開しています</h2>
-            <p className="lede">実際の現場を最初から最後まで撮っています。どんな人が来るのかご覧ください。</p>
+            <h2 className="h-section">フッ軽ちゃんねる</h2>
+            <p className="lede">
+              実際の現場を最初から最後まで撮っています。どんな人が来るのかご覧ください。
+              <span className="mt-1 block text-ink-600">@fukkaru_fuji-benriya</span>
+            </p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">

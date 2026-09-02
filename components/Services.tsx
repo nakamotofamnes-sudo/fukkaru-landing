@@ -25,9 +25,9 @@ const groups: Group[] = [
     note: '家具の組立・移動、軽貨物での運搬',
     defaultOpen: true,
     services: [
-      { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります', popular: true },
+      { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' },
       { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動' },
-      { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに' },
+      { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true },
       { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true },
       { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します' },
     ],
@@ -38,7 +38,7 @@ const groups: Group[] = [
     note: '高圧洗浄、側溝の泥上げなど',
     services: [
       { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true },
-      { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし' },
+      { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true },
       { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃' },
       { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します' },
       { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' },
@@ -127,6 +127,10 @@ const Services: React.FC = () => {
               <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-500">
                 作業の内容や現場の状況によって、適切なプランと料金をご案内します。
                 まずは「こんなこと頼める？」とお声がけください。富士市・富士宮市エリアなら、出張費もいただきません。
+              </p>
+              <p className="mt-3 max-w-2xl text-[14px] leading-[1.85] text-ink-600">
+                ご高齢の方、力仕事にご不安がある方はお気軽にお電話ください。
+                礼儀正しく丁寧なスタッフが、皆様の暮らしを安全にサポートいたします。
               </p>
             </div>
             <a href="#contact" className="btn btn-primary shrink-0">
