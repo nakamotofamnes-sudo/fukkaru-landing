@@ -566,7 +566,15 @@ def main() -> int:
                 git("add", str(extra.relative_to(REPO)))
             except (ValueError, RuntimeError, subprocess.CalledProcessError):
                 pass      # Mac のときは REPO の外にあるので、そのままでよい
-        git("commit", "-m", "ブログ記事の下書き：%s" % art["title"])
+        # ✓ の行はここで書く。**コミットより後に書いた行は記事と一緒に残らない**ので、
+        # 管制画面から見ると「途中で終わった」ように見えてしまう
+        # （2026-09-02、それで ブログ が unknown のままになった）
+        log("✓ 記事ができました：%s" % art["title"])
+        try:
+            git("add", str(LOGF.relative_to(REPO)))
+        except (ValueError, RuntimeError, subprocess.CalledProcessError):
+            pass
+        git("commit", "-m", "ブログ記事：%s" % art["title"])
         if force:
             # 中身がmainに入りきっている枝の置き換えなので、失うものは無い
             git("push", "-u", "--force-with-lease", "origin", branch)
