@@ -1,28 +1,29 @@
 import React from 'react';
-import { Sprout, Sofa, Droplets, PackageOpen } from 'lucide-react';
+import { Sprout, Warehouse, Hammer, Droplets } from 'lucide-react';
 
 const problems = [
   {
     icon: Sprout,
-    title: '庭の草むしり、物置の片づけ',
+    title: '庭の草むしり、草刈り',
     text: '昔は自分でやっていたけれど、最近はすぐに疲れてしまって、つい後回しになる。',
   },
   {
-    icon: Sofa,
-    title: '家具の移動、重い荷物の運搬',
-    text: '模様替えをしたいけれど、自分たちだけでは腰を痛めそうで不安。',
+    icon: Warehouse,
+    title: '物置の設置・解体・移動',
+    text: '説明書どおりに組めるか不安。古い物置を片づけたいが、自分では動かせない。',
+  },
+  {
+    icon: Hammer,
+    title: '家具の組み立て・解体・移動',
+    text: '箱から出したものの、途中で手が止まった。重い家具を運ぶのは腰を痛めそうで怖い。',
   },
   {
     icon: Droplets,
-    title: '外壁の汚れ、側溝の掃除',
+    title: '家の外回りの汚れ、側溝の掃除',
     text: '見て見ぬふりをしている。高いところや無理な体勢での作業は、けがが怖い。',
   },
-  {
-    icon: PackageOpen,
-    title: '不用品の片づけ、粗大ごみの搬出',
-    text: '力仕事を安心して任せられる、誠実な業者が身近にいない。',
-  },
 ];
+
 
 const Problems: React.FC = () => {
   return (
