@@ -42,7 +42,7 @@ const InfoModal: React.FC<{ title: string; onClose: () => void; children: React.
 );
 
 interface FooterProps {
-  onNavigate: (view: 'home' | 'consultation', hash?: string) => void;
+  onNavigate: (hash?: string) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
@@ -53,7 +53,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
-    onNavigate('home', hash);
+    onNavigate(hash);
   };
 
   // SEOタグリスト（網戸張替えは除外）

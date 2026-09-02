@@ -10,14 +10,13 @@ import Founder from '../components/Founder';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
 import StickyCallBar from '../components/StickyCallBar';
-import ConsultationPage from '../components/ConsultationPage';
 import Reservation from '../components/Reservation';
 import Partners from '../components/Partners';
 import CouponSlider from '../components/CouponSlider';
 import YouTubeVideos from '../components/YouTubeVideos';
 import BlogTeaser from '../components/BlogTeaser';
 import {
-  ArrowUpRight, ChevronDown, MessageSquare, ClipboardList, Wrench, Wallet, Check,
+  ArrowRight, ChevronDown, MessageSquare, ClipboardList, Wrench, Wallet, Check, MessageCircle,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------
@@ -212,23 +211,17 @@ const Subscription: React.FC = () => (
 
       <p className="mt-8 text-[13px] text-ink-500">損害賠償補償制度加入・丁寧な事前見積もり</p>
 
+      {/* 以前は fuji.creo-sumai.jp（別サイト）へ出していましたが、
+          2026-09-02 時点でそのサイトが404を返すため、行き先をLINEに変えています。
+          サイトが戻ったら、ここを元のURLに差し戻してください。 */}
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <a
-          href="https://fuji.creo-sumai.jp/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-primary btn-lg"
-        >
-          まずは無料で見てみる
-          <ArrowUpRight size={17} />
+        <a href="https://lin.ee/Bh5gFU6" className="btn btn-line btn-lg">
+          <MessageCircle size={17} />
+          定額サポートについて相談する
         </a>
-        <a
-          href="https://fuji.creo-sumai.jp/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-outline btn-lg"
-        >
-          プランの詳細を見る
+        <a href="#contact" className="btn btn-outline btn-lg">
+          ほかの連絡方法を見る
+          <ArrowRight size={17} />
         </a>
       </div>
     </div>
@@ -239,48 +232,20 @@ const Subscription: React.FC = () => (
    ページ全体
    ------------------------------------------------------------------ */
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'consultation'>('home');
-
-  const handleNavigate = (view: 'home' | 'consultation', hash?: string) => {
-    const wasHome = currentView === 'home';
-    setCurrentView(view);
-    if (view !== 'home') return;
-
-    const move = () => {
-      if (hash) {
-        document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    };
-
-    if (wasHome) {
-      // すでにホーム画面にいるので、そのまま飛び先へ1回だけ動かします。
-      // 先に一番上へ戻すと、なめらかスクロールが2回走って一度上に動きかけます。
-      move();
-      return;
+  // 節へなめらかに動かすだけ。相談ページは持ちません（入口は公式LINEに一本化）。
+  const handleNavigate = (hash?: string) => {
+    if (hash) {
+      document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
-    // 相談ページから戻るときは、ホームが描かれるのを待ってから動かします。
-    window.scrollTo(0, 0);
-    setTimeout(move, 50);
   };
-
-  if (currentView === 'consultation') {
-    return (
-      <main className="w-full overflow-x-hidden">
-        <Header currentView={currentView} onNavigate={handleNavigate} />
-        <ConsultationPage onBack={() => handleNavigate('home')} />
-        <Footer onNavigate={handleNavigate} />
-      </main>
-    );
-  }
 
   // 上から順に「困りごと → 任せられる理由 → 何がいくらか → どう進むか →
   // 実際の評判 → 誰がやるか → 疑問 → 予約」。入れ子のカードは作りません。
   return (
     <main className="w-full overflow-x-hidden">
-      <Header currentView={currentView} onNavigate={handleNavigate} />
+      <Header onNavigate={handleNavigate} />
       <Hero />
       <CouponSlider />
       <News />
