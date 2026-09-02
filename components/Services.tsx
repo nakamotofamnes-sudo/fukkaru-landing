@@ -124,7 +124,7 @@ const Services: React.FC = () => {
               </h3>
               <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-500">
                 作業の内容や現場の状況によって、適切なプランと料金をご案内します。
-                まずは「こんなこと頼める？」とお声がけください。出張費もいただきません。
+                まずは「こんなこと頼める？」とお声がけください。富士市・富士宮市エリアなら、出張費もいただきません。
               </p>
             </div>
             <a href="#contact" className="btn btn-primary shrink-0">

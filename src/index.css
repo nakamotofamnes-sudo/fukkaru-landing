@@ -15,6 +15,9 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* ヘッダーが 64px で固定されているので、その分だけ飛び先を下げます。
+       これが無いと、アンカーで飛んだ節の見出しがヘッダーの下に潜ります。 */
+    scroll-padding-top: 4rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

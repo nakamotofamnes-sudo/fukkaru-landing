@@ -72,7 +72,7 @@ const Hero: React.FC<HeroProps> = () => {
           <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-6 text-white/75">
             <div>
               <dt className="text-[12px] tracking-[0.06em] text-white/60">見積もり・出張費</dt>
-              <dd className="mt-1 text-[15px] font-semibold text-white">無料（キャンセルも無料）</dd>
+              <dd className="mt-1 text-[15px] font-semibold text-white">無料（富士市・富士宮市）</dd>
             </div>
             <div>
               <dt className="text-[12px] tracking-[0.06em] text-white/60">最短</dt>

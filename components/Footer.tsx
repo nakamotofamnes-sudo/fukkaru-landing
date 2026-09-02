@@ -1,7 +1,45 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { X, Youtube, Instagram, Music2, AtSign, MessageCircle, FileText } from 'lucide-react';
+import Modal from './Modal';
 
 type ModalType = 'operator' | 'privacy' | 'cookie' | null;
+
+/**
+ * フッターの3つの小窓は、見出し・本文・閉じるボタンの形がそろっています。
+ * スクロール止めや焦点まわりの世話は、共通部品の Modal がまとめて見ます。
+ */
+const InfoModal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
+  title,
+  onClose,
+  children,
+}) => (
+  <Modal
+    onClose={onClose}
+    labelledBy="footer-modal-title"
+    panelClassName="flex max-h-[80vh] w-full max-w-2xl flex-col"
+  >
+    <div className="flex items-center justify-between gap-4 border-b border-hairline px-6 py-4">
+      <h3 id="footer-modal-title" className="text-[17px] font-bold tracking-tight text-ink-900">
+        {title}
+      </h3>
+      <button
+        onClick={onClose}
+        aria-label="閉じる"
+        className="-mr-2 rounded p-2 text-ink-500 transition-colors hover:bg-canvas hover:text-ink-900"
+      >
+        <X size={18} />
+      </button>
+    </div>
+    <div className="space-y-4 overflow-y-auto px-6 py-6 text-[14px] leading-[1.9] text-ink-600">
+      {children}
+    </div>
+    <div className="flex justify-end border-t border-hairline px-6 py-4">
+      <button onClick={onClose} className="btn btn-outline">
+        閉じる
+      </button>
+    </div>
+  </Modal>
+);
 
 interface FooterProps {
   onNavigate: (view: 'home' | 'consultation', hash?: string) => void;
@@ -10,55 +48,12 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
-  const openModal = (type: ModalType) => {
-    setActiveModal(type);
-    document.body.style.overflow = 'hidden'; // 背景スクロール固定
-  };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    document.body.style.overflow = 'auto'; // 解除
-  };
+  const openModal = (type: ModalType) => setActiveModal(type);
+  const closeModal = useCallback(() => setActiveModal(null), []);
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
     onNavigate('home', hash);
-  };
-
-  const Modal: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
-    if (!activeModal) return null;
-    return (
-      <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-900/60 p-4 animate-fade-in"
-        onClick={closeModal}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded border border-hairline bg-surface"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between gap-4 border-b border-hairline px-6 py-4">
-            <h3 className="text-[17px] font-bold tracking-tight text-ink-900">{title}</h3>
-            <button
-              onClick={closeModal}
-              aria-label="閉じる"
-              className="-mr-2 rounded p-2 text-ink-500 transition-colors hover:bg-canvas hover:text-ink-900"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <div className="space-y-4 overflow-y-auto px-6 py-6 text-[14px] leading-[1.9] text-ink-600">
-            {children}
-          </div>
-          <div className="flex justify-end border-t border-hairline px-6 py-4">
-            <button onClick={closeModal} className="btn btn-outline">
-              閉じる
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // SEOタグリスト（網戸張替えは除外）
@@ -93,7 +88,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <div>
                   <span className="block text-[11px] tracking-[0.08em] text-white/65">フッ軽合同会社</span>
                   <h3 className="mt-1 text-[18px] font-bold tracking-tight text-white">
-                    フッ軽 <span className="ml-2 text-[12px] font-normal text-white/65">ふっかる／富士市の便利屋</span>
+                    フッ軽 <span className="ml-2 text-[12px] font-normal text-white/65">フッカル/富士市の便利屋</span>
                   </h3>
                 </div>
               </div>
@@ -148,6 +143,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <li><a href="#services" onClick={(e) => handleLinkClick(e, '#services')} className="transition-colors hover:text-white">サービス一覧</a></li>
                 <li><a href="#reservation" onClick={(e) => handleLinkClick(e, '#reservation')} className="transition-colors hover:text-white">Web予約</a></li>
                 <li><a href="#reasons" onClick={(e) => handleLinkClick(e, '#reasons')} className="transition-colors hover:text-white">選ばれる理由</a></li>
+                <li><a href="#partners" onClick={(e) => handleLinkClick(e, '#partners')} className="transition-colors hover:text-white">協力会社</a></li>
                 <li><a href="#contact" onClick={(e) => handleLinkClick(e, '#contact')} className="transition-colors hover:text-white">お問い合わせ</a></li>
                 <li><a href="/blog/" className="transition-colors hover:text-white">お役立ちブログ</a></li>
               </ul>
@@ -181,7 +177,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
       {/* Modals */}
       {activeModal === 'operator' && (
-        <Modal title="運営者情報">
+        <InfoModal title="運営者情報" onClose={closeModal}>
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-2 border-b border-hairline pb-4 sm:grid-cols-3 sm:gap-4">
               <div className="font-semibold text-ink-900">会社名</div>
@@ -217,11 +213,11 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </div>
             </div>
           </div>
-        </Modal>
+        </InfoModal>
       )}
 
       {activeModal === 'privacy' && (
-        <Modal title="プライバシーポリシー">
+        <InfoModal title="プライバシーポリシー" onClose={closeModal}>
           <h4 className="font-semibold text-ink-900">1. 個人情報の利用目的</h4>
           <p className="mb-4">
             当方は、お客様から収集した個人情報を、お問い合わせへの回答、サービスの提供、および当方のサービス向上を目的として利用いたします。
@@ -253,11 +249,11 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <p>
             本ポリシーに関するお問い合わせは、当サイトのお問い合わせフォームまたはお電話にてお願いいたします。
           </p>
-        </Modal>
+        </InfoModal>
       )}
 
       {activeModal === 'cookie' && (
-        <Modal title="クッキーポリシー">
+        <InfoModal title="クッキーポリシー" onClose={closeModal}>
           <p className="mb-4">
             当サイトでは、サービスの向上およびお客様により適したサービスを提供するため、Cookie（クッキー）を使用しています。
             Cookieとは、お客様がWebサイトを閲覧した際に、お客様のブラウザに保存される小さなデータファイルのことです。
@@ -274,7 +270,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             お客様は、ブラウザの設定を変更することでCookieを無効にすることができます。
             ただし、Cookieを無効にした場合、当サイトの一部の機能が正常に動作しない可能性がありますのでご注意ください。
           </p>
-        </Modal>
+        </InfoModal>
       )}
     </>
   );

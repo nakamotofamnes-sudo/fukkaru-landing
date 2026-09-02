@@ -62,23 +62,23 @@ const ConsultationPage: React.FC<ConsultationPageProps> = ({ onBack }) => {
           <form onSubmit={handleSubmit} className="space-y-6 px-7 py-8 sm:px-10">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className={label}>お名前 <span className="text-accent">必須</span></label>
-                <input type="text" required className={field} placeholder="例：富士 太郎" />
+                <label htmlFor="consult-name" className={label}>お名前 <span className="text-accent">必須</span></label>
+                <input id="consult-name" type="text" required className={field} placeholder="例：富士 太郎" />
               </div>
               <div className="space-y-2">
-                <label className={label}>電話番号 <span className="text-accent">必須</span></label>
-                <input type="tel" required className={field} placeholder="例：090-1234-5678" />
+                <label htmlFor="consult-tel" className={label}>電話番号 <span className="text-accent">必須</span></label>
+                <input id="consult-tel" type="tel" required className={field} placeholder="例：090-1234-5678" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className={label}>ご住所（エリア確認のため）</label>
-              <input type="text" className={field} placeholder="例：富士市永田町" />
+              <label htmlFor="consult-address" className={label}>ご住所（エリア確認のため）</label>
+              <input id="consult-address" type="text" className={field} placeholder="例：富士市永田町" />
             </div>
 
             <div className="space-y-2">
-              <label className={label}>ご相談カテゴリ <span className="text-accent">必須</span></label>
-              <select required className={`${field} cursor-pointer appearance-none`}>
+              <label htmlFor="consult-category" className={label}>ご相談カテゴリ <span className="text-accent">必須</span></label>
+              <select id="consult-category" required className={`${field} cursor-pointer appearance-none`}>
                 <option value="">選択してください</option>
                 <option>物置の設置・解体</option>
                 <option>お庭の手入れ（草むしりなど）</option>
@@ -90,13 +90,13 @@ const ConsultationPage: React.FC<ConsultationPageProps> = ({ onBack }) => {
             </div>
 
             <div className="space-y-2">
-              <label className={label}>訪問希望日時（任意）</label>
-              <input type="text" className={field} placeholder="例：平日の午前中、土曜日など" />
+              <label htmlFor="consult-visit" className={label}>訪問希望日時（任意）</label>
+              <input id="consult-visit" type="text" className={field} placeholder="例：平日の午前中、土曜日など" />
             </div>
 
             <div className="space-y-2">
-              <label className={label}>ご相談内容 <span className="text-accent">必須</span></label>
-              <textarea required rows={5} className={field} placeholder="具体的なお困りごとや、現状の様子をご記入ください。" />
+              <label htmlFor="consult-message" className={label}>ご相談内容 <span className="text-accent">必須</span></label>
+              <textarea id="consult-message" required rows={5} className={field} placeholder="具体的なお困りごとや、現状の様子をご記入ください。" />
             </div>
 
             <div className="pt-2">
