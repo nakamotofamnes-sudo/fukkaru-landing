@@ -16,7 +16,7 @@ import CouponSlider from '../components/CouponSlider';
 import YouTubeVideos from '../components/YouTubeVideos';
 import BlogTeaser from '../components/BlogTeaser';
 import {
-  ArrowRight, ChevronDown, MessageSquare, ClipboardList, Wrench, Wallet, Check, MessageCircle,
+  ArrowUpRight, ChevronDown, MessageSquare, ClipboardList, Wrench, Wallet, Check,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------
@@ -211,17 +211,27 @@ const Subscription: React.FC = () => (
 
       <p className="mt-8 text-[13px] text-ink-500">損害賠償補償制度加入・丁寧な事前見積もり</p>
 
-      {/* 以前は fuji.creo-sumai.jp（別サイト）へ出していましたが、
-          2026-09-02 時点でそのサイトが404を返すため、行き先をLINEに変えています。
-          サイトが戻ったら、ここを元のURLに差し戻してください。 */}
+      {/* 2026-09-01 にこのリンク先が404になっていました（管制画面フォルダからの
+          firebase deploy が、既定サイトを中身なしで上書きしていたため）。
+          2026-09-02 にロールバックで復旧済み。壊れたら memory の
+          fukkaru_subsc_site_wiped.md を見てください。 */}
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <a href="https://lin.ee/Bh5gFU6" className="btn btn-line btn-lg">
-          <MessageCircle size={17} />
-          定額サポートについて相談する
+        <a
+          href="https://fuji.creo-sumai.jp/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary btn-lg"
+        >
+          まずは無料で見てみる
+          <ArrowUpRight size={17} />
         </a>
-        <a href="#contact" className="btn btn-outline btn-lg">
-          ほかの連絡方法を見る
-          <ArrowRight size={17} />
+        <a
+          href="https://fuji.creo-sumai.jp/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-outline btn-lg"
+        >
+          プランの詳細を見る
         </a>
       </div>
     </div>
