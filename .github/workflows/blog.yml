@@ -13,9 +13,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: '試し運転（dry）なら公開しません'
+        description: '試し運転（dry）なら公開しません。live で本当に出します'
         type: choice
-        options: [dry, on]
+        # ⚠ ここに on と書くと YAML が「真」と読んでしまい、選択肢として使えない
+        options: [dry, live]
         default: dry
       target:
         description: '狙いを1回だけ指定（例 物置組立:富士市）。空なら狙い.txt の順番どおり'
@@ -63,7 +64,7 @@ jobs:
           # index は言語の違い。0 が日本語。太字は別ファイルにある
           FUKKARU_FONT: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
           FUKKARU_FONT_BOLD: /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
-          FUKKARU_BLOG_MODE: ${{ inputs.mode || 'on' }}
+          FUKKARU_BLOG_MODE: ${{ inputs.mode == 'dry' && 'dry' || 'on' }}
           FUKKARU_BLOG_FORCE: '1'
           FUKKARU_BLOG_TARGET: ${{ inputs.target }}
         run: python3 scripts/blog/blog.py
