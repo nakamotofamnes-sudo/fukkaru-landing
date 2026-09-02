@@ -27,11 +27,12 @@ const Hero: React.FC = () => {
 
       {/* 文字を読ませるための覆い。グラデーションではなく、単色の膜を2枚重ねます。 */}
       <div className="absolute inset-0 z-10 bg-ink-900/70" />
-      <div className="absolute inset-0 z-10 bg-ink-900/40 md:bg-transparent" />
+      <div className="absolute inset-0 z-10 bg-ink-900/40 lg:bg-transparent" />
 
-      {/* 人物写真。スマホでは文字とボタンに重なってしまうので出しません。
+      {/* 人物写真。画面が狭いほど文字と重なるので、そのぶん薄くして背景になじませます。
+          パソコン（lg以上）は重ならないので、そのままの濃さで出します。
           実在の従業員ではなくモデルの写真なので、飾りとして扱い alt は空にしています。 */}
-      <div className="pointer-events-none absolute bottom-0 right-0 z-20 hidden items-end justify-end sm:flex sm:h-[70vh] md:h-[82vh] lg:h-[94vh]">
+      <div className="pointer-events-none absolute bottom-0 right-0 z-20 flex h-[44vh] items-end justify-end opacity-30 sm:h-[70vh] sm:opacity-40 md:h-[82vh] md:opacity-40 lg:h-[94vh] lg:opacity-100">
         <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto object-contain object-bottom" />
       </div>
 
