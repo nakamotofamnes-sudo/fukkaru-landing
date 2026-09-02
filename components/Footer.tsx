@@ -247,7 +247,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           <h4 className="font-semibold text-ink-900">5. お問い合わせ窓口</h4>
           <p>
-            本ポリシーに関するお問い合わせは、当サイトのお問い合わせフォームまたはお電話にてお願いいたします。
+            本ポリシーに関するお問い合わせは、公式LINE・お電話（0545-78-3704）・メールにてお願いいたします。
           </p>
         </InfoModal>
       )}
