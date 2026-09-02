@@ -69,3 +69,30 @@ jobs:
       - name: 記録を出す
         if: always()
         run: cat .blogstate/_ログ.txt 2>/dev/null || echo "記録がありません"
+
+      - name: 入っている日本語の書体を見る
+        if: always()
+        run: |
+          ls -la /usr/share/fonts/opentype/noto/ 2>/dev/null || echo "noto のフォルダがありません"
+          python3 - <<'PY'
+          from PIL import ImageFont
+          import glob
+          for f in sorted(glob.glob('/usr/share/fonts/opentype/noto/*.ttc')):
+              for i in range(12):
+                  try:
+                      ft = ImageFont.truetype(f, 20, index=i)
+                      print(i, f.split('/')[-1], '->', ft.getname())
+                  except Exception:
+                      break
+          PY
+
+      - name: できた画像を見られるようにする
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: できた記事とトップ画像
+          path: |
+            public/blog/*.jpg
+            content/articles/*.json
+          retention-days: 3
+          if-no-files-found: warn
