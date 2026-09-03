@@ -498,6 +498,20 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
         if clash:
             ng.append("タイトルの型が既存記事とかぶっています（地名だけ変えたように見えます）："
                       "%s ←ここと似すぎ" % clash[1])
+        # 説明文（検索結果に出る2〜3行）も同じ理由で見る。
+        # 実測（既存15本の総当たり105組）でかぶっていたのは1組だけなので、
+        # ここを厳しくしても記事が書けなくなる心配は薄い。
+        md = str(art.get("metaDescription", ""))
+        shape = title_shape(md)
+        if shape:
+            import difflib
+            for a in done:
+                r = difflib.SequenceMatcher(
+                    None, shape, title_shape(a.get("metaDescription", ""))).ratio()
+                if r >= TITLE_SHAPE_MAX:
+                    ng.append("説明文の型が既存記事とかぶっています：%s ←ここと似すぎ"
+                              % a.get("title", ""))
+                    break
 
     # 数字の捏造よけ。実績値を書かせない約束なので、見つけたら止める。
     # ただし、サイトに載っている料金と同じ額は通す（捏造ではなく会社の事実のため）。
@@ -579,6 +593,22 @@ def main() -> int:
     if not REPO.exists():
         log("✗ リポジトリが見つかりません：%s" % REPO)
         return 1
+
+    # **blog.py は2つあります。**Macの中（~/.fukkaru/blog.py）と、
+    # ホームページのリポジトリの中（scripts/blog/blog.py）。
+    # **毎日10時の記事を書いているのは後者です。**
+    # 2026-09-03、Mac側だけ直して「直したのに明日も変わらない」を踏みかけました。
+    # 片方だけ直したら、ここで知らせます（止めはしません）。
+    try:
+        mine = Path(__file__).resolve()
+        other = (REPO / "scripts" / "blog" / "blog.py").resolve()
+        if other.exists() and other != mine and \
+                other.read_bytes() != mine.read_bytes():
+            log("  ⚠ blog.py が2つあって中身が違います。**片方しか直っていません**")
+            log("    Macの中  ：%s" % mine)
+            log("    自動ぶん ：%s ← 毎日10時はこちらが動きます" % other)
+    except Exception:
+        pass
 
     from datetime import datetime
     state_f = STATEDIR / ("state-%s.json" % date.today().isoformat())
