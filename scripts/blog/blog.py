@@ -183,7 +183,18 @@ def existing() -> list[dict]:
 
 
 TARGETS = Path(os.environ.get("FUKKARU_TARGETS") or (HOME / ".fukkaru" / "狙い.txt"))
-CURSOR = Path(os.environ.get("FUKKARU_CURSOR") or (HOME / ".fukkaru" / "狙い_いまの位置.txt"))
+
+# **「次にどれを書くか」の位置は、リポジトリの中のものを本物にします。**
+#
+# 2026-09-03、位置が2か所にあってずれました。Macから手で4本書いたのに
+# 自動ぶんの位置は動かず、翌日と翌々日が同じ狙いをなぞる形になっていました。
+# 見張りを足すより、**1つにしてしまうほうが確かです。**
+# リポジトリの中にあれば、記事と一緒にコミットされて自動ぶんにも伝わります
+# （その仕組みは元からありました。Macが別のファイルを見ていただけです）。
+_REPO_CURSOR = REPO / "scripts" / "blog" / "狙い_いまの位置.txt"
+CURSOR = (Path(os.environ["FUKKARU_CURSOR"]) if os.environ.get("FUKKARU_CURSOR")
+          else (_REPO_CURSOR if _REPO_CURSOR.exists()
+                else HOME / ".fukkaru" / "狙い_いまの位置.txt"))
 
 
 def read_targets() -> list[tuple[str, str]]:
@@ -204,6 +215,10 @@ def read_targets() -> list[tuple[str, str]]:
 
 def advance_target() -> None:
     """記事が1本できたときだけ、狙いを次へ進める"""
+    if MODE == "dry":
+        # **試し運転で位置を進めない。**位置は本物のファイルを指すようになったので、
+        # 進めてしまうと次の日の狙いが1つ飛びます（2026-09-03、手で戻しました）
+        return
     targets = read_targets()
     if not targets:
         return
@@ -607,6 +622,18 @@ def main() -> int:
             log("  ⚠ blog.py が2つあって中身が違います。**片方しか直っていません**")
             log("    Macの中  ：%s" % mine)
             log("    自動ぶん ：%s ← 毎日10時はこちらが動きます" % other)
+    except Exception:
+        pass
+
+    # 狙い.txt は中元さんが手で書き換えるファイルなので、勝手に片方へ寄せません。
+    # ずれていたら知らせるだけにします。
+    try:
+        other_t = REPO / "scripts" / "blog" / "狙い.txt"
+        if other_t.exists() and other_t.resolve() != TARGETS.resolve() and \
+                other_t.read_bytes() != TARGETS.read_bytes():
+            log("  ⚠ 狙い.txt が2つあって中身が違います")
+            log("    いま読んだの：%s" % TARGETS)
+            log("    自動ぶん    ：%s ← 毎日10時はこちらを読みます" % other_t)
     except Exception:
         pass
 
