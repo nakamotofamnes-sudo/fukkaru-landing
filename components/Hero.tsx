@@ -42,7 +42,7 @@ const Hero: React.FC = () => {
       <div className="shell relative z-30 pt-24 pb-16">
         <div className="w-full lg:w-[66%]">
           <p className="mb-6 inline-flex items-center rounded border border-white/20 bg-white/10 px-3 py-1.5 text-[12px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
-            富士市・富士宮市エリア対応（市外もご相談ください）
+            富士市・富士宮市・静岡市・沼津市に対応（市外もご相談ください）
           </p>
 
           {/* 1行が長いと折り返しが読みにくいので、行そのものを分けて置きます。 */}
@@ -73,7 +73,7 @@ const Hero: React.FC = () => {
           <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-6 text-white/75">
             <div>
               <dt className="text-[12px] tracking-[0.06em] text-white/60">見積もり・出張費</dt>
-              <dd className="mt-1 text-[15px] font-semibold text-white">無料（富士市・富士宮市）</dd>
+              <dd className="mt-1 text-[15px] font-semibold text-white">無料（富士市・富士宮市・静岡市・沼津市）</dd>
             </div>
             <div>
               <dt className="text-[12px] tracking-[0.06em] text-white/60">最短</dt>
