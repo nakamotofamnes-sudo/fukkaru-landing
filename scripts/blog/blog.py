@@ -66,6 +66,7 @@ SERVICES = [
 ]
 AREAS = ["富士市", "富士宮市", "沼津市", "静岡市", "三島市", "御殿場市", "裾野市", "清水町"]
 MIN_BODY = 1500          # これより短い記事は検索で戦えないので作り直す
+ATTEMPTS = 4             # 書き直しは4回まで。最後の1回はタイトルの型の弁を見送る
 
 FACTS = """
 ・会社名：フッ軽合同会社（静岡県富士市の便利屋）
@@ -253,8 +254,25 @@ def pick_target(done: list[dict]) -> tuple[str, str]:
     return service, area
 
 
+# 記事の切り口。**同じ切り口が続くとタイトルの型もそろってしまう**ので、
+# 書いた本数で順ぐりに回す。1周するまで同じ切り口は来ない。
+ANGLES = [
+    "料金の内訳を先に見せる（何にいくらかかるのか、追加料金が出るのはどんなときか）",
+    "頼む前に決めておくことの手順（当日までに何を用意し、何を決めておくか）",
+    "自分でやる場合との比べもの（かかる時間・道具・失敗しやすいところ）",
+    "よくある失敗と、その直し方（実際に起きがちなつまずきから入る）",
+    "メーカーや品物ごとの違い（型番・大きさ・素材で手間がどう変わるか）",
+    "当日の流れを時間順に見せる（連絡から作業が終わるまで）",
+    "この地域ならではの事情（土地の広さ、ごみの出し方、季節の事情）",
+    "どこに頼むか迷っている人向けの選び方（便利屋・専門業者・量販店の使い分け）",
+]
+
+
 def build_prompt(done: list[dict], service: str, area: str,
                  ng: list[str] | None = None) -> str:
+    angle = ANGLES[len(done) % len(ANGLES)]
+    used = [title_shape(a.get("title", "")) for a in done[-8:]]
+    used_shapes = "\n".join("  ・%s" % u for u in used if u) or "  ・（まだありません）"
     written = "\n".join(
         "  ・%s（slug: %s／分類: %s）" % (a.get("title", ""), a.get("slug", ""),
                                     a.get("category", ""))
@@ -274,6 +292,15 @@ def build_prompt(done: list[dict], service: str, area: str,
 
 すでに書いた記事（**同じテーマは避けてください**）：
 {written}
+
+**タイトルの型を、上の記事とかぶらせないでください。**
+地名と金額だけ差し替えた見出しは、検索で「使い回し」と見なされます。
+とくに、すでに何度も使っている次の言い回しは**もう使えません**：
+{used_shapes}
+
+今回は、この切り口で書いてください：**{angle}**
+（切り口が変われば、タイトルの型も自然に変わります。無理に当てはめず、
+　記事の中身がその切り口になっていること。）
 
 記事の作り：
 ・検索されそうな悩みを1つ選び、その答えを最後まで書ききる
@@ -383,7 +410,42 @@ def site_prices() -> set[str]:
     return out
 
 
-def check(art: dict, done: list[dict]) -> list[str]:
+# ここが守っているのは「地域だけ変えた使い回しに見えること」です。
+# 2026-09-03、同じ日に書いた2本がこうなりました：
+#   富士市で家具組立は8,000円〜！面倒な作業から解放されるプロの技
+#   富士宮市で家具組立は8,000円〜！面倒な作業はプロにお任せ
+# 本文の一致は13%で中身は別物でしたが、**並べると同じ記事に見えます。**
+# 地名だけ差し替えたページが並ぶのは、検索で嫌われる型です。
+#
+# 地名と金額を外した「型」どうしを比べます。実測（既存15本の総当たり）では
+# 本当にかぶっている2組が 0.77 と 0.65、別物どうしは 0.56 以下でした。
+# 境目は 0.60 にしてあります。
+TITLE_SHAPE_MAX = float(os.environ.get("FUKKARU_TITLE_SHAPE_MAX") or 0.60)
+
+
+def title_shape(t: str) -> str:
+    """タイトルから地名と金額を抜いた「型」を返す"""
+    s = re.sub(r"[一-龥ぁ-ん]{1,5}[市町村]", "", t or "")
+    s = re.sub(r"\d[\d,]*\s*円\s*[〜~]?", "", s)
+    return re.sub(r"[!！?？。、・…\s（）()「」【】/｜|]", "", s)
+
+
+def title_clash(title: str, done: list[dict]) -> tuple[float, str] | None:
+    """既存記事とタイトルの型がかぶっていれば、その相手を返す"""
+    import difflib
+    shape = title_shape(title)
+    if not shape:
+        return None
+    worst = None
+    for a in done:
+        other = a.get("title", "")
+        r = difflib.SequenceMatcher(None, shape, title_shape(other)).ratio()
+        if r >= TITLE_SHAPE_MAX and (worst is None or r > worst[0]):
+            worst = (r, other)
+    return worst
+
+
+def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[str]:
     """出せる形になっているか調べる。戻り値は問題点の一覧（空なら合格）。"""
     ng = []
     for k in ("slug", "title", "metaDescription", "keywords", "category", "blocks"):
@@ -427,6 +489,15 @@ def check(art: dict, done: list[dict]) -> list[str]:
         t = (b.get("text") or "") + (b.get("title") or "")
         if ("無許可" in t or "許可を得ず" in t) and "フッ軽" in t:
             ng.append("無許可業者の話と自社の宣伝が同じ塊にあります（許可の誤認を招く）")
+
+    # タイトルの型が既存とかぶっていないか。
+    # **最後の1回だけは見送ります。**ここで粘ると、その日の記事がゼロになります
+    # （2026-09-02、別の弁で実際に1本飛びました）。見た目の重複より、記事が出るほうが大事です。
+    if attempt < last:
+        clash = title_clash(str(art.get("title", "")), done)
+        if clash:
+            ng.append("タイトルの型が既存記事とかぶっています（地名だけ変えたように見えます）："
+                      "%s ←ここと似すぎ" % clash[1])
 
     # 数字の捏造よけ。実績値を書かせない約束なので、見つけたら止める。
     # ただし、サイトに載っている料金と同じ額は通す（捏造ではなく会社の事実のため）。
@@ -540,21 +611,21 @@ def main() -> int:
 
     art = None
     last_ng: list[str] | None = None
-    for attempt in range(1, 5):
+    for attempt in range(1, ATTEMPTS + 1):
         try:
             art = extract_json(gen_text(build_prompt(done, service, area, last_ng)))
         except Exception as e:
             log("  ・%d回目：作れませんでした（%s）" % (attempt, e))
             last_ng = ["JSONの形が壊れていました。指定した形のJSONだけを返すこと（説明文や```は付けない）"]
             continue
-        ng = check(art, done)
+        ng = check(art, done, attempt, ATTEMPTS)
         if not ng:
             break
         log("  ・%d回目：やり直します → %s" % (attempt, " / ".join(ng[:3])))
         last_ng = ng          # 次の回に、弾かれた理由を伝える
         art = None
     if art is None:
-        log("✗ 4回試しましたが、出せる形になりませんでした")
+        log("✗ %d回試しましたが、出せる形になりませんでした" % ATTEMPTS)
         return 1
 
     today = date.today().isoformat()
