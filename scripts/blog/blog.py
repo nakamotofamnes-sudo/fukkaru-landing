@@ -89,10 +89,16 @@ FACTS = """
 
 RULES = """
 守ること
-1. **具体的な数値を書かない。** 「〇〇件」「中央値〇円」「〇%」などの実績値・統計は
-   いっさい書かない。料金は「〇円〜」のような相場観も書かない。**数字を出さずに書く。**
+1. **確かめられない数値を書かない。** 「〇〇件」「満足度〇%」「〇人に1人」などの
+   実績値・統計は**いっさい書かない**。相場や他社の料金も書かない。
    （実績の数字は、人があとから追記する）
-   ただし公式LINEの「最大3,000円割引」だけは会社の事実なので書いてよい。
+   **書いてよい金額は2つだけです。**
+   ・下の「サイトに載っている料金」に**そのまま載っている額**
+   ・公式LINEの「最大3,000円割引」
+   **この2つ以外の金額を書くと、記事は出せません。**
+   タイトルと説明文には、その仕事の金額を**できるだけ入れてください**
+   （例：「富士市の草刈りはいくら？手作業8,000円〜・機械10,000円〜」）。
+   金額の無い「プロに依頼！失敗しないコツ」のような見出しにはしないこと。
 2. 嘘を書かない。受賞・提携があるとは書かない。
    許認可は**古物商と軽貨物だけ**。それ以外を持っているとは書かない。
 2-2. **ごみの処分を請け負うとは書かない。**
@@ -263,6 +269,8 @@ def build_prompt(done: list[dict], service: str, area: str,
 会社の前提：
 {FACTS}
 {RULES}
+サイトに載っている料金（**この額だけ、そのまま書けます**）：
+{price_table()}
 
 すでに書いた記事（**同じテーマは避けてください**）：
 {written}
@@ -278,8 +286,8 @@ def build_prompt(done: list[dict], service: str, area: str,
 
 {{
   "slug": "英小文字と数字とハイフンだけ。内容が分かるもの。地名を入れる",
-  "title": "検索結果に出る見出し。30〜45字。地名を入れる",
-  "metaDescription": "検索結果の説明文。80〜120字",
+  "title": "検索結果に出る見出し。30〜45字。**地名と、その仕事の金額を入れる**",
+  "metaDescription": "検索結果の説明文。80〜120字。地名と金額を入れる",
   "keywords": ["検索語を4〜6個。地名つきのものを必ず含める"],
   "category": "家具組立／物置／草刈り／不用品処分／掃除／庭まわり などから1つ",
   "blocks": [
@@ -290,7 +298,7 @@ def build_prompt(done: list[dict], service: str, area: str,
     {{"type": "ul", "items": ["箇条書き。**強調**が使えます"]}},
     {{"type": "ol", "items": ["手順の箇条書き"]}},
     {{"type": "table", "headers": ["列1", "列2"], "rows": [["値", "値"]]}},
-    {{"type": "note", "title": "注記の見出し", "text": "気をつけたいことなど。数値は書かない"}},
+    {{"type": "note", "title": "注記の見出し", "text": "気をつけたいことなど。サイトに載っていない数値は書かない"}},
     {{"type": "faq", "items": [{{"q": "質問", "a": "答え"}}]}},
     {{"type": "cta", "heading": "締めの見出し", "sub": "ひと押しの一文"}}
   ]
@@ -324,6 +332,55 @@ def retry_note(ng: list[str] | None) -> str:
 NUM = re.compile(r"\d[\d,]*\s*(?:円|件|%|％|人|台|年連続|割)")
 # 会社の事実として確定している数値だけは書いてよい（公式LINEの割引額など）
 KNOWN_NUMBERS = {"3,000円", "3000円"}
+
+# この弁が守っているのは「実績の捏造」です。
+# 満足度98%・実績500件・3人に1人 のような、確かめられない数字を書かせないためのもの。
+#
+# ところが、**料金まで一緒に弾いていました。**
+# 2026-09-03 に確かめたところ、既にある記事10本のうち6本
+# （「富士市の草刈りはいくら？手作業8,000円〜」など）が、この弁で弾かれる形でした。
+# 通るのは金額の無い「プロに依頼！失敗しないコツ」型だけ。
+# 弁が、読まれない記事を選んでいたことになります。
+#
+# **弁は外しません。通す条件を「サイトに載っている料金と同じ額」だけに狭めます。**
+# 出どころは components/Services.tsx。サイトに無い金額は、これまでどおり弾かれます。
+# 件・%・人・割 などは、これまでどおり全部弾きます（捏造の危険がそのまま残るため）。
+SERVICES_TSX = REPO / "components" / "Services.tsx"
+PRICE_IN_TSX = re.compile(r"price:\s*'([\d,]+円)")
+
+
+PRICE_ROW_IN_TSX = re.compile(r"\{\s*title:\s*'([^']+)',\s*price:\s*'([^']+)'")
+
+
+def price_table() -> str:
+    """サイトのサービス一覧を、そのまま指示に貼るための文にする。
+
+    ここを人が手で書き写すと、サイトと食い違ったまま何日も記事が出てしまう。
+    出どころを1つにするため、components/Services.tsx をそのまま読む。
+    """
+    try:
+        text = SERVICES_TSX.read_text(encoding="utf-8")
+    except OSError:
+        return "（サイトの料金表を読めませんでした。金額は書かないでください）"
+    rows = ["・%s … %s" % (m.group(1), m.group(2))
+            for m in PRICE_ROW_IN_TSX.finditer(text)]
+    if not rows:
+        return "（サイトの料金表を読めませんでした。金額は書かないでください）"
+    return "\n".join(rows)
+
+
+def site_prices() -> set[str]:
+    """サイトのサービス一覧に載っている金額。読めなければ空（＝これまでどおり全部弾く）。"""
+    try:
+        text = SERVICES_TSX.read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    out = set()
+    for m in PRICE_IN_TSX.finditer(text):
+        yen = m.group(1)
+        out.add(yen)
+        out.add(yen.replace(",", ""))
+    return out
 
 
 def check(art: dict, done: list[dict]) -> list[str]:
@@ -371,11 +428,14 @@ def check(art: dict, done: list[dict]) -> list[str]:
         if ("無許可" in t or "許可を得ず" in t) and "フッ軽" in t:
             ng.append("無許可業者の話と自社の宣伝が同じ塊にあります（許可の誤認を招く）")
 
-    # 数字の捏造よけ。実績値を書かせない約束なので、見つけたら止める
+    # 数字の捏造よけ。実績値を書かせない約束なので、見つけたら止める。
+    # ただし、サイトに載っている料金と同じ額は通す（捏造ではなく会社の事実のため）。
+    allowed = set(KNOWN_NUMBERS) | site_prices()
     found = {m.group(0) for m in NUM.finditer(json.dumps(art, ensure_ascii=False))}
-    hits = sorted(h for h in found if h.replace(" ", "") not in KNOWN_NUMBERS)
+    hits = sorted(h for h in found if h.replace(" ", "") not in allowed)
     if hits:
-        ng.append("数値が書かれています（実績の捏造を避けるため禁止）：%s" % ", ".join(hits[:6]))
+        ng.append("数値が書かれています（サイトに載っていない数字は書けません）：%s"
+                  % ", ".join(hits[:6]))
     return ng
 
 
