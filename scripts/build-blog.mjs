@@ -75,7 +75,7 @@ function renderBlock(block) {
 // 中元さんが src を入れた時点で出ます。入っていない枠はビルドのときに一覧で知らせます。
 function renderPhoto(block) {
   if (!block.src) return '';
-  const cap = block.caption ? `<figcaption>${esc(block.caption)}</figcaption>` : '';
+  const cap = block.caption ? `<figcaption>${inline(block.caption)}</figcaption>` : '';
   return `<figure class="photo"><img src="${esc(block.src)}" alt="${esc(block.alt || block.need || '')}" loading="lazy">${cap}</figure>`;
 }
 
@@ -446,8 +446,12 @@ function renderPillarBody(pillar, articles) {
 
 function renderPillarPage(pillar, articles) {
   const body = pillar.blocks.map(renderBlock).join('\n');
+  const heroBg = pillar.heroImage
+    ? `<div class="hero-bg" style="background-image:url('${esc(pillar.heroImage)}')"></div>`
+    : '';
   const bodyHtml = `
 <div class="hero">
+  ${heroBg}
   <div class="wrap">
     <span class="cat">まとめ</span>
     <h1>${esc(pillar.title)}</h1>
@@ -469,7 +473,7 @@ function renderPillarPage(pillar, articles) {
     canonical: articleUrl(pillar.slug),
     ogType: 'article',
     extraHead: jsonLd(pillar),
-    ogImage: '',
+    ogImage: pillar.ogImage || pillar.heroImage ? `${SITE_URL}${pillar.ogImage || pillar.heroImage}` : '',
     bodyHtml,
   });
 }
