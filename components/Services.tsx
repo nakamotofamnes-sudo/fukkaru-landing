@@ -40,11 +40,11 @@ const groups: Group[] = [
     title: '清掃・洗浄',
     note: '高圧洗浄、側溝の泥上げなど',
     services: [
-      { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true },
+      { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true , link: '/service/senjo/' },
       { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true },
       { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃' },
       { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します' },
-      { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' },
+      { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' , link: '/service/senjo/' },
     ],
   },
   {
