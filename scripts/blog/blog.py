@@ -331,7 +331,7 @@ def build_prompt(done: list[dict], service: str, area: str,
   "title": "検索結果に出る見出し。30〜45字。**地名と、その仕事の金額を入れる**",
   "metaDescription": "検索結果の説明文。80〜120字。地名と金額を入れる",
   "keywords": ["検索語を4〜6個。地名つきのものを必ず含める"],
-  "category": "家具組立／物置／草刈り／不用品処分／掃除／庭まわり などから1つ",
+  "category": "家具組立／物置／草刈り／不用品の運搬／掃除／庭まわり などから1つ（**「処分」「回収」は分類名に使わない**）",
   "blocks": [
     {{"type": "lead", "text": "導入。読者の困りごとを言い当てて、この記事で分かることを示す。150〜250字"}},
     {{"type": "h2", "id": "英数字のid", "text": "見出し"}},
@@ -496,6 +496,25 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
               "ゴミを引き取", "処分いたします", "処分します", "回収いたします"):
         if w in whole:
             ng.append("ごみの処分を請け負う書き方です（一般廃棄物の許可が無い）：%s" % w)
+
+    # 自社を主語にして「回収」「引き取り」を約束させない（2026-09-04 に追加）。
+    # 上の弁は決まり文句だけを見ていたので、
+    # 「不用な梱包材の回収、古い家具の引き取りまでまとめてお任せいただけます」を
+    # 素通りさせ、本番に1本出てしまった。文の形で見る。
+    PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
+    EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
+              "自治体", "市の", "指定", "ご案内")
+    OKAY_HIKITORI = ("まだ使える", "買い取り", "買取", "古物商")
+    for t in (b.get("text") or "" for b in blocks if isinstance(b, dict)):
+        for sent in re.split(r"(?<=[。！？])", t):
+            if not any(w in sent for w in PROMISE) or any(w in sent for w in EXCUSE):
+                continue
+            if "回収" in sent:
+                ng.append("自社が「回収」すると読める文です（廃棄物の許可が無い）：%s"
+                          % sent.strip()[:50])
+            elif "引き取" in sent and not any(w in sent for w in OKAY_HIKITORI):
+                ng.append("何を引き取るのか書かれていません"
+                          "（買取できるのは、まだ使えるものだけ）：%s" % sent.strip()[:50])
 
     # 許認可の誤認よけ。「無許可の業者」の話のすぐ後に自社名を出させない
     for b in blocks:

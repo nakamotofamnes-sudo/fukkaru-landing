@@ -183,6 +183,12 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .related{font-size:13.5px;color:var(--ink-500)}
 .related a{color:var(--ink-900);text-decoration:none}
 .related a:hover{text-decoration:underline}
+.related-list{margin:0 0 28px}
+.related-list h2{font-size:16px;margin:0 0 10px;color:var(--ink-900)}
+.related-list ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.related-list li{line-height:1.6}
+.related-list a{color:var(--ink-900);text-decoration:none;border-bottom:1px solid var(--line, #e5e7eb)}
+.related-list a:hover{border-bottom-color:currentColor}
 
 /* フッター */
 footer.site{background:var(--ink-900);color:rgba(255,255,255,.6);padding:40px 0;font-size:13px;line-height:1.9}
@@ -250,7 +256,53 @@ ${bodyHtml}
 </html>`;
 }
 
-function renderArticlePage(article) {
+
+// ── 関連記事（2026-09-04 に追加）──
+// それまで記事どうしが1本も繋がっていなかった。
+// 「富士市 家具組立」のような大きい語は、1本では取れない。
+// 同じ話題の記事が束になって、はじめて Google に「この店はここに詳しい」と伝わる。
+// **選び方は機械だけで決める。**AIに選ばせると、関係のない記事を薦めてしまう。
+const AREA_RE = /(富士宮市|富士市|沼津市|静岡市|三島市|御殿場市|裾野市|清水町)/g;
+
+function areasOf(a) {
+  const s = [a.title, a.metaDescription, ...(a.keywords || [])].join(' ');
+  return new Set(s.match(AREA_RE) || []);
+}
+
+function relatedArticles(article, all, max = 4) {
+  const myAreas = areasOf(article);
+  const myKw = new Set((article.keywords || []).map(String));
+  return all
+    .filter((a) => a.slug !== article.slug)
+    .map((a) => {
+      let score = 0;
+      if (a.category && a.category === article.category) score += 3; // 同じ分類がいちばん近い
+      for (const ar of areasOf(a)) if (myAreas.has(ar)) score += 2;  // 次に同じ地域
+      for (const k of a.keywords || []) if (myKw.has(String(k))) score += 1;
+      return { a, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((x, y) => y.score - x.score || (x.a.publishDate < y.a.publishDate ? 1 : -1))
+    .slice(0, max)
+    .map((x) => x.a);
+}
+
+function renderRelated(article, all) {
+  const rel = relatedArticles(article, all);
+  if (!rel.length) return '';
+  const items = rel
+    .map((a) => `<li><a href="/blog/${esc(a.slug)}/">${esc(a.title)}</a></li>`)
+    .join('\n      ');
+  return `
+  <nav class="related-list" aria-label="関連する記事">
+    <h2>あわせて読みたい</h2>
+    <ul>
+      ${items}
+    </ul>
+  </nav>`;
+}
+
+function renderArticlePage(article, all = []) {
   const bodyBlocks = article.blocks.map(renderBlock).join('\n');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
@@ -272,6 +324,7 @@ function renderArticlePage(article) {
   </div>
 </main>
 <div class="article-footer wrap">
+  ${renderRelated(article, all)}
   <p class="related"><a href="/blog/">← ブログ一覧へ戻る</a></p>
 </div>`;
   return pageShell({
@@ -339,6 +392,44 @@ function buildSitemap(articles) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
 }
 
+
+// ── トップページに、機械が読める道を作る（2026-09-04 に追加）──
+// トップは JavaScript で組み立てているので、配られるHTMLは空の器だった。
+// 画面上には（Header/Footer/BlogTeaser に）ブログへのリンクがあるのに、
+// **HTMLには1本も無かった。**そのため Google はブログへ辿り着けず、
+// 2026-09-04 の実測で /blog/ も記事15本も「Googleが知らないURL」だった。
+// JavaScript を動かさない相手（クローラの初回・読み上げ・回線が細い端末）にも
+// 同じ道が見えるよう、noscript に本物のリンクを置く。中身は毎回作り直す。
+function injectBlogLinks(articles) {
+  const indexPath = path.join(DIST_DIR, 'index.html');
+  if (!fs.existsSync(indexPath)) return false;
+  let html = fs.readFileSync(indexPath, 'utf8');
+  const MARK_S = '<!-- blog-links:start -->';
+  const MARK_E = '<!-- blog-links:end -->';
+  const items = articles
+    .slice()
+    .sort((a, b) => (a.publishDate < b.publishDate ? 1 : -1))
+    .map((a) => `<li><a href="/blog/${esc(a.slug)}/">${esc(a.title)}</a></li>`)
+    .join('\n');
+  const block = `${MARK_S}
+<noscript>
+<nav aria-label="お役立ちブログ">
+<h2>お役立ちブログ</h2>
+<p><a href="/blog/">記事の一覧を見る</a></p>
+<ul>
+${items}
+</ul>
+</nav>
+</noscript>
+${MARK_E}`;
+  const re = new RegExp(MARK_S + '[\\s\\S]*?' + MARK_E);
+  html = re.test(html)
+    ? html.replace(re, block)
+    : html.replace('</body>', block + '\n</body>');
+  fs.writeFileSync(indexPath, html, 'utf8');
+  return true;
+}
+
 function main() {
   if (!fs.existsSync(DIST_DIR)) {
     console.error('[build-blog] dist/ が見つかりません。先に `vite build` を実行してください。');
@@ -373,11 +464,13 @@ function main() {
   for (const a of articles) {
     const outDir = path.join(BLOG_OUT_DIR, a.slug);
     fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'index.html'), renderArticlePage(a), 'utf8');
+    fs.writeFileSync(path.join(outDir, 'index.html'), renderArticlePage(a, articles), 'utf8');
     console.log(`[build-blog] 生成: /blog/${a.slug}/`);
   }
 
   fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles), 'utf8');
+
+  const linked = injectBlogLinks(articles);
 
   const sitemapPath = path.join(DIST_DIR, 'sitemap.xml');
   fs.writeFileSync(sitemapPath, buildSitemap(articles), 'utf8');
@@ -387,7 +480,8 @@ function main() {
     fs.writeFileSync(robotsPath, `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`, 'utf8');
   }
 
-  console.log(`[build-blog] 完了: 記事${articles.length}件 + 一覧ページ + sitemap.xml`);
+  console.log(`[build-blog] 完了: 記事${articles.length}件 + 一覧ページ + sitemap.xml`
+    + (linked ? ' + トップのブログ導線' : ' ／ ★トップに導線を入れられませんでした'));
 }
 
 main();
