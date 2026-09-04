@@ -285,10 +285,23 @@ footer.site a{color:rgba(255,255,255,.85);text-decoration:none}
 footer.site a:hover{color:#fff}
 
 /* 記事一覧 */
+.svc-nav{margin:0 0 8px;padding:16px 18px;border:1px solid var(--line, #e5e7eb);border-radius:8px}
+.svc-nav h2{border:0;padding:0;margin:0 0 10px;font-size:14px;color:var(--ink-500);font-weight:500}
+.svc-nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 10px}
+.svc-nav a{display:inline-block;padding:6px 12px;border:1px solid var(--line, #e5e7eb);border-radius:999px;
+  font-size:13.5px;color:var(--ink-900);text-decoration:none}
+.svc-nav a:hover{border-color:var(--ink-900)}
 .index-list{list-style:none;margin:0;padding:0}
 .index-list li{border-top:1px solid var(--hairline)}
 .index-list li:last-child{border-bottom:1px solid var(--hairline)}
-.index-list a{text-decoration:none;color:var(--ink-700);display:block;padding:24px 0;transition:opacity .15s}
+.index-list a{text-decoration:none;color:var(--ink-700);display:grid;grid-template-columns:132px 1fr;
+  gap:18px;align-items:start;padding:24px 0;transition:opacity .15s}
+.index-thumb{display:block;border-radius:8px;overflow:hidden;background:var(--line, #e5e7eb);aspect-ratio:1200/630}
+.index-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.index-text{display:block;min-width:0}
+@media (max-width:560px){
+  .index-list a{grid-template-columns:92px 1fr;gap:12px}
+}
 .index-list a:hover h2{color:var(--accent)}
 .index-list h2{border:0;margin:6px 0 8px;font-size:18px;padding:0;transition:color .15s}
 .index-list p{color:var(--ink-500);font-size:14px;margin:0}
@@ -521,15 +534,18 @@ function photoTodo(docs) {
   return out;
 }
 
-function renderIndexPage(articles, pillar = null) {
+function renderIndexPage(articles, pillars = []) {
   const items = articles
     .slice()
     .sort((a, b) => (a.publishDate < b.publishDate ? 1 : -1))
     .map(
       (a) => `<li><a href="/blog/${esc(a.slug)}/">
-        <span class="index-date">${esc(a.publishDate)}</span>
-        <h2>${esc(a.title)}</h2>
-        <p>${esc(a.metaDescription)}</p>
+        ${a.heroImage ? `<span class="index-thumb"><img src="${esc(a.heroImage)}" alt="" loading="lazy"></span>` : '<span class="index-thumb"></span>'}
+        <span class="index-text">
+          <span class="index-date">${esc(a.publishDate)}</span>
+          <h2>${esc(a.title)}</h2>
+          <p>${esc(a.metaDescription)}</p>
+        </span>
       </a></li>`
     )
     .join('\n');
@@ -543,6 +559,12 @@ function renderIndexPage(articles, pillar = null) {
 </div>
 <main>
   <div class="wrap">
+    ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
+      <h2>仕事ごとのまとめ</h2>
+      <ul>
+        ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n        ')}
+      </ul>
+    </nav>` : ''}
     <ul class="index-list">
       ${items || '<li>準備中です。</li>'}
     </ul>
@@ -665,7 +687,7 @@ function main() {
     console.log(`[build-blog] 生成（柱）: /${base}/${pl.slug}/`);
   }
 
-  fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles, pillars[0] || null), 'utf8');
+  fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles, pillars), 'utf8');
 
   const linked = injectBlogLinks(articles, pillars);
 
