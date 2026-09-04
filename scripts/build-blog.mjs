@@ -11,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ARTICLES_DIR = path.join(ROOT, 'content', 'articles');
 const DIST_DIR = path.join(ROOT, 'dist');
+const PILLAR_DIR = path.join(ROOT, 'content', 'pillar');
 const BLOG_OUT_DIR = path.join(DIST_DIR, 'blog');
 const SITE_URL = 'https://fukkaru.creo-sumai.jp';
 const SITE_NAME = 'フッ軽（ふっかる）';
@@ -30,6 +31,8 @@ function inline(s) {
 }
 
 function renderBlock(block) {
+  if (block.type === 'photo') return renderPhoto(block);
+  if (block.type === 'steps') return renderSteps(block);
   switch (block.type) {
     case 'lead':
       return `<p class="lead">${inline(block.text)}</p>`;
@@ -65,6 +68,23 @@ function renderBlock(block) {
     default:
       return '';
   }
+}
+
+// 写真の枠（2026-09-04）。**中身が入るまで、本番には何も出しません。**
+// 「[写真: 軽トラの積載例]」のような文字を本番に出すと、作りかけに見えるため。
+// 中元さんが src を入れた時点で出ます。入っていない枠はビルドのときに一覧で知らせます。
+function renderPhoto(block) {
+  if (!block.src) return '';
+  const cap = block.caption ? `<figcaption>${esc(block.caption)}</figcaption>` : '';
+  return `<figure class="photo"><img src="${esc(block.src)}" alt="${esc(block.alt || block.need || '')}" loading="lazy">${cap}</figure>`;
+}
+
+// 相談から作業までの流れ。「フッ軽」の名のとおり、何をすればいいかを3つに絞って見せる
+function renderSteps(block) {
+  const items = (block.items || [])
+    .map((it, i) => `<li><span class="step-n">${i + 1}</span><b>${esc(it.t || '')}</b><span>${esc(it.d || '')}</span></li>`)
+    .join('\n      ');
+  return `<ol class="steps">\n      ${items}\n    </ol>`;
 }
 
 function renderCta(block) {
@@ -183,6 +203,23 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .related{font-size:13.5px;color:var(--ink-500)}
 .related a{color:var(--ink-900);text-decoration:none}
 .related a:hover{text-decoration:underline}
+.photo{margin:22px 0}
+.photo img{width:100%;height:auto;border-radius:8px;display:block}
+.photo figcaption{font-size:13px;color:var(--ink-500);margin-top:8px}
+.steps{list-style:none;margin:22px 0;padding:0;display:grid;gap:12px}
+.steps li{display:grid;grid-template-columns:34px 1fr;gap:4px 12px;align-items:start}
+.steps .step-n{grid-row:span 2;width:34px;height:34px;border-radius:8px;background:var(--ink-900);color:#fff;display:grid;place-items:center;font-weight:700}
+.steps b{font-size:15px;color:var(--ink-900)}
+.steps span:not(.step-n){font-size:14px;color:var(--ink-500);line-height:1.7}
+.pillar-index{margin:8px 0 28px}
+.pillar-index h3{font-size:15px;margin:20px 0 8px;color:var(--ink-900)}
+.pillar-index ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pillar-index a{color:var(--ink-900);text-decoration:none;border-bottom:1px solid var(--line, #e5e7eb)}
+.pillar-index a:hover{border-bottom-color:currentColor}
+.to-pillar{margin:0 0 20px;padding:14px 16px;border:1px solid var(--line, #e5e7eb);border-radius:8px}
+.to-pillar b{display:block;font-size:13px;color:var(--ink-500);font-weight:500;margin-bottom:4px}
+.to-pillar a{color:var(--ink-900);text-decoration:none;font-weight:600}
+.to-pillar a:hover{text-decoration:underline}
 .related-list{margin:0 0 28px}
 .related-list h2{font-size:16px;margin:0 0 10px;color:var(--ink-900)}
 .related-list ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
@@ -302,7 +339,7 @@ function renderRelated(article, all) {
   </nav>`;
 }
 
-function renderArticlePage(article, all = []) {
+function renderArticlePage(article, all = [], pillar = null) {
   const bodyBlocks = article.blocks.map(renderBlock).join('\n');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
@@ -324,6 +361,7 @@ function renderArticlePage(article, all = []) {
   </div>
 </main>
 <div class="article-footer wrap">
+  ${pillar ? `<div class="to-pillar"><b>この地域のまとめ</b><a href="/blog/${esc(pillar.slug)}/">${esc(pillar.title)}</a></div>` : ''}
   ${renderRelated(article, all)}
   <p class="related"><a href="/blog/">← ブログ一覧へ戻る</a></p>
 </div>`;
@@ -342,7 +380,76 @@ function renderArticlePage(article, all = []) {
   });
 }
 
-function renderIndexPage(articles) {
+
+// ── 柱のページ（ピラー）2026-09-04 ──
+// 枝葉の記事は、1本ずつでは大きい語に届かない。
+// 話題の中心になる1枚を置き、そこへ全記事から繋いで束にする。
+// 記事一覧の部分は**毎回作り直す**ので、記事が増えても柱が古くならない。
+function renderPillarBody(pillar, articles) {
+  const groups = new Map();
+  for (const a of articles) {
+    const k = a.category || 'そのほか';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(a);
+  }
+  const list = [...groups.entries()]
+    .sort((x, y) => y[1].length - x[1].length)
+    .map(([cat, arr]) => {
+      const items = arr
+        .sort((a, b) => (a.publishDate < b.publishDate ? 1 : -1))
+        .map((a) => `<li><a href="/blog/${esc(a.slug)}/">${esc(a.title)}</a></li>`)
+        .join('\n        ');
+      return `<h3>${esc(cat)}</h3>\n      <ul>\n        ${items}\n      </ul>`;
+    })
+    .join('\n      ');
+  return `
+  <h2 id="kiji">もっと詳しく（${articles.length}本）</h2>
+  <p>仕事ごとの細かい話は、それぞれの記事にまとめています。</p>
+  <div class="pillar-index">
+      ${list}
+  </div>`;
+}
+
+function renderPillarPage(pillar, articles) {
+  const body = pillar.blocks.map(renderBlock).join('\n');
+  const bodyHtml = `
+<div class="hero">
+  <div class="wrap">
+    <span class="cat">まとめ</span>
+    <h1>${esc(pillar.title)}</h1>
+    <div class="meta">更新日: ${esc(new Date().toISOString().slice(0, 10))}</div>
+  </div>
+</div>
+<main>
+  <div class="wrap">
+    ${body}
+    ${renderPillarBody(pillar, articles)}
+  </div>
+</main>
+<div class="article-footer wrap">
+  <p class="related"><a href="/blog/">← ブログ一覧へ戻る</a></p>
+</div>`;
+  return pageShell({
+    title: `${pillar.title}｜${SITE_NAME}`,
+    description: pillar.metaDescription,
+    canonical: articleUrl(pillar.slug),
+    ogType: 'article',
+    extraHead: jsonLd(pillar),
+    ogImage: '',
+    bodyHtml,
+  });
+}
+
+// 写真の枠が空のままのものを数える。中元さんに何を撮ればいいかを伝えるため
+function photoTodo(docs) {
+  const out = [];
+  for (const d of docs)
+    for (const b of d.blocks || [])
+      if (b && b.type === 'photo' && !b.src) out.push(`${d.slug}: ${b.need || '（用途未記入）'}`);
+  return out;
+}
+
+function renderIndexPage(articles, pillar = null) {
   const items = articles
     .slice()
     .sort((a, b) => (a.publishDate < b.publishDate ? 1 : -1))
@@ -378,10 +485,11 @@ function renderIndexPage(articles) {
   });
 }
 
-function buildSitemap(articles) {
+function buildSitemap(articles, pillars = []) {
   const urls = [
     { loc: `${SITE_URL}/`, priority: '1.0' },
     { loc: `${SITE_URL}/blog/`, priority: '0.8' },
+    ...pillars.map((p) => ({ loc: articleUrl(p.slug), priority: '0.9' })),
     ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: a.updatedDate || a.publishDate })),
   ];
   const body = urls
@@ -400,7 +508,7 @@ function buildSitemap(articles) {
 // 2026-09-04 の実測で /blog/ も記事15本も「Googleが知らないURL」だった。
 // JavaScript を動かさない相手（クローラの初回・読み上げ・回線が細い端末）にも
 // 同じ道が見えるよう、noscript に本物のリンクを置く。中身は毎回作り直す。
-function injectBlogLinks(articles) {
+function injectBlogLinks(articles, pillar = null) {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (!fs.existsSync(indexPath)) return false;
   let html = fs.readFileSync(indexPath, 'utf8');
@@ -416,6 +524,7 @@ function injectBlogLinks(articles) {
 <nav aria-label="お役立ちブログ">
 <h2>お役立ちブログ</h2>
 <p><a href="/blog/">記事の一覧を見る</a></p>
+${pillar ? `<p><a href="/blog/${esc(pillar.slug)}/">${esc(pillar.title)}</a></p>` : ''}
 <ul>
 ${items}
 </ul>
@@ -459,25 +568,45 @@ function main() {
     articles.push(a);
   }
 
+  // 柱（ピラー）を読む。無ければ今までどおり動く
+  const pillars = fs.existsSync(PILLAR_DIR)
+    ? fs.readdirSync(PILLAR_DIR).filter((f) => f.endsWith('.json'))
+        .map((f) => JSON.parse(fs.readFileSync(path.join(PILLAR_DIR, f), 'utf8')))
+    : [];
+  const pillar = pillars[0] || null;
+
   fs.mkdirSync(BLOG_OUT_DIR, { recursive: true });
 
   for (const a of articles) {
     const outDir = path.join(BLOG_OUT_DIR, a.slug);
     fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'index.html'), renderArticlePage(a, articles), 'utf8');
+    fs.writeFileSync(path.join(outDir, 'index.html'), renderArticlePage(a, articles, pillar), 'utf8');
     console.log(`[build-blog] 生成: /blog/${a.slug}/`);
   }
 
-  fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles), 'utf8');
+  for (const pl of pillars) {
+    const outDir = path.join(BLOG_OUT_DIR, pl.slug);
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'index.html'), renderPillarPage(pl, articles), 'utf8');
+    console.log(`[build-blog] 生成（柱）: /blog/${pl.slug}/`);
+  }
 
-  const linked = injectBlogLinks(articles);
+  fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles, pillar), 'utf8');
+
+  const linked = injectBlogLinks(articles, pillar);
 
   const sitemapPath = path.join(DIST_DIR, 'sitemap.xml');
-  fs.writeFileSync(sitemapPath, buildSitemap(articles), 'utf8');
+  fs.writeFileSync(sitemapPath, buildSitemap(articles, pillars), 'utf8');
 
   const robotsPath = path.join(DIST_DIR, 'robots.txt');
   if (!fs.existsSync(robotsPath)) {
     fs.writeFileSync(robotsPath, `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`, 'utf8');
+  }
+
+  const todo = photoTodo(pillars);
+  if (todo.length) {
+    console.log('[build-blog] ★ 写真の枠が空いています（入るまで本番には出ません）:');
+    for (const t of todo) console.log('           - ' + t);
   }
 
   console.log(`[build-blog] 完了: 記事${articles.length}件 + 一覧ページ + sitemap.xml`
