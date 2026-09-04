@@ -285,6 +285,7 @@ footer.site a{color:rgba(255,255,255,.85);text-decoration:none}
 footer.site a:hover{color:#fff}
 
 /* 記事一覧 */
+.svc-desc{font-size:13px;color:var(--ink-500)}
 .svc-nav{margin:0 0 8px;padding:16px 18px;border:1px solid var(--line, #e5e7eb);border-radius:8px}
 .svc-nav h2{border:0;padding:0;margin:0 0 10px;font-size:14px;color:var(--ink-500);font-weight:500}
 .svc-nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 10px}
@@ -534,6 +535,84 @@ function photoTodo(docs) {
   return out;
 }
 
+// ── サービス一覧のページ（/service/）2026-09-04 ──
+// トップの「サービスと料金」は JavaScript の中にあり、Google からは読めない
+// （2026-09-04 の実測：トップの body の中身は556文字しかない）。
+// **同じ中身を、機械にも読める静的なページとして置き直す。**
+// 料金は components/Services.tsx から読むので、値の持ち場所は1つのまま。
+const SERVICES_TSX = path.join(ROOT, 'components', 'Services.tsx');
+
+function readServiceGroups() {
+  if (!fs.existsSync(SERVICES_TSX)) return [];
+  const src = fs.readFileSync(SERVICES_TSX, 'utf8');
+  const groups = [];
+  // note と services のあいだに defaultOpen などが入る分類がある。まとめて飛ばす
+  const gRe = /\{\s*id:\s*'([^']+)',\s*title:\s*'([^']+)',\s*note:\s*'([^']*)',[\s\S]*?services:\s*\[([\s\S]*?)\n\s*\],/g;
+  let g;
+  while ((g = gRe.exec(src))) {
+    const services = [];
+    const sRe = /\{\s*title:\s*'([^']+)',\s*price:\s*'([^']+)',\s*desc:\s*'([^']*)'([^}]*)\}/g;
+    let m;
+    while ((m = sRe.exec(g[4]))) {
+      const tail = m[4] || '';
+      const link = (tail.match(/link:\s*'([^']+)'/) || [])[1] || '';
+      services.push({ title: m[1], price: m[2], desc: m[3], link });
+    }
+    if (services.length) groups.push({ title: g[2], note: g[3], services });
+  }
+  return groups;
+}
+
+function renderServiceIndex(groups, pillars) {
+  const tables = groups.map((g) => `
+  <h2 id="${esc(g.title)}">${esc(g.title)}</h2>
+  <p>${esc(g.note)}</p>
+  <table><thead><tr><th>やること</th><th>料金</th></tr></thead><tbody>
+    ${g.services.map((s) => `<tr><td>${esc(s.title)}${s.link ? ` <a href="${esc(s.link)}">くわしく</a>` : ''}<br><span class="svc-desc">${esc(s.desc)}</span></td><td>${esc(s.price)}</td></tr>`).join('\n    ')}
+  </tbody></table>`).join('\n');
+
+  const nav = pillars.length ? `
+  <nav class="svc-nav" aria-label="仕事ごとの詳しい説明">
+    <h2>仕事ごとの詳しい説明</h2>
+    <ul>
+      ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n      ')}
+    </ul>
+  </nav>` : '';
+
+  const bodyHtml = `
+<div class="hero">
+  <div class="wrap">
+    <span class="cat">サービス</span>
+    <h1>できることと料金｜富士市の便利屋フッ軽</h1>
+    <div class="meta">草むしり8,000円〜／家具の組み立て8,000円〜／物置の設置・解体15,000円〜／不用品の運搬・買取5,000円〜</div>
+  </div>
+</div>
+<main>
+  <div class="wrap">
+    <p class="lead">静岡県富士市の便利屋です。**代表がひとりで**うかがいます。ここに載っていない作業も、できるかぎりお受けします。まずは「こんなこと頼める？」とお声がけください。</p>
+    <ul>
+      <li>**LINEで写真を送っていただくお見積りは、エリアを問わず無料です。**</li>
+      <li>現地に伺う出張費は、富士市・富士宮市・静岡市・沼津市ならいただきません。</li>
+      <li>公式LINEにご登録のうえご成約いただくと、**最大3,000円割引**になります。</li>
+      <li>作業前にお見積りをお出しし、ご納得いただいてから始めます。</li>
+    </ul>
+    ${nav}
+    ${tables}
+    <div class="note"><b>お引き受けできないこと</b><p>ご家庭から出た不用品を、ごみとして引き取って処分することはできません（一般廃棄物収集運搬業の許可が無いためです）。できるのは、荷物を指定の場所まで<b>運ぶこと</b>、まだ使えるものを<b>買い取ること</b>、自治体での<b>出し方をご案内すること</b>です。</p></div>
+  </div>
+</main>
+<div class="article-footer wrap">
+  <p class="related"><a href="/">← トップページへ</a></p>
+</div>`;
+  return pageShell({
+    title: `できることと料金｜${SITE_NAME}`,
+    description: '富士市の便利屋フッ軽のサービスと料金の一覧です。草むしり8,000円〜、家具の組み立て8,000円〜、物置の設置・解体15,000円〜、不用品の運搬・買取5,000円〜。LINEで写真を送るだけのお見積りは無料です。',
+    canonical: `${SITE_URL}/service/`,
+    ogType: 'website',
+    bodyHtml: bodyHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
+  });
+}
+
 function renderIndexPage(articles, pillars = []) {
   const items = articles
     .slice()
@@ -562,6 +641,7 @@ function renderIndexPage(articles, pillars = []) {
     ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
       <h2>仕事ごとのまとめ</h2>
       <ul>
+        <li><a href="/service/">できることと料金</a></li>
         ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n        ')}
       </ul>
     </nav>` : ''}
@@ -583,6 +663,7 @@ function buildSitemap(articles, pillars = []) {
   const urls = [
     { loc: `${SITE_URL}/`, priority: '1.0' },
     { loc: `${SITE_URL}/blog/`, priority: '0.8' },
+    { loc: `${SITE_URL}/service/`, priority: '0.9' },
     ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9' })),
     ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: a.updatedDate || a.publishDate })),
   ];
@@ -617,6 +698,7 @@ function injectBlogLinks(articles, pillars = []) {
 <noscript>
 <nav aria-label="お役立ちブログ">
 <h2>お役立ちブログ</h2>
+<p><a href="/service/">できることと料金</a></p>
 <p><a href="/blog/">記事の一覧を見る</a></p>
 ${pillars.map((p) => `<p><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.title)}</a></p>`).join('\n')}
 <ul>
@@ -688,6 +770,14 @@ function main() {
   }
 
   fs.writeFileSync(path.join(BLOG_OUT_DIR, 'index.html'), renderIndexPage(articles, pillars), 'utf8');
+
+  const svcGroups = readServiceGroups();
+  if (svcGroups.length) {
+    const svcDir = path.join(DIST_DIR, 'service');
+    fs.mkdirSync(svcDir, { recursive: true });
+    fs.writeFileSync(path.join(svcDir, 'index.html'), renderServiceIndex(svcGroups, pillars), 'utf8');
+    console.log(`[build-blog] 生成: /service/（${svcGroups.length}分類 / ${svcGroups.reduce((n, g) => n + g.services.length, 0)}項目）`);
+  }
 
   const linked = injectBlogLinks(articles, pillars);
 
