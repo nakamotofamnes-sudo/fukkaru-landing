@@ -131,6 +131,31 @@ const PAGE_CSS = `
   --line-green:#0A8138; --line-hover:#08682D;
   --r:8px;
 }
+/* ── 追従するCTA帯（2026-09-04）──
+   固定で浮かせると、途中の行が必ずその下を通る。過去に2回この直し方を間違えた。
+   ここでは帯に**居場所を与える**。本文は .page の中だけを流れるので、
+   どこまでスクロールしても文字が帯の下に入らない。 */
+html,body{height:100%}
+body{display:flex;flex-direction:column;overflow:hidden}
+.page{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.cta-bar{flex:0 0 auto;background:var(--ink-900,#0f172a);color:#fff;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  box-shadow:0 -1px 0 rgba(0,0,0,.08)}
+.cta-bar .wrap{display:flex;gap:10px;align-items:center;max-width:760px;margin:0 auto}
+.cta-bar p{flex:1 1 auto;margin:0;font-size:13px;line-height:1.5;color:rgba(255,255,255,.82)}
+.cta-bar a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;padding:0 16px;border-radius:8px;font-size:14px;font-weight:700;
+  text-decoration:none;background:#fff;color:var(--ink-900,#0f172a)}
+.cta-bar a.tel{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+.cta-bar a{white-space:nowrap}
+.cta-bar .sub{font-weight:500;opacity:.7}
+@media (max-width:640px){
+  .cta-bar p{display:none}
+  .cta-bar .wrap{gap:8px}
+  .cta-bar a{flex:2 1 0;padding:0 8px;font-size:13.5px}
+  .cta-bar a.tel{flex:1 1 0}
+  .cta-bar .sub{display:none}
+}
 *{box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{
@@ -275,6 +300,7 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ''}
 ${extraHead || ''}
 </head>
 <body>
+<div class="page">
 <header class="site">
   <div class="wrap">
     <a class="brand" href="/">フッ軽<span>ふっかる</span></a>
@@ -289,6 +315,14 @@ ${bodyHtml}
     <p><a href="/">トップページ</a> ｜ <a href="/blog/">ブログ一覧</a> ｜ <a href="${LINE_URL}" target="_blank" rel="noopener">公式LINE</a></p>
   </div>
 </footer>
+</div>
+<div class="cta-bar">
+  <div class="wrap">
+    <p>写真を1枚送るだけで、お見積りをお出しします。作業前にご納得いただいてから始めます。</p>
+    <a href="${LINE_URL}" target="_blank" rel="noopener">LINEで無料見積もり<span class="sub">（写真1枚でOK）</span></a>
+    <a class="tel" href="tel:0545-78-3704">電話する</a>
+  </div>
+</div>
 </body>
 </html>`;
 }
