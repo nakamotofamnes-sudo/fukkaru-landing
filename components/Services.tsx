@@ -139,7 +139,10 @@ const Services: React.FC = () => {
               </h3>
               <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-500">
                 作業の内容や現場の状況によって、適切なプランと料金をご案内します。
-                まずは「こんなこと頼める？」とお声がけください。LINEで写真をお送りいただくお見積りは、エリアを問わず無料です。現地に伺う出張費も、富士市・富士宮市・静岡市・沼津市ならいただきません。
+                まずは「こんなこと頼める？」とお声がけください。LINEで写真をお送りいただくお見積りは、エリアを問わず無料です。現地に伺う出張費も、富士市・富士宮市・静岡市・沼津市ならいただきません。{' '}
+                <a href="/service/" className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2">
+                  できることと料金の一覧 →
+                </a>
               </p>
               <p className="mt-3 max-w-2xl text-[14px] leading-[1.85] text-ink-600">
                 ご高齢の方、力仕事にご不安がある方はお気軽にお電話ください。
