@@ -53,6 +53,18 @@ PAD = 64
 NAME = "便利屋フッ軽　富士市・富士宮市"
 
 
+# ── フォントに無い字を、見た目の同じ字に置き換える（2026-09-04）──
+# 「〜」(U+301C WAVE DASH) は Hiragino Sans GB が持っておらず、**□ で出ます。**
+# 記事の題はほとんど「8,000円〜」なので、og画像の11本が豆腐になっていました。
+# 記事の本文は触りません。**絵に描くときだけ**差し替えます。
+SAFE = {"\u301c": "\uff5e"}   # 〜 → ～
+
+
+def font_safe(t: str) -> str:
+    for a, b in SAFE.items():
+        t = t.replace(a, b)
+    return t
+
 def font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(FONT_BOLD if bold else FONT, size,
                              index=W6 if bold else W3)
@@ -104,6 +116,8 @@ def wrap(text: str, f: ImageFont.FreeTypeFont, width: int) -> list[str]:
 def make_hero(out_path: Path, title: str, category: str = "",
               bg_path: Path | None = None) -> Path:
     """記事のトップ画像を1枚作って、置いた場所を返す。"""
+    title = font_safe(title)
+    category = font_safe(category)
     # 記事ページの見出しに敷く絵。ページ側でも暗い幕をかけるので、ここでは薄くしか暗くしない。
     # 文字は載せない（ページに題があるので、二重に見えてしまう）。
     out_path.parent.mkdir(parents=True, exist_ok=True)
