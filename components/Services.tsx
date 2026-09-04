@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronDown, MessageCircle } from 'lucide-react';
 
-type Service = { title: string; price: string; desc: string; popular?: boolean };
+// link を持つ項目は、作業ごとの詳細ページへ案内します（2026-09-04）。
+// トップに全部を書くと重くなるうえ、トップの中身は JavaScript の中にあって
+// Google からは読めません。**詳しい話は静的なページ側に置きます。**
+type Service = { title: string; price: string; desc: string; popular?: boolean; link?: string };
 type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean };
 
 const groups: Group[] = [
@@ -11,7 +14,7 @@ const groups: Group[] = [
     note: '草むしりから伐採、防草シートまで',
     defaultOpen: true,
     services: [
-      { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true },
+      { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true , link: '/service/kusakari/' },
       { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します' },
       { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業' },
       { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途' },
@@ -25,10 +28,10 @@ const groups: Group[] = [
     note: '家具の組立・移動、軽貨物での運搬',
     defaultOpen: true,
     services: [
-      { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' },
+      { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' , link: '/service/kagu-kumitate/' },
       { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動' },
       { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true },
-      { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true },
+      { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true , link: '/blog/fuji-unpan-kaitori-guide/' },
       { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します' },
     ],
   },
@@ -49,7 +52,7 @@ const groups: Group[] = [
     title: 'その他の代行',
     note: '物置の設置、買い物やお墓参りの代行',
     services: [
-      { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true },
+      { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true , link: '/service/monooki/' },
       { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも' },
       { title: 'お墓参り代行', price: '7,000円〜', desc: '清掃と献花を含みます' },
     ],
@@ -91,7 +94,17 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
                 {s.price}
               </dd>
               {/* 説明は幅いっぱいにして、項目名と料金の下の行に回します。 */}
-              <dd className="mt-1 w-full text-[13px] leading-relaxed text-ink-500">{s.desc}</dd>
+              <dd className="mt-1 w-full text-[13px] leading-relaxed text-ink-500">
+                {s.desc}
+                {s.link && (
+                  <>
+                    {' '}
+                    <a href={s.link} className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2">
+                      くわしく →
+                    </a>
+                  </>
+                )}
+              </dd>
             </div>
           ))}
         </dl>
