@@ -567,9 +567,9 @@ function renderServiceIndex(groups, pillars) {
   const tables = groups.map((g) => `
   <h2 id="${esc(g.title)}">${esc(g.title)}</h2>
   <p>${esc(g.note)}</p>
-  <table><thead><tr><th>やること</th><th>料金</th></tr></thead><tbody>
+  <div class="table-wrap"><table><thead><tr><th>やること</th><th>料金</th></tr></thead><tbody>
     ${g.services.map((s) => `<tr><td>${esc(s.title)}${s.link ? ` <a href="${esc(s.link)}">くわしく</a>` : ''}<br><span class="svc-desc">${esc(s.desc)}</span></td><td>${esc(s.price)}</td></tr>`).join('\n    ')}
-  </tbody></table>`).join('\n');
+  </tbody></table></div>`).join('\n');
 
   const nav = pillars.length ? `
   <nav class="svc-nav" aria-label="仕事ごとの詳しい説明">
