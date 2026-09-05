@@ -15,11 +15,11 @@ const groups: Group[] = [
     defaultOpen: true,
     services: [
       { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true , link: '/service/kusakari/' },
-      { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します' },
-      { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業' },
-      { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途' },
-      { title: '落ち葉の清掃', price: '6,000円〜', desc: 'お庭をきれいに保ちます' },
-      { title: '庭の水やり', price: '3,000円〜', desc: '留守のあいだの水やりも承ります' },
+      { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します', link: '/service/kusakari/' },
+      { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業', link: '/service/kusakari/' },
+      { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途', link: '/service/kusakari/' },
+      { title: '落ち葉の清掃', price: '6,000円〜', desc: 'お庭をきれいに保ちます', link: '/service/kusakari/' },
+      { title: '庭の水やり', price: '3,000円〜', desc: '留守のあいだの水やりも承ります', link: '/service/kusakari/' },
     ],
   },
   {
@@ -29,10 +29,10 @@ const groups: Group[] = [
     defaultOpen: true,
     services: [
       { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' , link: '/service/kagu-kumitate/' },
-      { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動' },
-      { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true },
+      { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動', link: '/service/kagu-kumitate/' },
+      { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true, link: '/blog/fuji-unpan-kaitori-guide/' },
       { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true , link: '/blog/fuji-unpan-kaitori-guide/' },
-      { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します' },
+      { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します', link: '/blog/fuji-unpan-kaitori-guide/' },
     ],
   },
   {
@@ -41,9 +41,9 @@ const groups: Group[] = [
     note: '高圧洗浄、側溝の泥上げなど',
     services: [
       { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true , link: '/service/senjo/' },
-      { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true },
-      { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃' },
-      { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します' },
+      { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true, link: '/service/senjo/' },
+      { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃', link: '/service/senjo/' },
+      { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します', link: '/service/senjo/' },
       { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' , link: '/service/senjo/' },
     ],
   },
