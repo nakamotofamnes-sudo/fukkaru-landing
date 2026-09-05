@@ -51,7 +51,7 @@ const groups: Group[] = [
     note: '物置の設置・解体、買い物の代行',
     services: [
       { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true , link: '/service/monooki/' },
-      { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも' },
+      { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも', link: '/service/kaimono/' },
     ],
   },
 ];
