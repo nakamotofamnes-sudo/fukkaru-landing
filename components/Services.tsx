@@ -18,8 +18,6 @@ const groups: Group[] = [
       { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します', link: '/service/kusakari/' },
       { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業', link: '/service/kusakari/' },
       { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途', link: '/service/kusakari/' },
-      { title: '落ち葉の清掃', price: '6,000円〜', desc: 'お庭をきれいに保ちます', link: '/service/kusakari/' },
-      { title: '庭の水やり', price: '3,000円〜', desc: '留守のあいだの水やりも承ります', link: '/service/kusakari/' },
     ],
   },
   {
@@ -38,23 +36,21 @@ const groups: Group[] = [
   {
     id: 'cleaning',
     title: '清掃・洗浄',
-    note: '高圧洗浄、側溝の泥上げなど',
+    note: '家の外まわり、駐車場、汚水枡の洗浄',
     services: [
       { title: '高圧洗浄', price: '15,000円〜', desc: '家の外まわり、駐車場の洗浄', popular: true , link: '/service/senjo/' },
       { title: 'カーポート洗浄', price: '12,000円〜', desc: '屋根や柱の汚れ落とし', popular: true, link: '/service/senjo/' },
       { title: '出張洗車', price: '8,000円〜', desc: '手洗いと車内の清掃', link: '/service/senjo/' },
-      { title: '側溝の掃除・泥上げ', price: '10,000円〜', desc: '詰まりを解消します', link: '/service/senjo/' },
       { title: '汚水枡の洗浄', price: '6,000円〜', desc: '家庭用・小型店舗用' , link: '/service/senjo/' },
     ],
   },
   {
     id: 'other',
     title: 'その他の代行',
-    note: '物置の設置、買い物やお墓参りの代行',
+    note: '物置の設置・解体、買い物の代行',
     services: [
       { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true , link: '/service/monooki/' },
       { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも' },
-      { title: 'お墓参り代行', price: '7,000円〜', desc: '清掃と献花を含みます' },
     ],
   },
 ];
