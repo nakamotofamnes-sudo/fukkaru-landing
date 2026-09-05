@@ -35,6 +35,140 @@
 
       gtag('config', 'G-Z092NPG2MW');
     </script>
+    <!-- 機械に読ませるための会社情報（2026-09-05）。
+         トップページの本文はJavaScriptで描いているので、
+         JSを動かさない相手（AIの検索・要約）にはほとんど何も見えていなかった。
+         ここだけは生のHTMLに置く。番地は自宅なので市までにとどめる。 -->
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HomeAndConstructionBusiness",
+  "@id": "https://fukkaru.creo-sumai.jp/#business",
+  "name": "フッ軽合同会社",
+  "alternateName": [
+    "フッ軽",
+    "ふっかる",
+    "便利屋フッ軽"
+  ],
+  "description": "静岡県富士市の便利屋。草むしり・草刈り、家具の組み立て・解体・再組立、物置の設置・解体・移設、高圧洗浄、不用品の運搬と買取などに対応します。代表がひとりでうかがいます。",
+  "url": "https://fukkaru.creo-sumai.jp/",
+  "telephone": "+81-545-78-3704",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "富士市",
+    "addressRegion": "静岡県",
+    "addressCountry": "JP"
+  },
+  "areaServed": [
+    {
+      "@type": "AdministrativeArea",
+      "name": "静岡県"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "山梨県"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "神奈川県海老名市以西"
+    }
+  ],
+  "priceRange": "5,000円〜",
+  "currenciesAccepted": "JPY",
+  "paymentAccepted": "現金, クレジットカード, PayPay",
+  "founder": {
+    "@type": "Person",
+    "name": "中元 晋平"
+  },
+  "sameAs": [
+    "https://www.instagram.com/fukkaru.fuji.benriya/",
+    "https://www.threads.com/@fukkaru.fuji.benriya"
+  ],
+  "hasCredential": [
+    "古物商許可",
+    "貨物軽自動車運送事業の届出"
+  ],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "できることと料金",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "家具の組み立て・解体・再組立"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 8000
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "物置の設置・解体・移設"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 15000
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "草むしり（手作業）"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 8000
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "草刈り"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 10000
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "不用品の運搬・買取"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 5000
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "高圧洗浄"
+        },
+        "priceSpecification": {
+          "@type": "PriceSpecification",
+          "priceCurrency": "JPY",
+          "minPrice": 6000
+        }
+      }
+    ]
+  }
+}
+    </script>
+
 </head>
 <body class="bg-canvas text-ink-700 antialiased font-sans overflow-x-hidden">
     <div id="root" class="overflow-x-hidden w-full m-0 p-0"></div>
