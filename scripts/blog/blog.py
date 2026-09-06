@@ -47,8 +47,12 @@ LOGF = STATE_BASE / "_ログ.txt"
 KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GH_PAT = os.environ.get("GH_PAT", "").strip()
 GH_OWNER, GH_REPO = "nakamotofamnes-sudo", "fukkaru-landing"
+# 2026-09-07 に実測したところ、**先頭の2つは404でした**。
+# gemini-3-pro-preview も gemini-2.5-pro も、この鍵では使えません。
+# つまり毎日、失敗する呼び出しを2回してから gemini-2.5-flash に落ちていました。
+# 記事を書いていたのは、ずっと flash のほうです。
 TEXT_MODELS = [os.environ.get("GEMINI_TEXT_MODEL", ""),
-               "gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash"]
+               "gemini-2.5-flash", "gemini-flash-latest"]
 MODE = (os.environ.get("FUKKARU_BLOG_MODE") or "on").strip()
 # 5分おきの巡回から呼ばれるので、1日1本だけ書くように自分で歯止めをかける
 HOUR = int(os.environ.get("FUKKARU_BLOG_HOUR") or 10)
@@ -135,20 +139,55 @@ def gen_text(prompt: str) -> str:
     """Gemini でテキストを作る。モデルが使えなければ次の候補を試す。"""
     body = {"contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.9, "maxOutputTokens": 24576}}
+    # 「考える」ぶんも同じ枠から出ていく（2026-09-05 に投稿案で分かったこと）。
+    # 実測（gemini-2.5-flash・本番のプロンプト）:
+    #   制限なし   合計 8,429 ／ 本文 4,166字
+    #   2048まで   合計 6,771 ／ 本文 4,347字  ← 短くならない。むしろ長い
+    #   1024まで   合計 5,492 ／ 本文 3,865字  ← ここまで削ると本文が痩せる
+    # **記事の中身は削らない。**考えるぶんだけ 2048 に抑える。
+    THINK = {"thinkingBudget": 2048}
     last = ""
     for model in TEXT_MODELS:
         if not model:
             continue
         url = ("https://generativelanguage.googleapis.com/v1beta/models/"
                f"{model}:generateContent")
-        req = urllib.request.Request(
-            url, data=json.dumps(body).encode("utf-8"),
-            headers={"x-goog-api-key": KEY, "Content-Type": "application/json"},
-            method="POST")
+        payload = None
+        # 1回目はこの指定つき。知らないモデルは400を返すので、そのときは指定なしで。
+        for think in (THINK, None):
+            cfg = dict(body["generationConfig"])
+            if think:
+                cfg["thinkingConfig"] = think
+            req = urllib.request.Request(
+                url, data=json.dumps({**body, "generationConfig": cfg}).encode("utf-8"),
+                headers={"x-goog-api-key": KEY, "Content-Type": "application/json"},
+                method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    payload = json.loads(r.read().decode("utf-8"))
+                break
+            except urllib.error.HTTPError as e:
+                detail = e.read().decode("utf-8", "replace")[:200]
+                if e.code == 400 and think:
+                    continue
+                last = f"{model} -> {e.code}: {detail}"
+                payload = None
+                break
+            except Exception as e:
+                last = f"{model} -> {e}"
+                payload = None
+                break
+        if payload is None:
+            continue
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
-                payload = json.loads(r.read().decode("utf-8"))
-            parts = payload["candidates"][0]["content"]["parts"]
+            cand = payload["candidates"][0]
+            # 途中で切れた答えは受け取らない。切れたJSONは必ず後で壊れる
+            if cand.get("finishReason") == "MAX_TOKENS":
+                u = payload.get("usageMetadata", {})
+                last = (f"{model} -> 枠に収まらず途中で切れました"
+                        f"（考えたぶん {u.get('thoughtsTokenCount')}）")
+                continue
+            parts = cand["content"]["parts"]
             text = "".join(p.get("text", "") for p in parts).strip()
             if text:
                 return text
