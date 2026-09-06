@@ -134,7 +134,31 @@ function jsonLd(article) {
     publisher: { '@type': 'Organization', name: SITE_NAME },
     mainEntityOfPage: articleUrl(article.slug),
   };
-  return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+  const out = [data];
+
+  // よくある質問を、機械にも「質問と答え」として渡す（2026-09-07）。
+  // **文章はもう記事の中にある。**足りなかったのは、それが Q&A だという印だけ。
+  // AI の回答や検索の Q&A 欄は、この印があるものから拾う。
+  // 作る側のトークンは1つも使わない。組み立てるときに足すだけ。
+  const faqs = (article.blocks || [])
+    .filter((b) => b && b.type === 'faq')
+    .flatMap((b) => b.items || [])
+    .filter((x) => x && x.q && x.a);
+  if (faqs.length) {
+    out.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((x) => ({
+        '@type': 'Question',
+        name: String(x.q),
+        acceptedAnswer: { '@type': 'Answer', text: String(x.a) },
+      })),
+    });
+  }
+
+  return out
+    .map((d) => `<script type="application/ld+json">${JSON.stringify(d)}</script>`)
+    .join('\n');
 }
 
 const PAGE_CSS = `
