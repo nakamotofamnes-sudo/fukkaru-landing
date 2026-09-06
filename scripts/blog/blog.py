@@ -51,8 +51,13 @@ GH_OWNER, GH_REPO = "nakamotofamnes-sudo", "fukkaru-landing"
 # gemini-3-pro-preview も gemini-2.5-pro も、この鍵では使えません。
 # つまり毎日、失敗する呼び出しを2回してから gemini-2.5-flash に落ちていました。
 # 記事を書いていたのは、ずっと flash のほうです。
+# 2026-09-07、同じプロンプトで測り比べた（草刈り／富士市）:
+#   gemini-2.5-flash       合計 11,110 ／ 本文 5,118字 ／ 27かたまり
+#   gemini-2.5-flash-lite  合計  7,799 ／ 本文 5,580字 ／ 27かたまり ← 安いのに長い
+#   gemini-3.1-flash-lite  合計  3,520 ／ 本文 1,876字 ／ 15かたまり ← 痩せすぎ
+# lite は1トークンあたりの値段も flash より安い。中身も読んで確かめた。
 TEXT_MODELS = [os.environ.get("GEMINI_TEXT_MODEL", ""),
-               "gemini-2.5-flash", "gemini-flash-latest"]
+               "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-flash-latest"]
 MODE = (os.environ.get("FUKKARU_BLOG_MODE") or "on").strip()
 # 5分おきの巡回から呼ばれるので、1日1本だけ書くように自分で歯止めをかける
 HOUR = int(os.environ.get("FUKKARU_BLOG_HOUR") or 10)
