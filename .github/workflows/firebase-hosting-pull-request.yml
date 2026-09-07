@@ -23,3 +23,9 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FUKKARU_APP }}
           projectId: fukkaru-app
+          # 仮ページの寿命。**これが無いと7日間残り、上限50本にぶつかる。**
+          # 2026-09-07に実際に詰まった：51本（本番1＋仮50）で
+          # 「RESOURCE_EXHAUSTED」。8回続けて赤い×が出ていた。
+          # 本番に出す側は無事だったが、**赤い×が並ぶと本当の失敗に気づけない。**
+          # ブログが毎日PRを作るので、1日で消えるようにしておく。
+          expires: 1d
