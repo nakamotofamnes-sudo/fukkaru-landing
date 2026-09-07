@@ -125,6 +125,16 @@ RULES = """
    廃棄物の収集運搬・古物の買取など許認可が要る話題では、
    「許可のある業者かを確認しましょう」と読者に案内するにとどめ、
    自社がその許可を持っているとも持っていないとも書かない。
+2-3. **ごみの話が出てこない記事には、ごみの断り書きを書かない。**（2026-09-07）
+   上の 2-2 は「ごみを処分すると書くな」という決まりであって、
+   「毎回ごみの説明を入れろ」ではありません。
+   草刈り・高圧洗浄・家具の組み立てのように、**ごみが話に出てこない記事に
+   一般廃棄物の許可の説明を入れると、読む人は自分の用件と関係のない
+   断り書きを読まされ、相談をやめてしまいます。**
+   実際に高圧洗浄の記事で起きました。
+   書いてよいのは、**その記事で実際に出てきたもの**についてだけです。
+   （例：家具の組み立てで出た梱包材 →「運び出しはします。
+   　ごみとしてのお預かりはできないので、市の出し方をご案内します」）
 3. お客様の氏名・電話・番地は書かない。地域は市区町村まで。
 4. 「です・ます」で、はじめての人が読んで分かる言葉で書く。
 5. 宣伝一色にしない。読んだ人が1つ得をする実用的な知識を必ず入れる。
@@ -542,6 +552,30 @@ def title_clash(title: str, done: list[dict]) -> tuple[float, str] | None:
     return worst
 
 
+
+# ごみの断り書きが、関係のない記事にも入ってしまう（2026-09-07 に実際に起きた）。
+# 指示書に「書くな」と足しても効かなかったので、**出来上がりから落とす。**
+# 落とすのは「ごみの許可の説明だけで出来ている note」1つ。
+# ごみが話に出てくる仕事（不用品の運搬・お片付け）では落とさない。
+GOMI_CATEGORIES = ("不用品", "運搬", "片付", "買取", "掃除")
+GOMI_MARKS = ("一般廃棄物", "収集運搬業の許可")
+
+
+def drop_stray_license_note(art: dict) -> int:
+    cat = str(art.get("category", ""))
+    if any(k in cat for k in GOMI_CATEGORIES):
+        return 0
+    keep, dropped = [], 0
+    for b in art.get("blocks", []):
+        if (isinstance(b, dict) and b.get("type") == "note"
+                and sum(m in str(b.get("text", "")) for m in GOMI_MARKS) >= 2):
+            dropped += 1
+            continue
+        keep.append(b)
+    if dropped:
+        art["blocks"] = keep
+    return dropped
+
 def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[str]:
     """出せる形になっているか調べる。戻り値は問題点の一覧（空なら合格）。"""
     ng = []
@@ -819,6 +853,9 @@ def main() -> int:
     except Exception as e:
         log("  ・トップ画像は作れませんでした（記事はそのまま出します）: %s" % e)
     dest = ARTICLES / ("%s.json" % art["slug"])
+    n = drop_stray_license_note(art)
+    if n:
+        log("  ・この仕事に関係のない、ごみの許可の断り書きを%d個外しました" % n)
     dest.write_text(json.dumps(art, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8")
     log("  ・書きました：%s（%s）" % (dest.name, art["title"]))
