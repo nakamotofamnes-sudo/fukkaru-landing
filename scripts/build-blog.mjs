@@ -109,7 +109,7 @@ function renderCta(block) {
     <p class="cta-sub">${inline(sub)}</p>
     <div class="cta-buttons">
       <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">公式LINEで相談する（登録＋成約で最大3,000円割引）</a>
-      <a class="btn btn-outline" href="/#reservation">Web予約フォームへ</a>
+      <a class="btn btn-outline" href="/service/">料金とサービス一覧を見る</a>
     </div>
   </div>`;
 }
