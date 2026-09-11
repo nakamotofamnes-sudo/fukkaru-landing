@@ -246,7 +246,7 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 
 /* メモ */
 .note{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:18px 20px;margin:0 0 26px}
-.note strong{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}
+.note>strong,.note>b{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}.note p strong,.note p b{color:var(--ink-900);font-weight:700}
 .note p{margin:0;font-size:14.5px;color:var(--ink-600)}
 
 /* よくある質問 */
