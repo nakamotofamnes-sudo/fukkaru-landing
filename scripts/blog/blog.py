@@ -523,8 +523,33 @@ VOICE = """
 **見出しは h3 ブロック。箇条書きは ul か ol ブロック。**
 p の中に「**太字だけの行**」や「・」「*」「1.」で始まる行があったら、それは作り直しになります。
 
-**h2 の下には h3 を2〜3本**置いてください。大見出しだけで進めると、
-どこに何が書いてあるか分からなくなります。
+**刻みの数（2026-09-12、よく読まれているブログ6記事を実際に測って決めました）**
+
+・**h3 は h2 の2倍以上**置いてください。h2 が5本なら h3 は10本以上です。
+  （測ったブログは h2が4本・h3が13本で**3.3倍**。フッ軽はいま0.8倍で、逆でした）
+・**箇条書き（ul か ol）のブロックを4つ以上。**
+  h2ひとつにつき1つは箇条書きを置く、と考えてください
+  （2026-09-12に試したら2個でした。フッ軽はいま平均3.2個）
+・**段落14個のうち、5個以上は60字以内にしてください。**
+  （2026-09-12に試したら**0個**でした。数だけ言っても足りなかったので、
+   段落の数に紐づけて書き直しています）
+  例：「結論から言うと、8,000円からです。」「ここが、いちばん多い失敗です。」
+  （測ったブログは段落の**中央値46字・60字未満が58%**。フッ軽は7%でした）
+  長い段落ばかりだと、読む人は途中でやめます。**短い段落がリズムを作ります。**
+
+**文体（同じく測って分かったこと）**
+
+・**事実は言い切る。**料金・対応エリア・許認可は「〜です」。
+  「〜だと思います」で濁さない
+・**見立てや助言は「〜だと思います」と書く。**事実と分けるためです
+・「**〜は、次のとおりです。**」で受けて、箇条書きや表に渡す形は使ってよい
+
+**やらないこと**
+
+・「**こんにちは、◯◯です**」の自己紹介から始めない
+  （2026-09-07、実在しない代表名で投稿した事故があります）
+・「**僕**」は使わない。フッ軽のHPは「です・ます」です
+・SNSの投稿を貼ったような型は使わない
 
 **なぜここを厚くしているか（2026-09-10、実測）**
 これまでの作り直し5回のうち**3回が「短すぎ」**でした。出てきたのは
@@ -588,7 +613,8 @@ def build_prompt(done: list[dict], service: str, area: str,
   "blocks": [
     {{"type": "lead", "text": "導入。**下の『冒頭の型』のとおりに書く。**150〜250字"}},
     {{"type": "h2", "id": "英数字のid", "text": "見出し"}},
-    {{"type": "p", "text": "本文の段落"}},
+    {{"type": "p", "text": "本文の段落。60〜300字"}},
+    {{"type": "p", "text": "**短い段落。60字以内。これを5個以上入れてください。**"}},
     {{"type": "h3", "text": "小見出し"}},
     {{"type": "ul", "items": ["箇条書き。**強調**が使えます"]}},
     {{"type": "ol", "items": ["手順の箇条書き"]}},
@@ -760,6 +786,182 @@ def drop_stray_license_note(art: dict) -> int:
         art["blocks"] = keep
     return dropped
 
+# ── 段落を自動で整える（2026-09-12）──
+#
+# **弾くのをやめて、直すことにしました。**
+# 2026-09-12、段落の設計を弁で弾くようにしたら、**4回試して1本も出せませんでした。**
+# AIは「p の中に箇条書きを書かない」と言っても、何度でも同じことをします。
+# **言っても直らないものは、こちらで直す。**作り直しは1本7,167トークンかかります。
+#
+# やること2つ（**文字は1文字も足さない・消さない**）：
+#   ① p の中の「太字だけの行」を h3 に、「・」「*」「1.」の行を ul に分ける
+#   ② それでも400字を超える p を「。」の切れ目で300字くらいに分ける
+#
+# 下の check() の弁は、**これで直しきれなかったときのための最後の網**です。
+# **判定はここ1か所だけ。**直す側（seikei）と弾く側（check）で必ず同じ答えになるように。
+# 2026-09-12、判定が2か所にあってずれていたため、
+# **直せないものを弾き続けて、4回試して1本も出せませんでした。**
+_MIDASHI_GYOU = re.compile(r"^\s*\*\*[^*\n]+\*\*\s*[:：]?\s*$", re.M)
+_KAJO_GYOU = re.compile(r"^\s*(?:[・●○]|[\*\-]\s|\d+[\.．]\s)", re.M)
+
+
+def p_kuzure(t: str) -> bool:
+    """段落の中に、見出しや箇条書きが混ざっているか"""
+    return bool(_MIDASHI_GYOU.search(t) or _KAJO_GYOU.search(t))
+
+
+_H3 = re.compile(r"^\s*(?:\d+[\.．]\s*)?\*\*(.+?)\*\*\s*[:：]?\s*(.*)$")
+_LI = re.compile(r"^\s*[\*\-・●○]\s*(.+)$")
+_NUM = re.compile(r"^\s*\d+[\.．]\s*(.+)$")
+P_TARGET = 300
+
+
+def _wake_p(text: str) -> list:
+    """1つの段落を、見出し・箇条書き・段落に分ける"""
+    out, buf, li = [], [], []
+
+    def flush_p():
+        if buf:
+            t = "\n".join(buf).strip()
+            if t:
+                out.append({"type": "p", "text": t})
+            buf.clear()
+
+    def flush_li():
+        if li:
+            out.append({"type": "ul", "items": list(li)})
+            li.clear()
+
+    for line in text.split("\n"):
+        s = line.strip()
+        if not s:
+            continue
+        m = _H3.match(s)
+        if m and len(m.group(1)) <= 40:
+            flush_li(); flush_p()
+            out.append({"type": "h3", "text": m.group(1).strip()})
+            if m.group(2).strip():
+                buf.append(m.group(2).strip())
+            continue
+        m = _LI.match(s)
+        if m:
+            flush_p(); li.append(m.group(1).strip()); continue
+        m = _NUM.match(s)
+        if m:
+            flush_li(); flush_p(); buf.append(m.group(1).strip()); continue
+        flush_li(); buf.append(s)
+    flush_li(); flush_p()
+    return out
+
+
+def _wake_nagai(t: str) -> list:
+    """長すぎる段落を「。」の切れ目で分ける"""
+    if len(t) <= 400:
+        return [t]
+    bun = re.findall(r"[^。]*。|[^。]+$", t)
+    out, ima = [], ""
+    for b in bun:
+        if ima and len(ima) + len(b) > P_TARGET:
+            out.append(ima); ima = b
+        else:
+            ima += b
+    if ima:
+        out.append(ima)
+    return [x for x in out if x.strip()]
+
+
+# ── AIが書いたHTMLのタグを、記事の書き方に直す（2026-09-12）──
+#
+# **これは読者に見えていました。**
+# AIが `<b>強調</b>` や `<br>` を本文に書き、ページでは安全のため
+# **文字として「<b>」がそのまま表示されていました。**
+# 実測：4ページ・50個。いちばん多いページで**読者に15か所見えていた。**
+#
+#   <b>…</b> / <strong>…</strong> → **…**（記事の書き方の強調）
+#   <br> / <br/>                  → 改行（いまは改行として表示されます）
+#   <li>…</li> / <ul></ul>        → 行に分ける（箇条書きは ul ブロックへ）
+#
+# **弾きません。直します。**（言っても書いてしまうので）
+_TAG_B = re.compile(r"</?(?:b|strong)\s*/?>", re.I)
+_TAG_BR = re.compile(r"<br\s*/?>", re.I)
+_TAG_LI = re.compile(r"</li>\s*<li>", re.I)
+_TAG_ETC = re.compile(r"</?(?:ul|ol|li|p|div|span|em|i)\s*/?>", re.I)
+
+
+def tag_naosu(t: str) -> str:
+    """本文に書かれたHTMLのタグを、記事の書き方に直す"""
+    if "<" not in t:
+        return t
+    # <b>x</b> → **x**（開きと閉じが揃っているものだけ）
+    t = re.sub(r"<(?:b|strong)\s*>(.+?)</(?:b|strong)\s*>", r"**\1**", t, flags=re.I | re.S)
+    t = _TAG_B.sub("", t)              # 揃っていない残りは落とす
+    t = _TAG_BR.sub("\n", t)
+    t = _TAG_LI.sub("\n", t)
+    t = _TAG_ETC.sub("", t)
+    return t
+
+
+def seikei(art: dict) -> int:
+    """記事の段落を整える。直した数を返す。**文字は変えない**"""
+    blocks = art.get("blocks")
+    if not isinstance(blocks, list):
+        return 0
+    naoshita, atarashii = 0, []
+
+    # **まずタグを直す。**そのあとで段落を分ける（<br> が改行になってから分けたい）
+    for b in blocks:
+        if not isinstance(b, dict):
+            continue
+        for k in ("text", "title"):
+            if isinstance(b.get(k), str):
+                naoshi = tag_naosu(b[k])
+                if naoshi != b[k]:
+                    b[k] = naoshi; naoshita += 1
+        if isinstance(b.get("items"), list):
+            # **箇条書きの中も数える。**数えないと「直していない」ことになり、
+            # 書き込みが飛ばされます（2026-09-12、実際にそうなりました）
+            mae = list(b["items"])
+            b["items"] = [tag_naosu(x) if isinstance(x, str) else x for x in b["items"]]
+            if b["items"] != mae:
+                naoshita += 1
+
+    for b in blocks:
+        # ── ① 空行で区切られたものを、別の段落に分ける（2026-09-12）──
+        #
+        # **ここがいちばん効きました。**
+        # AIは短い文を空行で区切って書いていたのに、
+        # **ページに変換するとき改行が消えて、1つの塊になっていました**
+        # （build-blog.mjs の inline() は改行を <br> にしません）。
+        # 実測：6ページ・14段落で、**40行が1つの塊に潰れていました。**
+        #
+        # lead は最初の1つだけ lead のまま。残りは p にします。
+        if isinstance(b, dict) and b.get("type") in ("p", "lead"):
+            kire = [x.strip() for x in re.split(r"\n\s*\n", str(b.get("text", "")))]
+            kire = [x for x in kire if x]
+            if len(kire) > 1:
+                for i, x in enumerate(kire):
+                    atarashii.append({"type": b["type"] if i == 0 else "p", "text": x})
+                naoshita += 1
+                continue
+        if not isinstance(b, dict) or b.get("type") != "p":
+            atarashii.append(b); continue
+        t = str(b.get("text", ""))
+        # ① 見出しや箇条書きが混ざっているか（判定は p_kuzure ひとつ）
+        if p_kuzure(t):
+            w = _wake_p(t)
+            if len(w) > 1:
+                atarashii += w; naoshita += 1; continue
+        # ② 長すぎるか
+        w = _wake_nagai(t)
+        if len(w) > 1:
+            atarashii += [{"type": "p", "text": x.strip()} for x in w]
+            naoshita += 1; continue
+        atarashii.append(b)
+    if naoshita:
+        art["blocks"] = atarashii
+    return naoshita
+
+
 def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[str]:
     """出せる形になっているか調べる。戻り値は問題点の一覧（空なら合格）。"""
     ng = []
@@ -797,14 +999,12 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
         if len(t) > P_MAX:
             ng.append("%d番目の段落が長すぎます（%d字／%d字まで）。"
                       "そこで段落を分けてください" % (i + 1, len(t), P_MAX))
-        if (re.search(r"^\s*[・●○]", t, re.M)
-                or re.search(r"^\s*[\*\-]\s", t, re.M)
-                or re.search(r"^\s*\d+[\.．]\s", t, re.M)):
-            ng.append("%d番目の段落の中に箇条書きが入っています。"
-                      "**ul か ol のブロックに分けてください**" % (i + 1))
-        if re.search(r"^\s*\*\*[^*\n]+\*\*\s*[:：]?\s*$", t, re.M):
-            ng.append("%d番目の段落の中に「太字だけの行」があります。"
-                      "**それは見出しなので h3 のブロックに分けてください**" % (i + 1))
+        # **ここは最後の網です。**ふつうは seikei() が先に直すので、鳴りません。
+        # 鳴ったら「自動で直しきれなかった」という意味なので、そのときは直し方を見直す
+        if p_kuzure(t):
+            ng.append("%d番目の段落の中に、見出しか箇条書きが混ざっています。"
+                      "**見出しは h3、箇条書きは ul か ol のブロックに分けてください**"
+                      % (i + 1))
 
     # ── 他社・比較サイトの名前を弾く（2026-09-11、中元さんの判断）──
     # **指示に書くだけでは守らないことがあるので、出来上がりを見て弾きます。**
@@ -823,7 +1023,12 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     unknown = types - BLOCK_TYPES
     if unknown:
         ng.append("使えない種類のブロックがあります：%s" % ", ".join(sorted(map(str, unknown))))
-    for need in ("lead", "h2", "p", "cta"):
+    # h3 と ul を足した（2026-09-12）。
+    # **実測：いまの記事27本のうち6本が、h3 か ul のどちらかを持っていない。**
+    # （「26本が持っている」と書きかけたが、数えたら違った。**数えてから書くこと**）
+    # 6本なので、作り直しが増えるのは 6/27 の見込み。
+    # **箇条書きも小見出しも無い記事は、文字の壁になる**ので、そこは受け入れる
+    for need in ("lead", "h2", "h3", "p", "ul", "cta"):
         if need not in types:
             ng.append("%s ブロックがありません" % need)
     for b in blocks:
@@ -1049,6 +1254,10 @@ def main() -> int:
             log("  ・%d回目：作れませんでした（%s）" % (attempt, e))
             last_ng = ["JSONの形が壊れていました。指定した形のJSONだけを返すこと（説明文や```は付けない）"]
             continue
+        # **弾く前に、直せるものは直す**（2026-09-12）
+        naoshita = seikei(art)
+        if naoshita:
+            log("  ・段落 %d個を、見出しと箇条書きに分けました（自動）" % naoshita)
         ng = check(art, done, attempt, ATTEMPTS)
         if not ng:
             break
