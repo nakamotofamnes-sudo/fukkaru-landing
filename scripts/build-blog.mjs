@@ -30,6 +30,20 @@ function inline(s) {
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
+/** 段落の中の改行を、そのまま改行として見せる（2026-09-12）
+ *
+ * **ここが効いていませんでした。**
+ * 記事を書くAIは短い文を改行で区切って書いていたのに、
+ * **inline() が改行を落とすので、ページでは1つの塊になっていました。**
+ * 実測：9段落（4ページ）が、改行を失って読みにくい塊になっていた。
+ *
+ * 段落・リード・箇条書きの中だけに使います。
+ * （見出しや表の中で改行することはないので、そこには使いません）
+ */
+function inlineBr(s) {
+  return inline(s).replace(/\n/g, '<br>');
+}
+
 /** 目次（2026-09-12）
  *
  * **記事34本すべてに目次が無かった。**
@@ -64,17 +78,17 @@ function renderBlock(block) {
   if (block.type === 'steps') return renderSteps(block);
   switch (block.type) {
     case 'lead':
-      return `<p class="lead">${inline(block.text)}</p>`;
+      return `<p class="lead">${inlineBr(block.text)}</p>`;
     case 'h2':
       return `<h2 id="${esc(block.id || '')}">${inline(block.text)}</h2>`;
     case 'h3':
       return `<h3>${inline(block.text)}</h3>`;
     case 'p':
-      return `<p>${inline(block.text)}</p>`;
+      return `<p>${inlineBr(block.text)}</p>`;
     case 'ul':
-      return `<ul>${block.items.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`;
+      return `<ul>${block.items.map((i) => `<li>${inlineBr(i)}</li>`).join('')}</ul>`;
     case 'ol':
-      return `<ol>${block.items.map((i) => `<li>${inline(i)}</li>`).join('')}</ol>`;
+      return `<ol>${block.items.map((i) => `<li>${inlineBr(i)}</li>`).join('')}</ol>`;
     case 'table': {
       const head = `<tr>${block.headers.map((h) => `<th>${inline(h)}</th>`).join('')}</tr>`;
       const rows = block.rows

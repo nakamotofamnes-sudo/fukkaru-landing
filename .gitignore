@@ -68,3 +68,7 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 dist/
+
+# Python の中間ファイル（2026-09-12。1つ git に入っていたので外した）
+__pycache__/
+*.pyc

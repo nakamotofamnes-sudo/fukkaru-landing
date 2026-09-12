@@ -854,20 +854,9 @@ def _wake_p(text: str) -> list:
     return out
 
 
-def _wake_nagai(t: str) -> list:
-    """長すぎる段落を「。」の切れ目で分ける"""
-    if len(t) <= 400:
-        return [t]
-    bun = re.findall(r"[^。]*。|[^。]+$", t)
-    out, ima = [], ""
-    for b in bun:
-        if ima and len(ima) + len(b) > P_TARGET:
-            out.append(ima); ima = b
-        else:
-            ima += b
-    if ima:
-        out.append(ima)
-    return [x for x in out if x.strip()]
+# _wake_nagai（400字超だけ分ける道具）は消しました（2026-09-12）。
+# _wake_rizumu が長さもリズムも見るので、**分ける係を2つ持たない。**
+# 2か所に判定があってずれたせいで、直せないものを弾き続けたことがあります。
 
 
 # ── AIが書いたHTMLのタグを、記事の書き方に直す（2026-09-12）──
@@ -886,6 +875,41 @@ _TAG_B = re.compile(r"</?(?:b|strong)\s*/?>", re.I)
 _TAG_BR = re.compile(r"<br\s*/?>", re.I)
 _TAG_LI = re.compile(r"</li>\s*<li>", re.I)
 _TAG_ETC = re.compile(r"</?(?:ul|ol|li|p|div|span|em|i)\s*/?>", re.I)
+
+
+# ── 段落のリズム（2026-09-12 夜）──
+#
+# **中元さん：「今サイト見た感じ変わっているようには感じませんでした」。そのとおりだった。**
+# 設計の直し（9/12 13時）で段落は 301字 → 195字 になったが、
+# **60字未満の段落は 0% のままだった。**参考にしたブログ（manablog）は 58%。
+# **短い段落が混ざっていないので、見た目が変わらない。**
+#
+# 指示には「段落14個のうち5個以上は60字以内に」と**既に書いてあった。**
+# それでも 0% だった。**言っても書かないので、こちらで分ける。**
+#   実測（16時の記事で試した）：上限80字で分けると
+#   平均63・中央59・60字未満51% → 参考の 61・46・58% とほぼ同じ
+P_RIZUMU = int(os.environ.get("FUKKARU_P_RIZUMU", "80"))   # 1段落の上限（目安）
+P_RIZUMU_MIN = 30        # これより短い切れ端は、前にくっつける（ぶつ切りを避ける）
+
+
+def _wake_rizumu(t: str) -> list:
+    """段落を「。」の切れ目で分ける。**文字は変えない。文の途中では切らない**"""
+    if len(t) <= P_RIZUMU:
+        return [t]
+    bun = re.findall(r"[^。]*。|[^。]+$", t)
+    out, ima = [], ""
+    for b in bun:
+        if ima and len(ima) + len(b) > P_RIZUMU:
+            out.append(ima)
+            ima = b
+        else:
+            ima += b
+    if ima:
+        if out and len(ima) < P_RIZUMU_MIN:
+            out[-1] += ima          # 最後が短すぎるなら前に足す
+        else:
+            out.append(ima)
+    return [x for x in out if x.strip()]
 
 
 def tag_naosu(t: str) -> str:
@@ -951,8 +975,8 @@ def seikei(art: dict) -> int:
             w = _wake_p(t)
             if len(w) > 1:
                 atarashii += w; naoshita += 1; continue
-        # ② 長すぎるか
-        w = _wake_nagai(t)
+        # ② 長さとリズム。**短い段落を混ぜる**（言っても書かないので、ここで分ける）
+        w = _wake_rizumu(t)
         if len(w) > 1:
             atarashii += [{"type": "p", "text": x.strip()} for x in w]
             naoshita += 1; continue
