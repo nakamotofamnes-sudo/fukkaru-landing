@@ -30,6 +30,34 @@ function inline(s) {
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
+/** 目次（2026-09-12）
+ *
+ * **記事34本すべてに目次が無かった。**
+ * 長い記事で「どこに何が書いてあるか」が分からないままだった。
+ * 参考にしたページ（AtoJ）は「OUTLINE 読みたい項目からご覧いただけます」を置いている。
+ *
+ * **記事側のファイルは直さない。**h2 から自動で作る。
+ * id が無い h2（7個あった）には、順番から作った id を振る。
+ */
+function withIds(blocks) {
+  let n = 0;
+  return blocks.map((b) => {
+    if (b.type !== 'h2') return b;
+    n += 1;
+    return b.id ? b : { ...b, id: `s${n}` };
+  });
+}
+
+function renderToc(blocks) {
+  const h2 = blocks.filter((b) => b.type === 'h2' && b.text);
+  // **3つ未満なら出さない。**2項目の目次は場所を取るだけ
+  if (h2.length < 3) return '';
+  const li = h2
+    .map((b) => `<li><a href="#${esc(b.id)}">${inline(b.text)}</a></li>`)
+    .join('');
+  return `<nav class="toc" aria-label="目次"><b>この記事の内容</b><ol>${li}</ol></nav>`;
+}
+
 function renderBlock(block) {
   if (block.type === 'photo') return renderPhoto(block);
   if (block.type === 'ba') return renderBA(block);
@@ -245,6 +273,12 @@ tr:last-child td{border-bottom:0}
 th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 
 /* メモ */
+.toc{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:16px 20px;margin:0 0 26px}
+.toc>b{display:block;margin-bottom:8px;font-size:13px;color:var(--accent);letter-spacing:.02em}
+.toc ol{margin:0;padding-left:1.3em}
+.toc li{font-size:14.5px;line-height:1.9}
+.toc a{color:var(--ink-700);text-decoration:none;border-bottom:1px solid var(--hairline)}
+.toc a:hover{color:var(--accent)}
 .note{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:18px 20px;margin:0 0 26px}
 .note>strong,.note>b{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}.note p strong,.note p b{color:var(--ink-900);font-weight:700}
 .note p{margin:0;font-size:14.5px;color:var(--ink-600)}
@@ -437,7 +471,13 @@ function renderRelated(article, all) {
 }
 
 function renderArticlePage(article, all = [], pillar = null) {
-  const bodyBlocks = article.blocks.map(renderBlock).join('\n');
+  // 目次は lead の直後（読む前に全体が見える位置）
+  const blocksWithIds = withIds(article.blocks);
+  const toc = renderToc(blocksWithIds);
+  const firstP = blocksWithIds.findIndex((b) => b.type !== 'lead');
+  const bodyBlocks = blocksWithIds
+    .map((b, i) => (i === firstP && toc ? toc + '\n' + renderBlock(b) : renderBlock(b)))
+    .join('\n');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
   const heroBg = article.heroImage
@@ -517,7 +557,12 @@ function renderPillarBody(pillar, all) {
 }
 
 function renderPillarPage(pillar, articles) {
-  const body = pillar.blocks.map(renderBlock).join('\n');
+  const pb = withIds(pillar.blocks);
+  const ptoc = renderToc(pb);
+  const pFirst = pb.findIndex((b) => b.type !== 'lead');
+  const body = pb
+    .map((b, i) => (i === pFirst && ptoc ? ptoc + '\n' + renderBlock(b) : renderBlock(b)))
+    .join('\n');
   const heroBg = pillar.heroImage
     ? `<div class="hero-bg" style="background-image:url('${esc(pillar.heroImage)}')"></div>`
     : '';
