@@ -17,21 +17,21 @@ const reasons = [
     description:
       '富士市・富士宮市を中心に、最短即日で伺います（市外もご相談ください）。「体力的にしんどい」というご要望に、フットワーク軽くお応えします。',
     icon: Truck,
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1773024410/1_drrtxv.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1773024410/1_drrtxv.png',
   },
   {
     title: '説明が丁寧です',
     description:
       '「こんな小さなこと、頼んでいいのかな」という遠慮は要りません。お見積もりと作業内容を分かりやすくご説明し、繰り返しご依頼をいただいています。',
     icon: MessagesSquare,
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1773024411/2_sz9b13.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1773024411/2_sz9b13.png',
   },
   {
     title: 'まとめて片づきます',
     description:
       '家具の移動、不用品の片づけ、草むしりから外構の掃除まで。業者をいくつも探す手間なく、お家まわりの力仕事をまるごと代行します。',
     icon: Home,
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1773024411/3_lwbdcx.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1773024411/3_lwbdcx.png',
   },
 ];
 

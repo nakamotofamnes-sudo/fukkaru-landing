@@ -81,7 +81,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               <div className="mb-5 flex items-center gap-3">
                 <img 
-                  src="https://res.cloudinary.com/dyclm0vti/image/upload/v1772689454/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_le0bo3.png" 
+                  src="https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_128,c_limit/v1772689454/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_le0bo3.png" 
                   alt="フッ軽 ロゴ" 
                   className="h-10 w-10 rounded bg-white object-contain p-1"
                 />
