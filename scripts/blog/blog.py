@@ -837,11 +837,19 @@ def _wake_p(text: str) -> list:
         if not s:
             continue
         m = _H3.match(s)
-        if m and len(m.group(1)) <= 40:
-            flush_li(); flush_p()
-            out.append({"type": "h3", "text": m.group(1).strip()})
-            if m.group(2).strip():
-                buf.append(m.group(2).strip())
+        if m:
+            if len(m.group(1)) <= 40:
+                flush_li(); flush_p()
+                out.append({"type": "h3", "text": m.group(1).strip()})
+                if m.group(2).strip():
+                    buf.append(m.group(2).strip())
+            else:
+                # **40字を超えるものは見出しにしない。**ただし捨てもしない。
+                # 印（**）だけ外して、ふつうの段落にする。
+                # 2026-09-13、ここで何もしなかったせいで
+                # 「直せないものを弾き続ける」が起き、**16時の記事が出なかった**
+                nokori = (m.group(1).strip() + " " + m.group(2).strip()).strip()
+                buf.append(nokori)
             continue
         m = _LI.match(s)
         if m:
@@ -925,6 +933,29 @@ def tag_naosu(t: str) -> str:
     return t
 
 
+def _p_naosu(t: str, katachi: str = "p") -> list:
+    """段落を1つ受け取って、出せる形のブロックに直す
+
+    **弁が弾くものは、ここで必ず直しきる**（CLAUDE.md 17）。
+      ① 見出し・箇条書きが混ざっていたら、外のブロックに出す
+      ② 残った段落は、長さとリズムで分ける（かけらにも必ずかける）
+    """
+    w = _wake_p(t) if p_kuzure(t) else [{"type": "p", "text": t}]
+    out = []
+    for x in w:
+        if x.get("type") == "p":
+            for y in _wake_rizumu(str(x.get("text", ""))):
+                y = y.strip()
+                if y:
+                    out.append({"type": "p", "text": y})
+        else:
+            out.append(x)
+    # 先頭が本文なら、もとの型（lead など）に戻す
+    if katachi != "p" and out and out[0].get("type") == "p":
+        out[0] = {"type": katachi, "text": out[0]["text"]}
+    return out
+
+
 def seikei(art: dict) -> int:
     """記事の段落を整える。直した数を返す。**文字は変えない**"""
     blocks = art.get("blocks")
@@ -950,37 +981,27 @@ def seikei(art: dict) -> int:
                 naoshita += 1
 
     for b in blocks:
-        # ── ① 空行で区切られたものを、別の段落に分ける（2026-09-12）──
+        # ── 段落を整える（2026-09-13 に組み直しました）──
         #
-        # **ここがいちばん効きました。**
-        # AIは短い文を空行で区切って書いていたのに、
-        # **ページに変換するとき改行が消えて、1つの塊になっていました**
-        # （build-blog.mjs の inline() は改行を <br> にしません）。
-        # 実測：6ページ・14段落で、**40行が1つの塊に潰れていました。**
+        # **通り道は1本だけにします。**
+        # それまでは「空行で分けたかけら」が直しを通らずにそのまま並んでいて、
+        # かけらの中に見出しや箇条書きが残ると、弁が弾き続けていました。
+        # 2026-09-13の16時、**4回試して1本も出せず、記事が落ちました。**
         #
-        # lead は最初の1つだけ lead のまま。残りは p にします。
-        if isinstance(b, dict) and b.get("type") in ("p", "lead"):
-            kire = [x.strip() for x in re.split(r"\n\s*\n", str(b.get("text", "")))]
-            kire = [x for x in kire if x]
-            if len(kire) > 1:
-                for i, x in enumerate(kire):
-                    atarashii.append({"type": b["type"] if i == 0 else "p", "text": x})
-                naoshita += 1
-                continue
-        if not isinstance(b, dict) or b.get("type") != "p":
+        #   空行で分ける → 見出し・箇条書きを外に出す → 長さとリズムで分ける
+        #
+        # lead も同じ道を通します（先頭だけ lead のまま）。
+        if not isinstance(b, dict) or b.get("type") not in ("p", "lead"):
             atarashii.append(b); continue
         t = str(b.get("text", ""))
-        # ① 見出しや箇条書きが混ざっているか（判定は p_kuzure ひとつ）
-        if p_kuzure(t):
-            w = _wake_p(t)
-            if len(w) > 1:
-                atarashii += w; naoshita += 1; continue
-        # ② 長さとリズム。**短い段落を混ぜる**（言っても書かないので、ここで分ける）
-        w = _wake_rizumu(t)
-        if len(w) > 1:
-            atarashii += [{"type": "p", "text": x.strip()} for x in w]
-            naoshita += 1; continue
-        atarashii.append(b)
+        kire = [x.strip() for x in re.split(r"\n\s*\n", t) if x.strip()] or [t]
+        dekita = []
+        for i, x in enumerate(kire):
+            dekita += _p_naosu(x, b["type"] if i == 0 else "p")
+        if dekita and dekita != [b]:
+            atarashii += dekita; naoshita += 1
+        else:
+            atarashii.append(b)
     if naoshita:
         art["blocks"] = atarashii
     return naoshita
