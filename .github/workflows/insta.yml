@@ -1,0 +1,59 @@
+name: インスタの最新投稿をHPに入れる（毎日）
+
+# 2026-09-13：Elfsight をやめて自前にした続き。
+# **Macが眠っていても更新されるように**、ここで毎日動かします。
+# 変わっていなければ何もしません（PRも立てません）。
+on:
+  schedule:
+    - cron: '30 11 * * *'   # 毎日 20:30（日本時間）。20時すぎの投稿が出たあと
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BLOG_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 画像の道具を入れる
+        run: pip install --quiet Pillow
+
+      - name: インスタを読む
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          FUKKARU_REPO: ${{ github.workspace }}
+        run: |
+          if [ -z "$IG_TOKEN" ]; then
+            echo "IG_TOKEN がまだ GitHub に入っていません。何もしません"
+            exit 0
+          fi
+          python3 scripts/insta/insta.py
+
+      - name: 変わっていたらPRを出して取り込む
+        env:
+          GH_TOKEN: ${{ secrets.BLOG_PAT }}
+        run: |
+          git config user.name  "フッ軽の自動投稿"
+          git config user.email "nakamoto.famnes@gmail.com"
+          if git diff --quiet && [ -z "$(git status --porcelain public/insta content/insta.json)" ]; then
+            echo "前と同じでした。何もしません"
+            exit 0
+          fi
+          EDA="insta/auto-$(date -u +%Y%m%d-%H%M)"
+          git checkout -b "$EDA"
+          git add public/insta content/insta.json
+          git commit -q -m "インスタの最新投稿を入れる（自動）"
+          git push -q origin "$EDA"
+          gh pr create --base main --head "$EDA" \
+            --title "インスタの最新投稿（自動）" \
+            --body "毎日の自動更新です。写真・日付・リンクだけで、投稿の文面は載せていません。"
+          gh pr merge "$EDA" --squash --delete-branch
