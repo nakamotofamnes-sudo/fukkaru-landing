@@ -171,7 +171,7 @@ const Testimonials: React.FC = () => {
                 日々の作業の様子を載せています
               </h3>
               <p className="mt-2 text-[14px] leading-[1.85] text-ink-500">
-                作業前と作業後、現場でのやり取りを随時更新しています。最新の実績は、インフルエンサーでもある当社のInstagramをご覧ください。
+                作業前と作業後、現場でのやり取りを随時更新しています。最新の実績は当社のInstagramをご覧ください。
               </p>
             </div>
             <a
