@@ -306,7 +306,10 @@ def existing() -> list[dict]:
     return out
 
 
-TARGETS = Path(os.environ.get("FUKKARU_TARGETS") or (HOME / ".fukkaru" / "狙い.txt"))
+# **狙い.txt はリポジトリ側の1か所だけ**（2026-09-13）。
+# Mac側にも写しがあり、153行と196行で中身がずれていました。毎日動くのはリポジトリ側です
+TARGETS = Path(os.environ.get("FUKKARU_TARGETS")
+               or (HOME / "fukkaru-landing" / "scripts" / "blog" / "狙い.txt"))
 
 # **「次にどれを書くか」の位置は、リポジトリの中のものを本物にします。**
 #
