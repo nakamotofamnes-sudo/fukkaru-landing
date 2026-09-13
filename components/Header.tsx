@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           className="flex items-center gap-2.5 shrink-0"
         >
           <img
-            src="https://res.cloudinary.com/dyclm0vti/image/upload/v1772689454/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_le0bo3.png"
+            src="https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_128,c_limit/v1772689454/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_le0bo3.png"
             alt=""
             className="h-8 w-8 object-contain"
           />

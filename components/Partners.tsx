@@ -13,19 +13,19 @@ const partners: Partner[] = [
     name: 'お手伝い屋',
     description: '埼玉の松江で便利屋頼むならここにお問合せ。地域密着で様々なトラブルを解決します。',
     url: 'https://otetsudaiya.jp/',
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1776848412/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-04-22_17.58.52_wj2dfz.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1776848412/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-04-22_17.58.52_wj2dfz.png',
   },
   {
     name: 'K-PLAN',
     description: '塗装工事・リフォーム工事の専門業者。塗装・防水・足場・外構など家屋のメンテナンスはお任せください。経験豊富な有資格者が最適な施工をご提案します。',
     url: 'https://k-plan.top/',
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1780030592/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-05-29_13.56.21_zfr5ov.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1780030592/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-05-29_13.56.21_zfr5ov.png',
   },
   {
     name: '信濃屋',
     description: 'さいたま市を中心に活動する剪定・高所特殊伐採の専門業者。「重機が入らない」「他で断られた」といった難しい伐採やお庭のお悩みを真心こめて解決いたします。',
     url: 'https://shinanoya01.com/',
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1780030526/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-05-28_8.32.01_w5tc5r.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1780030526/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-05-28_8.32.01_w5tc5r.png',
   },
   {
     name: '地域の寄り添い処 つむぎ',
@@ -41,7 +41,7 @@ const partners: Partner[] = [
     name: 'アリサラのうんてい屋さん',
     description: '知育・育脳に基づいた設計で、子供の運動能力や考える力を育むフルオーダーメイドの「知育うんてい」専門店。年間600台以上の制作実績があり、プロ集団がご家庭に合わせた世界に一つだけのうんていを制作します。',
     url: 'https://untei.jp/',
-    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/v1785409389/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-07-30_20.00.56_mkti92.png',
+    imageUrl: 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_800,c_limit/v1785409389/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2026-07-30_20.00.56_mkti92.png',
   },
 ];
 

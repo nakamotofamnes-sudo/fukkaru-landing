@@ -12,15 +12,15 @@ const getOptimizedImageUrl = (url: string) => {
 };
 
 const Hero: React.FC = () => {
-  const bgImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/v1772757439/hi-ro-%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_w3lcfl.png';
-  const womanImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/v1772757439/%E3%83%A2%E3%83%86%E3%82%99%E3%83%AB%E3%83%92%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_cqufdm.png';
+  const bgImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_1920,c_limit/v1772757439/hi-ro-%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_w3lcfl.png';
+  const womanImageUrl = 'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_1100,c_limit/v1772757439/%E3%83%A2%E3%83%86%E3%82%99%E3%83%AB%E3%83%92%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%92%E3%82%99%E3%83%A5%E3%83%BC_cqufdm.png';
 
   return (
     <section className="relative flex min-h-[92svh] items-center overflow-hidden bg-ink-900">
       {/* 流れる背景写真 */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-35">
         <div className="flex h-full w-max animate-slide-bg">
-          <img src={getOptimizedImageUrl(bgImageUrl)} alt="" className="h-full w-auto min-w-[100vw] max-w-none object-cover" />
+          <img src={getOptimizedImageUrl(bgImageUrl)} alt="" fetchPriority="high" className="h-full w-auto min-w-[100vw] max-w-none object-cover" />
           <img src={getOptimizedImageUrl(bgImageUrl)} alt="" className="h-full w-auto min-w-[100vw] max-w-none object-cover" />
         </div>
       </div>
@@ -36,7 +36,7 @@ const Hero: React.FC = () => {
           パソコン（lg以上）は重ならないので、位置も濃さもそのままです。
           実在の従業員ではなくモデルの写真なので、飾りとして扱い alt は空にしています。 */}
       <div className="pointer-events-none absolute bottom-0 right-[-48%] z-20 flex h-[95vh] items-end justify-end opacity-30 sm:right-0 sm:h-[70vh] sm:opacity-40 md:h-[82vh] md:opacity-40 lg:h-[94vh] lg:opacity-100">
-        <img src={getOptimizedImageUrl(womanImageUrl)} alt="" className="h-full w-auto max-w-none object-contain object-bottom" />
+        <img src={getOptimizedImageUrl(womanImageUrl)} alt="" fetchPriority="high" className="h-full w-auto max-w-none object-contain object-bottom" />
       </div>
 
       <div className="shell relative z-30 pt-24 pb-16">

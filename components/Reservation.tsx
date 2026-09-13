@@ -12,7 +12,7 @@ const getOptimizedImageUrl = (url: string) => {
 
 const Reservation: React.FC = () => {
   const reservationImageUrl =
-    'https://res.cloudinary.com/dyclm0vti/image/upload/v1772757436/discover_master_1770688407567_fjecub.jpg';
+    'https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_1600,c_limit/v1772757436/discover_master_1770688407567_fjecub.jpg';
 
   return (
     <section id="reservation" className="section border-t border-hairline">

@@ -21,7 +21,7 @@ const Founder: React.FC = () => {
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
             <img
-              src="https://res.cloudinary.com/dyclm0vti/image/upload/v1782467437/IMG_1176_kcxykw_jkbh6n.webp"
+              src="https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_900,c_limit/v1782467437/IMG_1176_kcxykw_jkbh6n.webp"
               alt="フッ軽合同会社 代表 中元晋平"
               className="aspect-[4/3] w-full rounded border border-hairline object-cover"
               loading="lazy"
