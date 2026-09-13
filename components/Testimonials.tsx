@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import InstagramFeed from './InstagramFeed';
 import { ChevronDown, Instagram, Star } from 'lucide-react';
 
 interface Review {
@@ -184,8 +185,8 @@ const Testimonials: React.FC = () => {
             </a>
           </div>
 
-          <div className="mt-8 min-h-[300px]">
-            <div className="elfsight-app-afdbcbf8-1651-498d-8fc2-09f4c139443b" data-elfsight-app-lazy></div>
+          <div className="mt-8">
+            <InstagramFeed />
           </div>
         </div>
       </div>
