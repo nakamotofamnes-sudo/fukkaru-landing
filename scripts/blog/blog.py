@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 import subprocess
 import sys
 import urllib.error
@@ -933,6 +934,32 @@ def tag_naosu(t: str) -> str:
     return t
 
 
+def slug_naosu(slug: str) -> str:
+    """slug を使える形に直す。**弾かずに直す**（2026-09-13）
+
+    `fuji-kusamushi-tesagyō-ryōkin` の `ō` で1回やり直しになりました。
+    伸ばす記号を落とすだけです（`ō`→`o`）。
+    """
+    t = unicodedata.normalize("NFKD", slug.lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"[^a-z0-9-]+", "-", t)
+    return re.sub(r"-{2,}", "-", t).strip("-")
+
+
+def _shirushi_hazusu(t: str) -> str:
+    """最後の砦。**印（** や ・）だけ外す。言葉は1文字も変えない**
+
+    ここまで来るのは、見出しにも箇条書きにもできなかった形だけです。
+    **弾いて記事を落とすより、印を外して出すほうがましです**（CLAUDE.md 17）。
+    """
+    gyou = []
+    for x in t.split("\n"):
+        y = re.sub(r"^\s*(?:[・●○]|[\*\-]\s|\d+[\.．]\s)\s*", "", x)
+        y = re.sub(r"\*\*(.+?)\*\*", r"\1", y)
+        gyou.append(y)
+    return "\n".join(gyou).strip()
+
+
 def _p_naosu(t: str, katachi: str = "p") -> list:
     """段落を1つ受け取って、出せる形のブロックに直す
 
@@ -943,13 +970,24 @@ def _p_naosu(t: str, katachi: str = "p") -> list:
     w = _wake_p(t) if p_kuzure(t) else [{"type": "p", "text": t}]
     out = []
     for x in w:
-        if x.get("type") == "p":
-            for y in _wake_rizumu(str(x.get("text", ""))):
-                y = y.strip()
-                if y:
-                    out.append({"type": "p", "text": y})
-        else:
-            out.append(x)
+        if x.get("type") != "p":
+            out.append(x); continue
+        for y in _wake_rizumu(str(x.get("text", ""))):
+            y = y.strip()
+            if not y:
+                continue
+            # **分けたあとに、もう一度みる。**
+            # 「…です。**準備するもの**」は1行のままなら弁に掛からないが、
+            # リズムで分けると **準備するもの** が行のあたまに来て、掛かる。
+            # **自分が作った崩れを、自分で直す**（2026-09-13）
+            if p_kuzure(y):
+                out += [z for z in _wake_p(y)] or [{"type": "p", "text": y}]
+            else:
+                out.append({"type": "p", "text": y})
+    # **最後の砦。**それでも残ったら、印だけ外して本文にする（言葉は変えない）
+    for x in out:
+        if x.get("type") == "p" and p_kuzure(str(x.get("text", ""))):
+            x["text"] = _shirushi_hazusu(str(x["text"]))
     # 先頭が本文なら、もとの型（lead など）に戻す
     if katachi != "p" and out and out[0].get("type") == "p":
         out[0] = {"type": katachi, "text": out[0]["text"]}
@@ -962,6 +1000,12 @@ def seikei(art: dict) -> int:
     if not isinstance(blocks, list):
         return 0
     naoshita, atarashii = 0, []
+
+    # slug は弾かずに直す（ō などの伸ばす記号を落とす）
+    if isinstance(art.get("slug"), str):
+        naoshi = slug_naosu(art["slug"])
+        if naoshi and naoshi != art["slug"]:
+            art["slug"] = naoshi; naoshita += 1
 
     # **まずタグを直す。**そのあとで段落を分ける（<br> が改行になってから分けたい）
     for b in blocks:
@@ -1047,6 +1091,14 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
         # **ここは最後の網です。**ふつうは seikei() が先に直すので、鳴りません。
         # 鳴ったら「自動で直しきれなかった」という意味なので、そのときは直し方を見直す
         if p_kuzure(t):
+            # **どの行が引っかかったかを出す。**
+            # 2026-09-13、文面が分からず原因の当てが外れました
+            warui = [x.strip() for x in t.split("\n") if p_kuzure(x)]
+            if warui:
+                ng.append("段落の中に見出しか箇条書きが混ざっています（%d番目・「%s」）。"
+                          "**見出しは h3、箇条書きは ul か ol のブロックに分けてください**"
+                          % (i + 1, warui[0][:30]))
+                continue
             ng.append("%d番目の段落の中に、見出しか箇条書きが混ざっています。"
                       "**見出しは h3、箇条書きは ul か ol のブロックに分けてください**"
                       % (i + 1))
