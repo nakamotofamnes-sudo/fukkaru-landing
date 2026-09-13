@@ -21,6 +21,7 @@ Macが眠っていても更新されます。**この道具はここ1か所だ�
 
 **投稿はしません。読むだけです。**
 """
+import datetime
 import io
 import json
 import os
@@ -165,7 +166,10 @@ def main():
                 print("  片付けました：%s" % f)
 
     data = {
-        "torikomi": time.strftime("%Y-%m-%dT%H:%M:%S+09:00"),
+        # **日本時間で書く。**Actions の時計は世界標準時なので、time.strftime に
+        # 「+09:00」を付けるだけだと9時間ずれた時刻を日本時間と言い張る（2026-09-13 本番で発見）
+        "torikomi": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+                    .strftime("%Y-%m-%dT%H:%M:%S+09:00"),
         "username": "fukkaru.fuji.benriya",
         "toukou": toukou,
     }
