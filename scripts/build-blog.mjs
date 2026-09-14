@@ -648,7 +648,8 @@ function renderPillarBody(pillar, all) {
 }
 
 function renderPillarPage(pillar, articles) {
-  const pb = withIds(pillar.blocks);
+  // 2026-09-15：柱ページだけ相談枠を置く処理を通っていなかった（「引き取りができません」があるのに0か所）
+  const pb = withDekinaiSoudan(withIds(pillar.blocks));
   const ptoc = renderToc(pb);
   const pFirst = pb.findIndex((b) => b.type !== 'lead');
   const body = pb
