@@ -30,7 +30,9 @@ function esc(s) {
 function inline(s) {
   return esc(s)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    // [文字](/service/…) -> サイト内のリンク（2026-09-15。柱ページで記号のまま画面に出ていた）
+    .replace(/\[([^\]]+)\]\((\/[^)\s]*)\)/g, '<a href="$2">$1</a>');
 }
 
 /** 段落の中の改行を、そのまま改行として見せる（2026-09-12）
