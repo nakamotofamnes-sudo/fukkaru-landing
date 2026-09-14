@@ -194,7 +194,7 @@ RULES = """
    「処分します」「引き取って捨てます」「回収します」は書かない。
    「運搬のお手伝い」「買取」「出し方のご案内」と書く。
    **名目を変えた同じ意味の言い方も書かない。**（2026-09-14）
-   「撤去物を引き取って処分」「廃棄します」「片付けて持ち帰ります」「処分のご相談に対応」など。
+   引き取る・捨てる・持ち帰る など、言い方を変えても、自社が処分すると読める書き方は同じです。
    事実に合う範囲で、次のように書く：
    ・古いシートを**剥がす作業**／草を**抜く作業**
    ・お客様が出せる形に**まとめる**
@@ -1214,9 +1214,38 @@ _KYOKA_OK = re.compile(
     r"処分場|処分費|産業廃棄物|一般廃棄物|クリーンセンター|お客様が|回収日|回収施設")
 
 
+# 「処分を請け負う」決まり文句と、自社が回収・引き取りを約束していると読める文。
+# **check() の弁と、seikei() の直しの両方がここを見る（判定は1か所）**（2026-09-14）。
+# 2026-09-14 の dry で、4回目（最後）が「処分いたします」で弾かれ、**その日の記事がゼロ**になりかけた。
+# 弾くのではなく、**その文だけ外す。**記事を落とすより、1文を失うほうがまし。
+KYOKA_KINSHI = ("不用品回収", "粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
+                "ゴミを引き取", "処分いたします", "処分します", "回収いたします")
+_PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
+_EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
+           "自治体", "市の", "指定", "ご案内")
+_OKAY_HIKITORI = ("まだ使える", "買い取り", "買取", "古物商")
+
+
+def kyoka_yakusoku(sent: str) -> str:
+    """自社が回収・引き取りを約束していると読める文なら、その理由を返す（2026-09-04 の弁を1か所に移した）"""
+    if not any(w in sent for w in _PROMISE) or any(w in sent for w in _EXCUSE):
+        return ""
+    if "回収" in sent:
+        return "自社が「回収」すると読める文です（廃棄物の許可が無い）"
+    if "引き取" in sent and not any(w in sent for w in _OKAY_HIKITORI):
+        return "何を引き取るのか書かれていません（買取できるのは、まだ使えるものだけ）"
+    return ""
+
+
 def _kyoka(s: str) -> str:
     for pat, ato in KYOKA_NAOSHI:
         s = re.sub(pat, ato, s)
+    # それでも「処分を請け負う」と読める文は、**その文だけ外す**（残りが空になるなら外さない）
+    bun = re.split(r"(?<=[。！？])", s)
+    nokosu = [b for b in bun
+              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b))]
+    if len(nokosu) != len(bun) and "".join(nokosu).strip():
+        s = "".join(nokosu)
     return s
 
 
@@ -1466,7 +1495,10 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     # （「26本が持っている」と書きかけたが、数えたら違った。**数えてから書くこと**）
     # 6本なので、作り直しが増えるのは 6/27 の見込み。
     # **箇条書きも小見出しも無い記事は、文字の壁になる**ので、そこは受け入れる
-    for need in ("lead", "h2", "h3", "p", "ul", "cta"):
+    # **最後の1回は、h3 と ul が無いだけでは弾かない**（2026-09-14、中元さん「毎日の記事は必ず投稿に」）。
+    # 文字の壁は困るが、記事がゼロになるよりはまし。lead・h2・p・cta は最後まで見る
+    hitsuyou = ("lead", "h2", "h3", "p", "ul", "cta") if attempt < last else ("lead", "h2", "p", "cta")
+    for need in hitsuyou:
         if need not in types:
             ng.append("%s ブロックがありません" % need)
     for b in blocks:
@@ -1474,8 +1506,10 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
             ng.append("h2 に id が付いていません：%s" % b.get("text", "")[:20])
 
     body = "".join((b.get("text") or "") for b in blocks if isinstance(b, dict))
-    if len(body) < MIN_BODY:
-        ng.append("本文が短すぎます（%d字／最低%d字）" % (len(body), MIN_BODY))
+    # 最後の1回だけ、下限を1,000字まで下げる（同じ理由。数字・許認可・名前の弁は下げない）
+    saitei = MIN_BODY if attempt < last else 1000
+    if len(body) < saitei:
+        ng.append("本文が短すぎます（%d字／最低%d字）" % (len(body), saitei))
 
     whole = json.dumps(art, ensure_ascii=False)
 
@@ -1483,15 +1517,19 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     # 2026-09-07、SNSの投稿が「代表のコバヤシです」で出た。以前は「ナカジマ」も。
     # **どちらも実在しない。**名前を教えていなかったので、AIが作っていた。
     # 指示に足すだけでは足りないので、出来上がりからも見る。
+    # 2026-09-14 に狭めた（弁は外していない）：「代表の方が一人で…」「代表の経験に基づいて」を
+    # 名前と取り違えて、作り直しを弾いていた。名前ではない言葉で始まるものは見ない
+    HITO_DENAI = ("中元", "なかもと", "ナカモト", "私", "方", "者", "人", "経験", "考え",
+                  "強み", "立場", "判断", "目線", "視点", "責任", "知識", "仕事", "手", "目")
     for m in re.finditer(r"代表の([ぁ-んァ-ヶー一-龥A-Za-z]{2,6})", whole):
         who = m.group(1)
-        if not any(who.startswith(ok) for ok in ("中元", "なかもと", "ナカモト", "私")):
+        if not any(who.startswith(ok) for ok in HITO_DENAI):
             ng.append("実在しない名前を名乗っています：「代表の%s」"
                       "（フッ軽の代表は中元です。迷うなら『代表の私が』）" % who)
 
     # 廃棄物の許可が無いのに「処分を請け負う」と読める書き方をさせない
-    for w in ("不用品回収", "粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
-              "ゴミを引き取", "処分いたします", "処分します", "回収いたします"):
+    # **言い回しの一覧は KYOKA_KINSHI の1か所。**seikei() が先にその文を外すので、ふつうは鳴らない
+    for w in KYOKA_KINSHI:
         if w in whole:
             ng.append("ごみの処分を請け負う書き方です（一般廃棄物の許可が無い）：%s" % w)
 
@@ -1499,20 +1537,12 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     # 上の弁は決まり文句だけを見ていたので、
     # 「不用な梱包材の回収、古い家具の引き取りまでまとめてお任せいただけます」を
     # 素通りさせ、本番に1本出てしまった。文の形で見る。
-    PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
-    EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
-              "自治体", "市の", "指定", "ご案内")
-    OKAY_HIKITORI = ("まだ使える", "買い取り", "買取", "古物商")
+    # 判定は kyoka_yakusoku() の1か所（seikei() の直しと同じもの）
     for t in (b.get("text") or "" for b in blocks if isinstance(b, dict)):
         for sent in re.split(r"(?<=[。！？])", t):
-            if not any(w in sent for w in PROMISE) or any(w in sent for w in EXCUSE):
-                continue
-            if "回収" in sent:
-                ng.append("自社が「回収」すると読める文です（廃棄物の許可が無い）：%s"
-                          % sent.strip()[:50])
-            elif "引き取" in sent and not any(w in sent for w in OKAY_HIKITORI):
-                ng.append("何を引き取るのか書かれていません"
-                          "（買取できるのは、まだ使えるものだけ）：%s" % sent.strip()[:50])
+            riyuu = kyoka_yakusoku(sent)
+            if riyuu:
+                ng.append("%s：%s" % (riyuu, sent.strip()[:50]))
 
     # 許認可の誤認よけ。「無許可の業者」の話のすぐ後に自社名を出させない
     for b in blocks:
