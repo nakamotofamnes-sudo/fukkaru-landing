@@ -69,6 +69,14 @@
       ]
     },
     {
+      "type": "ba",
+      "before": "/blog/svc-kusakari-hadano-before.jpg",
+      "after": "/blog/svc-kusakari-hadano-after.jpg",
+      "beforeAlt": "作業前。家と塀のあいだの砂利に草が生い茂っている",
+      "afterAlt": "作業後。草を根元から抜いて砂利が見えている",
+      "caption": "秦野市のお宅。**防草シートを敷いたのに草が生えてきた**というご相談でした。シートの上にたまった土やすき間から根を張るので、根元から手で抜きました。"
+    },
+    {
       "type": "photo",
       "need": "木の伐採",
       "src": "/blog/svc-kusakari-bassai.jpg",
