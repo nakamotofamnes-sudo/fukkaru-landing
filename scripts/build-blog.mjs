@@ -72,7 +72,68 @@ function renderToc(blocks) {
   return `<nav class="toc" aria-label="目次"><b>この記事の内容</b><ol>${li}</ol></nav>`;
 }
 
+/** 「できない」を行き止まりにしない（2026-09-14・中元さんの方針）
+ *
+ * 許認可の線で「できません」と書く所で、読者が止まって帰っていた。
+ * **線はぼかさない。**すぐ下に「どれに当たるか聞ける」入口を置く。
+ * 約束するのは判定と出し方の案内まで。「相談すれば何とかなる」とは書かない。
+ *
+ * AIには頼まない（言っても守られない）。組み立てるときに機械で差し込む。
+ * 1記事2か所まで・続けて置かない（押し売りに見えるため）。FAQは答えの下に1か所。
+ */
+const DEKINAI_RE = /できません|できない|承れません|お引き受けできません|買い取れません|引き取れません|請け負えません/;
+// 「自分で対処できない」のような一般の文には付けない。ごみ・許可・買取の話のときだけ
+const DEKINAI_WADAI = /ごみ|廃棄物|許可|処分|自治体|出し方|買取|買い取|引き取|持ち込|施設|お預かり/;
+
+// 「できない」と話題（ごみ・許可・買取）が、同じ文の中にあるときだけ
+function dekinaiWadai(t) {
+  return t.split(/[。\n]/).some((s) => DEKINAI_RE.test(s) && DEKINAI_WADAI.test(s));
+}
+
+function blockText(b) {
+  if (b.type === 'table') return [...(b.headers || []), ...(b.rows || []).flat()].join(' ');
+  if (b.type === 'ul' || b.type === 'ol') return (b.items || []).join(' ');
+  if (b.type === 'p' || b.type === 'note') return b.text || '';
+  return '';
+}
+
+function withDekinaiSoudan(blocks) {
+  const out = [];
+  let n = 0;
+  let last = -99;
+  let faqDone = false;
+  blocks.forEach((b, i) => {
+    if (b.type === 'faq' && !faqDone && Array.isArray(b.items)) {
+      const k = b.items.findIndex((qa) => dekinaiWadai(String(qa?.a || '')));
+      if (k >= 0) {
+        faqDone = true;
+        out.push({ ...b, items: b.items.map((qa, j) => (j === k ? { ...qa, soudan: true } : qa)) });
+        return;
+      }
+    }
+    // 見出しは記事ごとに作業名が入っているので上書きしない。枠の中に1行足すだけ
+    if (b.type === 'cta' && (n > 0 || faqDone)) {
+      out.push({ ...b, dekinai: true });
+      return;
+    }
+    out.push(b);
+    if (n < 2 && i - last > 3 && dekinaiWadai(blockText(b))) {
+      out.push({ type: 'soudan' });
+      n += 1;
+      last = i;
+    }
+  });
+  return out;
+}
+
+const SOUDAN_TEXT = 'どれに当たるか分からないときは、写真を公式LINEに送ってください。「運び出し」「買取」「出し方のご案内」のどれになるか、お答えします。';
+
+function renderSoudan() {
+  return `<div class="soudan"><p>${esc(SOUDAN_TEXT)}</p><a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">LINEで聞いてみる</a></div>`;
+}
+
 function renderBlock(block) {
+  if (block.type === 'soudan') return renderSoudan();
   if (block.type === 'photo') return renderPhoto(block);
   if (block.type === 'ba') return renderBA(block);
   if (block.type === 'steps') return renderSteps(block);
@@ -103,7 +164,7 @@ function renderBlock(block) {
     case 'faq': {
       const items = block.items
         .map(
-          (qa) => `<div class="faq-item"><p class="faq-q">Q. ${inline(qa.q)}</p><p class="faq-a">A. ${inline(qa.a)}</p></div>`
+          (qa) => `<div class="faq-item"><p class="faq-q">Q. ${inline(qa.q)}</p><p class="faq-a">A. ${inline(qa.a)}</p>${qa.soudan ? `<a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">写真を送って聞いてみる</a>` : ''}</div>`
         )
         .join('');
       return `<div class="faq">${items}</div>`;
@@ -149,6 +210,7 @@ function renderCta(block) {
   <div class="cta-box">
     <p class="cta-heading">${inline(heading)}</p>
     <p class="cta-sub">${inline(sub)}</p>
+    ${block?.dekinai ? '<p class="cta-sub">頼めるか迷った物も、写真を送ってください。どれに当たるかお答えします。</p>' : ''}
     <div class="cta-buttons">
       <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">公式LINEで相談する（登録＋成約で最大3,000円割引）</a>
       <a class="btn btn-outline" href="/service/">料金とサービス一覧を見る</a>
@@ -303,6 +365,9 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .faq-a{margin:0;color:var(--ink-600);font-size:15px}
 
 /* 相談への誘い */
+.soudan{border:1px solid var(--hairline);border-left:3px solid var(--accent);border-radius:var(--r);padding:14px 16px;margin:16px 0 28px}
+.soudan p{margin:0 0 8px;font-size:14.5px;color:var(--ink-600)}
+.soudan-link{display:inline-block;font-size:14.5px;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:6px 0}
 .cta-box{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:28px 24px;margin:40px 0}
 .cta-heading{font-size:17px;font-weight:700;color:var(--ink-900);margin:0 0 8px;letter-spacing:-0.02em}
 .cta-sub{font-size:13.5px;color:var(--ink-500);margin:0 0 20px}
@@ -488,7 +553,7 @@ function renderArticlePage(article, all = [], pillar = null) {
   // 目次は導入のあと、最初の h2 の直前（2026-09-14）。
   // 以前は lead の直後で、導入（結論・料金の目安・分かること）より先に目次が出ていた。
   // h2 が無い記事は、これまでどおり lead の直後
-  const blocksWithIds = withIds(article.blocks);
+  const blocksWithIds = withDekinaiSoudan(withIds(article.blocks));
   const toc = renderToc(blocksWithIds);
   const firstH2 = blocksWithIds.findIndex((b) => b.type === 'h2');
   const firstP = firstH2 >= 0 ? firstH2 : blocksWithIds.findIndex((b) => b.type !== 'lead');
