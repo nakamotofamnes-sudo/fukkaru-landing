@@ -26,8 +26,11 @@ function esc(s) {
 }
 
 // インライン強調記法だけ簡易対応: **太字** -> <strong>
+// [文字](https://…) -> 外へのリンク（2026-09-14。許可をいただいた他社サイトを載せるため。https だけ）
 function inline(s) {
-  return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 }
 
 /** 段落の中の改行を、そのまま改行として見せる（2026-09-12）
