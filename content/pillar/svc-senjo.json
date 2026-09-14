@@ -83,11 +83,25 @@
       "caption": "洗浄前と後。ふたを開けたことがない、という方がほとんどです。"
     },
     {
-      "type": "photo",
-      "need": "高圧洗浄",
-      "src": "/blog/svc-senjo-sagyou.jpg",
-      "alt": "高圧洗浄機のノズルでコンクリートを洗っているところ。洗った部分だけ色が変わっている",
-      "caption": "洗っているところ。**洗った跡だけ色が変わります。**汚れは少しずつ積もるので、比べて初めて分かります。"
+      "type": "h2",
+      "id": "carport",
+      "text": "カーポートの洗浄"
+    },
+    {
+      "type": "ba",
+      "before": "/blog/svc-senjo-carport1-before.jpg",
+      "after": "/blog/svc-senjo-carport1-after.jpg",
+      "beforeAlt": "洗浄前のカーポート。屋根の板が白く曇り、しみが残っている",
+      "afterAlt": "洗浄後のカーポート。屋根の板が透けて、向こうの家が映っている",
+      "caption": "屋根の裏から見たところ。**曇っていた板が、向こうが透けて見えるまで戻りました。**"
+    },
+    {
+      "type": "ba",
+      "before": "/blog/svc-senjo-carport2-before.jpg",
+      "after": "/blog/svc-senjo-carport2-after.jpg",
+      "beforeAlt": "洗浄前のカーポートの屋根。水あかと黒い点々の汚れがこびりついている",
+      "afterAlt": "洗浄後のカーポートの屋根。汚れが落ちて下の地面が見えている",
+      "caption": "屋根の上のこびりついた水あかも落とします。**1台用から何台用でもお受けしています。**"
     },
     {
       "type": "h2",

@@ -77,6 +77,21 @@
       "caption": "秦野市のお宅。**防草シートを敷いたのに草が生えてきた**というご相談でした。シートの上にたまった土やすき間から根を張るので、根元から手で抜きました。"
     },
     {
+      "type": "ba",
+      "before": "/blog/svc-kusakari-bouso-seichi.jpg",
+      "after": "/blog/svc-kusakari-bouso-shiba.jpg",
+      "beforeAlt": "家と石垣のあいだの細い通路。土をならしたところ",
+      "afterAlt": "同じ通路に防草シートを敷き、上に人工芝を張ったところ",
+      "caption": "**土をならす → 防草シートを敷く → 人工芝を張る**の順です。シートの端まで押さえると、すき間から草が伸びにくくなります。"
+    },
+    {
+      "type": "photo",
+      "need": "防草シート",
+      "src": "/blog/svc-kusakari-bouso-sheet.jpg",
+      "alt": "石垣沿いの通路に防草シートを敷き、ピンで留めたところ",
+      "caption": "人工芝を張る前の、防草シートを敷いた状態。"
+    },
+    {
       "type": "photo",
       "need": "木の伐採",
       "src": "/blog/svc-kusakari-bassai.jpg",
