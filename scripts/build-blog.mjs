@@ -351,6 +351,8 @@ strong{color:var(--ink-900);font-weight:700}
 .table-wrap{overflow-x:auto;margin:0 0 24px;border:1px solid var(--hairline);border-radius:var(--r)}
 table{border-collapse:collapse;width:100%;min-width:420px;font-size:14.5px}
 th,td{border-bottom:1px solid var(--hairline);padding:12px 14px;text-align:left}
+/* 2026-09-14：左の列の見出しが空の「選べる」表で、「費用」「手間」が1文字ずつ縦に折り返していた（Chromeで目視）。最小の幅だけ持たせる。nowrap にすると長い行の表がスマホではみ出すので使わない */
+th:first-child,td:first-child{min-width:4.5em}
 tr:last-child td{border-bottom:0}
 th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 
