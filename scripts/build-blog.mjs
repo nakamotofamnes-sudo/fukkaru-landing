@@ -106,6 +106,7 @@ function withDekinaiSoudan(blocks) {
   const out = [];
   let n = 0;
   let last = -99;
+  let ato = -1;
   let faqDone = false;
   blocks.forEach((b, i) => {
     if (b.type === 'faq' && !faqDone && Array.isArray(b.items)) {
@@ -122,8 +123,16 @@ function withDekinaiSoudan(blocks) {
       return;
     }
     out.push(b);
-    if (n < 2 && i - last > 3 && dekinaiWadai(blockText(b))) {
+    if (i === ato) {
       out.push({ type: 'soudan' });
+      ato = -1;
+      return;
+    }
+    if (n < 2 && i - last > 3 && dekinaiWadai(blockText(b))) {
+      // 2026-09-15：「次のものは…できません。」の直後に一覧が続くとき、文と一覧のあいだに割り込んでいた（柱ページで目視）。一覧・表の後ろに回す
+      const tsugi = blocks[i + 1];
+      if (tsugi && ['ul', 'ol', 'table'].includes(tsugi.type)) ato = i + 1;
+      else out.push({ type: 'soudan' });
       n += 1;
       last = i;
     }
