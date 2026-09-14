@@ -485,10 +485,13 @@ function renderRelated(article, all) {
 }
 
 function renderArticlePage(article, all = [], pillar = null) {
-  // 目次は lead の直後（読む前に全体が見える位置）
+  // 目次は導入のあと、最初の h2 の直前（2026-09-14）。
+  // 以前は lead の直後で、導入（結論・料金の目安・分かること）より先に目次が出ていた。
+  // h2 が無い記事は、これまでどおり lead の直後
   const blocksWithIds = withIds(article.blocks);
   const toc = renderToc(blocksWithIds);
-  const firstP = blocksWithIds.findIndex((b) => b.type !== 'lead');
+  const firstH2 = blocksWithIds.findIndex((b) => b.type === 'h2');
+  const firstP = firstH2 >= 0 ? firstH2 : blocksWithIds.findIndex((b) => b.type !== 'lead');
   const bodyBlocks = blocksWithIds
     .map((b, i) => (i === firstP && toc ? toc + '\n' + renderBlock(b) : renderBlock(b)))
     .join('\n');
