@@ -957,12 +957,26 @@ P_HARD_MAX = 140         # これを超える段落は shindan() が知らせる
 P_RIZUMU_MIN = 30        # これより短い切れ端は、前にくっつける（ぶつ切りを避ける）
 
 
+_KAKKO_MARU = "\u2063"   # かっこの中の「。」を一時的に置いておく印（見えない区切り文字。本文には出てこない）
+
+
+def _bun_wake(t: str) -> list:
+    """文に分ける。**全角のかっこ（ ）の中の「。」では切らない**（2026-09-14）
+
+    「（料金は2026年9月時点。最新は富士市にご確認ください）」が途中で切られ、
+    「最新は富士市にご確認ください）」だけの段落ができていた。
+    """
+    hogo = re.sub(r"（[^（）]*）", lambda m: m.group(0).replace("。", _KAKKO_MARU), t)
+    bun = [b for b in re.findall(r"[^。]*。[」』）)]*|[^。]+$", hogo) if b.strip()]
+    return [b.replace(_KAKKO_MARU, "。") for b in bun]
+
+
 def _wake_rizumu(t: str) -> list:
     """段落を「。」の切れ目で分ける。**文字は変えない。文の途中では切らない**
 
     「。」のすぐ後のかぎかっこ閉じ（」』）など）は、前の文に付けたまま分けます。
     """
-    bun = [b for b in re.findall(r"[^。]*。[」』）)]*|[^。]+$", t) if b.strip()]
+    bun = _bun_wake(t)
     if len(t) <= P_RIZUMU and len(bun) <= P_BUN_MAX:
         return [t]
     out, kazus, ima, kazu = [], [], "", 0
@@ -1231,7 +1245,8 @@ _KYOKA_WORD = re.compile(r"処分|回収|廃棄")
 # この言葉が同じ文にあれば「できない・案内する・自治体の話」なので、要確認に出さない
 _KYOKA_OK = re.compile(
     r"できません|できない|承れません|承ることができ|いたしかね|致しかね|行っておりません|"
-    r"お引き受けできません|請け負えません|請け負うことはできません|ご案内|自治体|ご自身|許可|"
+    r"お引き受けできません|請け負えません|請け負うことはできません|お受けしていません|お受けしていない|"
+    r"ご案内|自治体|ご自身|許可|"
     r"処分場|処分費|産業廃棄物|一般廃棄物|クリーンセンター|お客様が|回収日|回収施設")
 
 
@@ -1243,7 +1258,7 @@ KYOKA_KINSHI = ("不用品回収", "粗大ごみを処分", "粗大ゴミを処�
                 "ゴミを引き取", "処分いたします", "処分します", "回収いたします")
 _PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
 _EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
-           "自治体", "市の", "指定", "ご案内")
+           "自治体", "市の", "指定", "ご案内", "お受けしていません", "お受けしていない")
 _OKAY_HIKITORI = ("まだ使える", "買い取り", "買取", "古物商")
 
 
@@ -1345,6 +1360,97 @@ def nai_naosu(art: dict, blocks: list) -> tuple[list, int]:
         c = _tekiyou(b, _nai)
         n += int(c != b)
         out.append(c)
+    return out, n
+
+
+# ── 「できません」の言い切りをやわらげる（2026-09-14・中元さん「なるべく濁して相談につなぐ」）──
+# 受けていない事実は消さない。言い方だけ「お受けしていません」にそろえる。
+# **ごみ・許可・引き取り・修理の話が同じ文にあるときだけ**（「自分で対処できません」には触らない）。
+# 置き換えたあとの文は、_EXCUSE と _KYOKA_OK が「打ち消し」として読む（許認可の弁で弾かれないように）。
+_KOTOWARI_WADAI = re.compile(r"ごみ|ゴミ|廃棄物|許可|処分|回収|引き取|持ち込|運ぶ|運搬|施設|お預かり|修理")
+_KOTOWARI = (
+    (re.compile(r"(?:法律上|法令上)?、?(?:承れません|承ることができません|お受けできません|"
+                r"お引き受けできません|請け負えません|請け負うことはできません|いたしかねます|致しかねます)"),
+     "お受けしていません"),
+    (re.compile(r"(こと)?は、?(?:法律上|法令上)?、?できません"), r"\1は、お受けしていません"),
+)
+
+
+def _kotowari(s: str) -> str:
+    bun = re.split(r"(?<=[。！？\n])", s)
+    out = []
+    for b in bun:
+        if _KOTOWARI_WADAI.search(b):
+            for pat, ato in _KOTOWARI:
+                b = pat.sub(ato, b)
+        out.append(b)
+    return "".join(out)
+
+
+def kotowari_naosu(art: dict, blocks: list) -> tuple[list, int]:
+    n = 0
+    out = []
+    for b in blocks:
+        c = _tekiyou(b, _kotowari)
+        n += int(c != b)
+        out.append(c)
+    return out, n
+
+
+# ── 説明の段落が3つ続くのをほどく（2026-09-14）──
+# AIに「3つ以上続けない」と言っても守られない（dry で5か所）。**文字は変えずに、1文ずつの短い段落を
+# 前の段落にくっつける。**2文・P_RIZUMU字を超えるならくっつけない（_wake_rizumu に分け直されないため）。
+def _bun_kazu(t: str) -> int:
+    return len(_bun_wake(t))
+
+
+def _kuttsukeru(a: dict, b: dict) -> dict | None:
+    """1文ずつの段落2つを、2文・P_RIZUMU字に収まるときだけ1つにする。収まらなければ None"""
+    t0, t1 = str(a.get("text", "")), str(b.get("text", ""))
+    if (_bun_kazu(t0) == 1 and _bun_kazu(t1) == 1
+            and len(t0) + len(t1) <= P_RIZUMU and "\n" not in t0 + t1):
+        return {**a, "text": t0 + t1}
+    return None
+
+
+def _kumi(run: list) -> tuple[list, int]:
+    """続いた段落を先頭から見て、1文どうしを2つずつ組にする（1文×4 → 2文・2文）
+
+    2026-09-14 の試験で、1つずつ前にくっつけるやり方だと「1文×4」が3つ続いたまま残った。
+    2文が上限なので「1文×6」は3つ続くのが最善（それ以上は直せない。数えて知らせるだけ）。
+    """
+    out, n, i = [], 0, 0
+    while i < len(run):
+        c = _kuttsukeru(run[i], run[i + 1]) if i + 1 < len(run) else None
+        if c:
+            out.append(c); n += 1; i += 2
+        else:
+            out.append(run[i]); i += 1
+    return out, n
+
+
+def renzoku_naosu(blocks: list) -> tuple[list, int]:
+    out, n, run = [], 0, []
+
+    def dasu():
+        nonlocal n
+        if len(run) >= 3:
+            kumi, k = _kumi(run)
+            out.extend(kumi); n += k
+        else:
+            out.extend(run)
+        run.clear()
+
+    for b in blocks:
+        if isinstance(b, dict) and b.get("type") == "p":
+            if not str(b.get("text", "")).strip():
+                n += 1            # 中身の無い段落は捨てる（文字は減らない）
+                continue
+            run.append(b)
+        else:
+            dasu()
+            out.append(b)
+    dasu()
     return out, n
 
 
@@ -1500,6 +1606,10 @@ def seikei(art: dict) -> int:
     atarashii, n = kyoka_naosu(art, atarashii)
     naoshita += n
     atarashii, n = nai_naosu(art, atarashii)
+    naoshita += n
+    atarashii, n = kotowari_naosu(art, atarashii)
+    naoshita += n
+    atarashii, n = renzoku_naosu(atarashii)
     naoshita += n
     if naoshita:
         art["blocks"] = atarashii
