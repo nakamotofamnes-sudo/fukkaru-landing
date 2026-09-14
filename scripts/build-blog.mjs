@@ -258,7 +258,8 @@ function jsonLd(article) {
       mainEntity: faqs.map((x) => ({
         '@type': 'Question',
         name: String(x.q),
-        acceptedAnswer: { '@type': 'Answer', text: String(x.a) },
+        // 文中リンク [文字](https://…) は、構造化データでは文字だけにする
+        acceptedAnswer: { '@type': 'Answer', text: String(x.a).replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '$1') },
       })),
     });
   }
