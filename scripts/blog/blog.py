@@ -19,6 +19,8 @@
 ------
     python3 ~/.fukkaru/blog.py            # 記事を1本書いてPRを作る
     FUKKARU_BLOG_MODE=dry python3 ~/.fukkaru/blog.py   # 保存だけ。gitには触らない
+    FUKKARU_BLOG_MODE=shindan python3 scripts/blog/blog.py   # 公開済みの記事を測るだけ（鍵もgitも使わない）
+    FUKKARU_BLOG_MODE=naosu   python3 scripts/blog/blog.py   # 公開済みの記事に自動の直しを当てる（ファイルを書き換える）
 """
 from __future__ import annotations
 
@@ -92,6 +94,7 @@ FACTS = """
 ・代表の経歴・資格：**登録宅地建物取引士／FP（ファイナンシャル・プランナー）／
   元・物流現場の管理者**（中元さん本人に2026-09-07に確かめた）
   → 使うのは「手際の良さ」と「明朗会計」の裏づけとしてだけ。**資格そのものを売り文句にしない。**
+  **記事の中で書くのは1回だけ。**（2026-09-14、4回くり返した記事がありました）
   住まいや保険の相談を受けられる、とは書かないこと（そういう商売ではない）
 ・公式LINE：https://lin.ee/qXlO1gC（登録＋成約で最大3,000円割引）
 ・扱う仕事：家具の組立/解体、物置の組立/移設、草刈り、掃除、庭まわり、
@@ -190,6 +193,13 @@ RULES = """
    ・自治体への出し方を**案内する**
    「処分します」「引き取って捨てます」「回収します」は書かない。
    「運搬のお手伝い」「買取」「出し方のご案内」と書く。
+   **名目を変えた同じ意味の言い方も書かない。**（2026-09-14）
+   「撤去物を引き取って処分」「廃棄します」「片付けて持ち帰ります」「処分のご相談に対応」など。
+   事実に合う範囲で、次のように書く：
+   ・古いシートを**剥がす作業**／草を**抜く作業**
+   ・お客様が出せる形に**まとめる**
+   ・自治体での**出し方をご案内する**
+   ・許可を持つ事業者があることを**ご案内する**（フッ軽がそこへ運ぶとは書かない）
    **他社の「無許可」「悪質」に触れた直後に自社を並べて書かない。**
    自社が許可を持っているかのように読める書き方は、遠回しでも禁止。
    廃棄物の収集運搬・古物の買取など許認可が要る話題では、
@@ -486,28 +496,30 @@ VOICE = """
 「作業員3人で」「年間◯件」「◯％の方が」は**裏付けが無いので書けません。**
 （2026-09-09、「3人」でやり直しになりました）
 
-**冒頭の型（2026-09-12）**
+**冒頭の型（2026-09-14 に変えました）**
 
-**いきなり説明から始めないでください。**読者の言葉から始めます。
-（よく読まれているブログを実際に測って分かった形です）
+**導入は5ブロック以内。**この順で書きます。目次は自動で導入のあとに付きます。
 
-  ① **読者の声を、かぎかっこで**。その人が心の中で言っていることをそのまま書く
-     「草が伸びすぎて、自分では手に負えない。頼むといくらかかるんだろう…」
-  ② **「こういったことにお答えします。」**と受ける
-  ③ **この記事で分かることを、3つまで**。箇条書きでよい
-  ④ **答えを先に書く。**「結論から言うと、富士市の草刈りは8,000円からです。」
-     もったいぶらない。**読む人は答えを探しています。**
+  ① **読者が知りたい結論**（lead・1〜2文）
+     例：「防草シートを敷く作業は、10,000円からお受けしています。」
+  ② **料金または判断の目安**（p）
+  ③ **料金や条件が変わる理由**（p）
+  ④ **この記事で分かること**（ul・3つまで）
+  ⑤ **相談につながる短い案内**（p・1〜2文）
 
-**①〜④を lead と、そのあとの p 2〜3個に入れてください。**
+**読者の声のかぎかっこや「こういったことにお答えします」から始めない。**答えから書きます。
+もったいぶらない。**読む人は答えを探しています。**
 
 **長さの決まり（ここを外すと作り直しになります）**
 数えるのは **lead と p の字数だけ**です。見出し・表・箇条書き・FAQ は数に入りません。
 ・**p（段落）を14個以上**置いてください
-・**1つの p は 60〜300字。**
-  **300字を超えたら、そこで段落を分けてください。**
+・**1つの p は1〜2文・45〜100字くらい。長くても140字まで。**
+  **画面の折り返しは改行に数えません。意味の区切りごとに、本当に p を分けてください。**
+  ただし1文ごとに機械的に分けない。**1つの意味のまとまりで1つの p** です。
+  「結論」「理由」「具体例」「次にすること」を**同じ p に詰め込まない。**
   （2026-09-12、上限を書いていなかったために **1,410字の段落**ができました。
    読む人は、その塊を見た時点で読むのをやめます）
-  **短い段落を混ぜてください。**60〜100字の段落があると、ぐっと読みやすくなります。
+・**説明の p を3つ以上続けて並べない。**間に h3・表・箇条書きのどれかを挟む
 ・合計で **2,800字以上**（段落を増やして届かせる。1つを長くして届かせない）
 見出しと箇条書きだけで進めると、必ず足りなくなります。**説明は p に書いてください。**
 
@@ -527,19 +539,28 @@ VOICE = """
 **見出しは h3 ブロック。箇条書きは ul か ol ブロック。**
 p の中に「**太字だけの行**」や「・」「*」「1.」で始まる行があったら、それは作り直しになります。
 
-**刻みの数（2026-09-12、よく読まれているブログ6記事を実際に測って決めました）**
+**刻みの数（2026-09-14 に見直しました）**
 
-・**h3 は h2 の2倍以上**置いてください。h2 が5本なら h3 は10本以上です。
-  （測ったブログは h2が4本・h3が13本で**3.3倍**。フッ軽はいま0.8倍で、逆でした）
-・**箇条書き（ul か ol）のブロックを4つ以上。**
-  h2ひとつにつき1つは箇条書きを置く、と考えてください
-  （2026-09-12に試したら2個でした。フッ軽はいま平均3.2個）
-・**段落14個のうち、5個以上は60字以内にしてください。**
-  （2026-09-12に試したら**0個**でした。数だけ言っても足りなかったので、
-   段落の数に紐づけて書き直しています）
-  例：「結論から言うと、8,000円からです。」「ここが、いちばん多い失敗です。」
-  （測ったブログは段落の**中央値46字・60字未満が58%**。フッ軽は7%でした）
-  長い段落ばかりだと、読む人は途中でやめます。**短い段落がリズムを作ります。**
+・**h3 は各 h2 に1〜2本。**見出しだけ読んでも、中身と判断の目安が分かる言葉にする
+・**箇条書き（ul か ol）は、比べる項目や条件が3つ以上あるときだけ。**
+  それ以外は p で書く（ただし記事全体で最低1つは置く）
+・**各 h2 の中は、この順で書く：**
+  ① 先に結論 → ② その理由 → ③ 現場に即した具体例 → ④ 読者がどう判断すればよいか
+  **「結論から言うと」など同じ決まり文句を、見出しごとに繰り返さない。**
+
+**書かないこと（2026-09-14）**
+
+・依頼を決めるのに使えない一般論（「雑草は景観を損ねます」など）
+・同じ意味の言い換えの繰り返し（「お気軽にご相談ください」を何度も書かない）
+・**「非常に」「最適」「ご安心ください」**のような、中身の無い言葉だけで説得する文
+・**測っていない地域事情や効果を言い切る**（「富士市は雑草が育ちやすい」など）
+・読者の不安をあおる文（「放っておくと火災の危険が」など）
+・**代表の強みを何度も書く。**書くのは1回だけ、具体的な根拠と一緒に
+・**FAQ で本文と同じ説明を繰り返す。**FAQ は依頼の前に出る疑問だけ
+
+**書くこと**
+
+・**数字・作業の範囲・追加料金が出る条件**を具体的に（金額は料金表にある額だけ）
 
 **文体（同じく測って分かったこと）**
 
@@ -601,6 +622,7 @@ def build_prompt(done: list[dict], service: str, area: str,
 
 記事の作り：
 ・検索されそうな悩みを1つ選び、その答えを最後まで書ききる
+・**導入は5ブロック以内**（下の『冒頭の型』）。そのあとに h2 が始まる
 ・見出し（h2）は4〜6個。h2には英数字の id を必ず付ける
 ・全体で2000〜3500字くらい
 ・表（table）・箇条書き（ul か ol）・注記（note）・よくある質問（faq）を最低1つずつ入れる
@@ -615,10 +637,12 @@ def build_prompt(done: list[dict], service: str, area: str,
   "keywords": ["検索語を4〜6個。地名つきのものを必ず含める"],
   "category": "家具組立／物置／草刈り／不用品の運搬／掃除／庭まわり などから1つ（**「処分」「回収」は分類名に使わない**）",
   "blocks": [
-    {{"type": "lead", "text": "導入。**下の『冒頭の型』のとおりに書く。**150〜250字"}},
-    {{"type": "h2", "id": "英数字のid", "text": "見出し"}},
-    {{"type": "p", "text": "本文の段落。60〜300字"}},
-    {{"type": "p", "text": "**短い段落。60字以内。これを5個以上入れてください。**"}},
+    {{"type": "lead", "text": "導入の1つ目。読者が知りたい結論を1〜2文で（『冒頭の型』の①）"}},
+    {{"type": "p", "text": "導入の2〜3つ目。料金や判断の目安／その金額や条件が変わる理由。1段落1〜2文"}},
+    {{"type": "ul", "items": ["この記事で分かること（3つまで）"]}},
+    {{"type": "p", "text": "導入の最後。相談につながる短い案内。1〜2文"}},
+    {{"type": "h2", "id": "英数字のid", "text": "見出しだけで中身と判断の目安が分かる言葉"}},
+    {{"type": "p", "text": "本文の段落。**1段落は1〜2文・45〜100字くらい・最大140字**"}},
     {{"type": "h3", "text": "小見出し"}},
     {{"type": "ul", "items": ["箇条書き。**強調**が使えます"]}},
     {{"type": "ol", "items": ["手順の箇条書き"]}},
@@ -799,7 +823,7 @@ def drop_stray_license_note(art: dict) -> int:
 #
 # やること2つ（**文字は1文字も足さない・消さない**）：
 #   ① p の中の「太字だけの行」を h3 に、「・」「*」「1.」の行を ul に分ける
-#   ② それでも400字を超える p を「。」の切れ目で300字くらいに分ける
+#   ② p を「。」の切れ目で、1〜2文・100字くらいに分ける（2026-09-14 に基準を変えた）
 #
 # 下の check() の弁は、**これで直しきれなかったときのための最後の網**です。
 # **判定はここ1か所だけ。**直す側（seikei）と弾く側（check）で必ず同じ答えになるように。
@@ -900,25 +924,41 @@ _TAG_ETC = re.compile(r"</?(?:ul|ol|li|p|div|span|em|i)\s*/?>", re.I)
 # それでも 0% だった。**言っても書かないので、こちらで分ける。**
 #   実測（16時の記事で試した）：上限80字で分けると
 #   平均63・中央59・60字未満51% → 参考の 61・46・58% とほぼ同じ
-P_RIZUMU = int(os.environ.get("FUKKARU_P_RIZUMU", "80"))   # 1段落の上限（目安）
+#
+# ── 2026-09-14 に基準を変えました（中元さんが受け取った記事の助言）──
+#   **1段落は1〜2文・45〜100字くらい・最大140字。**
+#   「長さ（100字）」と「文の数（2つまで）」の両方で分けます。
+#   **1文だけで140字を超えるものは、文の途中では切りません**（言葉を変えないため）。
+#   それは shindan() が数えて知らせます。
+P_RIZUMU = int(os.environ.get("FUKKARU_P_RIZUMU", "100"))   # 1段落の目安の上限
+P_BUN_MAX = 2            # 1段落に入れる文の数
+P_HARD_MAX = 140         # これを超える段落は shindan() が知らせる
 P_RIZUMU_MIN = 30        # これより短い切れ端は、前にくっつける（ぶつ切りを避ける）
 
 
 def _wake_rizumu(t: str) -> list:
-    """段落を「。」の切れ目で分ける。**文字は変えない。文の途中では切らない**"""
-    if len(t) <= P_RIZUMU:
+    """段落を「。」の切れ目で分ける。**文字は変えない。文の途中では切らない**
+
+    「。」のすぐ後のかぎかっこ閉じ（」』）など）は、前の文に付けたまま分けます。
+    """
+    bun = [b for b in re.findall(r"[^。]*。[」』）)]*|[^。]+$", t) if b.strip()]
+    if len(t) <= P_RIZUMU and len(bun) <= P_BUN_MAX:
         return [t]
-    bun = re.findall(r"[^。]*。|[^。]+$", t)
-    out, ima = [], ""
+    out, kazus, ima, kazu = [], [], "", 0
     for b in bun:
-        if ima and len(ima) + len(b) > P_RIZUMU:
+        if ima and (len(ima) + len(b) > P_RIZUMU or kazu >= P_BUN_MAX):
             out.append(ima)
-            ima = b
+            kazus.append(kazu)
+            ima, kazu = b, 1
         else:
             ima += b
+            kazu += 1
     if ima:
-        if out and len(ima) < P_RIZUMU_MIN:
-            out[-1] += ima          # 最後が短すぎるなら前に足す
+        # 最後が1文だけで短すぎるなら、前も1文のときだけ前に足す（2文を超えないように）。
+        # 2026-09-14、足す条件に文の数を入れ忘れて、4文を1段落に戻していました（試験で見つけた）
+        if (out and kazu == 1 and kazus[-1] == 1 and len(ima) < P_RIZUMU_MIN
+                and len(out[-1]) + len(ima) <= P_RIZUMU):
+            out[-1] += ima
         else:
             out.append(ima)
     return [x for x in out if x.strip()]
@@ -997,6 +1037,294 @@ def _p_naosu(t: str, katachi: str = "p") -> list:
     return out
 
 
+# ── 2026-09-14 に足した「直す」道具 ──
+#
+# 中元さんが受け取った記事の助言（スマホで読みやすい段落・許認可の線）を、
+# **AIに毎回言うのではなく、書いたあとに機械で直す**ために足しました（CLAUDE.md 17）。
+# **どれも弾きません。check() の弁も増やしていません**（毎日の記事を必ず出すため）。
+#
+#   ichiran_naosu … ばらばらの段落になった一覧を、箇条書き1つに戻す
+#   kajo_naosu    … 箇条書きの中の入れ子（`*   ` が画面に出ていた）を1行1項目に
+#   hoshi_naosu   … 対になっていない ** と行頭に残った * を外す。h3 の番号とコロンを外す
+#   kyoka_naosu   … 「処分する・回収する」と読める決まった言い回しを言い換える
+#   shindan       … 直せないもの（140字超・説明の段落の連続・抽象語・許認可の要確認）を数える
+#
+# **判定と置き換えの表はここ1か所。**書くとき（seikei）も、公開済みを直すとき（naosu）も、
+# 数えるとき（shindan）も同じものを使います。
+
+# 画像や日付など、文章ではない値は直さない
+_NAOSANAI_KEY = {"type", "id", "src", "before", "after", "slug", "ogImage", "heroImage",
+                 "publishDate", "updatedDate", "need"}
+
+
+def _tekiyou(x, fn):
+    """文字列だけに fn を当てた写しを返す（画像のパスや id には当てない）"""
+    if isinstance(x, str):
+        return fn(x)
+    if isinstance(x, list):
+        return [_tekiyou(y, fn) for y in x]
+    if isinstance(x, dict):
+        return {k: (v if k in _NAOSANAI_KEY else _tekiyou(v, fn)) for k, v in x.items()}
+    return x
+
+
+def _mojiretsu(x, key=None):
+    """文章の文字列を全部取り出す"""
+    if isinstance(x, str):
+        if key not in _NAOSANAI_KEY:
+            yield x
+    elif isinstance(x, list):
+        for y in x:
+            yield from _mojiretsu(y, key)
+    elif isinstance(x, dict):
+        for k, v in x.items():
+            yield from _mojiretsu(v, k)
+
+
+def ichiran_naosu(blocks: list) -> tuple[list, int]:
+    """ばらばらの段落になった一覧を、箇条書き1つに戻す
+
+    実例（2026-09-14 10時の防草シートの記事）：
+      p「この記事では、」 p「費用目安」 p「メリット・デメリット」 p「選び方」
+      p「について、具体的に解説します。最後まで…」
+    AIが改行で並べた一覧が、空行で分けるところで1行ずつ別の段落になっていました。
+    """
+    out, i, n = [], 0, 0
+    while i < len(blocks):
+        b = blocks[i]
+        t = str(b.get("text", "")).strip() if isinstance(b, dict) else ""
+        if (isinstance(b, dict) and b.get("type") in ("p", "lead")
+                and t.endswith("、") and len(t) <= 25):
+            j, kakera = i + 1, []
+            while (j < len(blocks) and isinstance(blocks[j], dict)
+                   and blocks[j].get("type") == "p"
+                   and "。" not in str(blocks[j].get("text", ""))
+                   and 0 < len(str(blocks[j].get("text", "")).strip()) <= 40):
+                kakera.append(str(blocks[j]["text"]).strip())
+                j += 1
+            if len(kakera) >= 2:
+                ato = blocks[j] if (j < len(blocks) and isinstance(blocks[j], dict)
+                                    and blocks[j].get("type") == "p") else None
+                at = str(ato.get("text", "")).strip() if ato else ""
+                if at.startswith("について"):
+                    # 「この記事では、」＋「について、具体的に解説します。」
+                    #  → 「この記事では、次のことについて、具体的に解説します。」＋箇条書き
+                    m = re.match(r"(.*?。[」』）)]*)(.*)$", at, re.S)
+                    hajime, nokori = (m.group(1), m.group(2).strip()) if m else (at, "")
+                    out.append({"type": b["type"], "text": t.rstrip("、") + "、次のこと" + hajime})
+                    out.append({"type": "ul", "items": kakera})
+                    if nokori:
+                        out.append({"type": "p", "text": nokori})
+                    i = j + 1
+                else:
+                    out.append(b)
+                    out.append({"type": "ul", "items": kakera})
+                    i = j
+                n += 1
+                continue
+        out.append(b)
+        i += 1
+    return out, n
+
+
+_KAJO_KO = re.compile(r"^\s*(?:[\*\-・●○]|\d+[\.．])\s+(.+)$")
+_KAJO_ATAMA = re.compile(r"^(?:\*\*(.+?)\*\*|(.+?))\s*[:：]\s*(?:\*\*)?$")
+
+
+def kajo_naosu(b) -> int:
+    """箇条書きの中の入れ子を、1行1項目に直す
+
+    実例（2026-09-14）：items が「**メリット:**\\n    *   材料費だけで…」の形で、
+    **ページに `*   ` がそのまま出ていました。**
+    見出しの行（メリット：）は、その下の項目の頭に「**メリット**：」として付けます。
+    """
+    if not isinstance(b, dict) or b.get("type") not in ("ul", "ol"):
+        return 0
+    items = b.get("items")
+    if not isinstance(items, list) or not any(
+            isinstance(x, str) and ("\n" in x or _KAJO_KO.match(x)) for x in items):
+        return 0
+    atama, shin = "", []
+    for x in items:
+        if not isinstance(x, str):
+            shin.append(x)
+            continue
+        for gyou in x.split("\n"):
+            s = gyou.strip()
+            if not s:
+                continue
+            m = _KAJO_KO.match(gyou)
+            if m:
+                naka = m.group(1).strip()
+                shin.append("**%s**：%s" % (atama, naka) if atama else naka)
+                continue
+            h = _KAJO_ATAMA.match(s)
+            midashi = ((h.group(1) or h.group(2) or "") if h else "").strip("* ").strip()
+            if h and 0 < len(midashi) <= 20:
+                atama = midashi
+                continue
+            atama = ""
+            shin.append(s)
+    if shin != items:
+        b["items"] = shin
+        return 1
+    return 0
+
+
+def _hoshi(s: str) -> str:
+    """対になっていない ** は全部外す。行頭に1つだけ残った * も外す（言葉は変えない）"""
+    if s.count("**") % 2 == 1:
+        s = s.replace("**", "")
+    return re.sub(r"^(\s*)\*(?!\*)\s*", r"\1", s)
+
+
+def hoshi_naosu(blocks: list) -> tuple[list, int]:
+    """印の崩れを外す。h3 の頭の番号（3.）と、おしりのコロンも外す"""
+    out, n = [], 0
+    for b in blocks:
+        c = _tekiyou(b, _hoshi)
+        if isinstance(c, dict) and c.get("type") == "h3" and isinstance(c.get("text"), str):
+            c["text"] = re.sub(r"\s*[:：]\s*$", "",
+                               re.sub(r"^\s*\d+[\.．]\s*", "", c["text"]))
+        n += int(c != b)
+        out.append(c)
+    return out, n
+
+
+# ── 許認可の言い換え（2026-09-14）──
+# 持っているのは古物商と軽貨物だけ。**「フッ軽が処分・回収する」と読める決まった言い回し**だけを直す。
+# 否定の文（「処分はできません」「出し方をご案内します」）には触らない。
+# 質問の「解体・処分もお願いできますか？」は、答えと食い違うので残す（後ろに「も」が続くもの）。
+KYOKA_NAOSHI = (
+    (r"剥がして処分し", "剥がし"),
+    (r"撤去・処分(?!も)", "撤去"),
+    (r"解体・処分(?!も)", "解体"),
+    (r"出たゴミの処分方法なども相談できる", "出たものの出し方も案内してもらえる"),
+    (r"(?:ゴミ|ごみ)の処分方法", "ごみの出し方"),
+    (r"の処分を手伝って", "の運び出しを手伝って"),
+    (r"の処分にお困り", "の手放し方にお困り"),
+    (r"の処分に困る", "の手放し方に困る"),
+    (r"（自治体の回収場所など）までお運びいたします", "（玄関先など、敷地内の置き場）までお運びいたします"),
+)
+_KYOKA_WORD = re.compile(r"処分|回収|廃棄")
+# この言葉が同じ文にあれば「できない・案内する・自治体の話」なので、要確認に出さない
+_KYOKA_OK = re.compile(
+    r"できません|できない|承れません|承ることができ|いたしかね|致しかね|行っておりません|"
+    r"お引き受けできません|請け負えません|請け負うことはできません|ご案内|自治体|ご自身|許可|"
+    r"処分場|処分費|産業廃棄物|一般廃棄物|クリーンセンター|お客様が|回収日|回収施設")
+
+
+def _kyoka(s: str) -> str:
+    for pat, ato in KYOKA_NAOSHI:
+        s = re.sub(pat, ato, s)
+    return s
+
+
+def kyoka_naosu(art: dict, blocks: list) -> tuple[list, int]:
+    n = 0
+    for k in ("title", "metaDescription"):
+        if isinstance(art.get(k), str):
+            v = _kyoka(art[k])
+            if v != art[k]:
+                art[k] = v
+                n += 1
+    out = []
+    for b in blocks:
+        c = _tekiyou(b, _kyoka)
+        n += int(c != b)
+        out.append(c)
+    return out, n
+
+
+def kyoka_miru(art: dict) -> list[str]:
+    """「処分・回収する」と読めるかもしれない文を拾う。**直さない。人が読んで決める**"""
+    out = []
+    naka = {"title": art.get("title"), "metaDescription": art.get("metaDescription"),
+            "blocks": art.get("blocks")}
+    for t in _mojiretsu(naka):
+        for s in re.split(r"(?<=[。！？\n])", t):
+            if _KYOKA_WORD.search(s) and not _KYOKA_OK.search(s):
+                out.append(s.strip()[:80])
+    return out
+
+
+SHINDAN_CHUSHO = ("非常に", "最適", "ご安心ください")
+
+
+def shindan(art: dict) -> dict:
+    """記事を測る。**直さない・弾かない。数えて知らせるだけ**"""
+    blocks = [b for b in (art.get("blocks") or []) if isinstance(b, dict)]
+    ps = [str(b.get("text", "")) for b in blocks if b.get("type") in ("p", "lead")]
+    ren = saidai = tsuzuku = 0
+    for b in blocks:
+        ren = ren + 1 if b.get("type") == "p" else 0
+        saidai = max(saidai, ren)
+        tsuzuku += int(ren == 3)
+    whole = json.dumps(art, ensure_ascii=False)
+    return {
+        "段落": len(ps),
+        "140字超": sum(len(t) > P_HARD_MAX for t in ps),
+        "3文以上": sum(t.count("。") >= 3 for t in ps),
+        "説明が3段落続く": tsuzuku,
+        "最長の連続": saidai,
+        "抽象語": sum(whole.count(w) for w in SHINDAN_CHUSHO),
+        "結論から言うと": whole.count("結論から言うと"),
+        "FAQの長い答え": sum(1 for b in blocks if b.get("type") == "faq"
+                          for q in (b.get("items") or [])
+                          if isinstance(q, dict) and len(str(q.get("a", ""))) > P_HARD_MAX),
+        "崩れ": sum(1 for t in _mojiretsu(blocks)
+                  if t.count("**") % 2 or re.match(r"^\s*\*(?!\*)", t))
+                + sum(1 for t in ps if p_kuzure(t)),
+        "許認可の要確認": kyoka_miru(art),
+    }
+
+
+def shindan_all() -> int:
+    """公開済みの記事を全部測って表にする（FUKKARU_BLOG_MODE=shindan）"""
+    cols = ("段落", "140字超", "3文以上", "説明が3段落続く", "最長の連続",
+            "抽象語", "結論から言うと", "FAQの長い答え", "崩れ")
+    goukei = {c: 0 for c in cols}
+    youkakunin = []
+    print("記事\t" + "\t".join(cols) + "\t許認可の要確認")
+    for f in sorted(ARTICLES.glob("*.json")):
+        try:
+            art = json.loads(f.read_text(encoding="utf-8"))
+        except Exception as e:
+            print("%s\t読めません：%s" % (f.name, e))
+            continue
+        r = shindan(art)
+        for c in cols:
+            goukei[c] += r[c]
+        youkakunin += ["%s：%s" % (f.stem, s) for s in r["許認可の要確認"]]
+        print(f.stem[:36] + "".join("\t%d" % r[c] for c in cols)
+              + "\t%d" % len(r["許認可の要確認"]))
+    print("合計" + "".join("\t%d" % goukei[c] for c in cols) + "\t%d" % len(youkakunin))
+    if youkakunin:
+        print("\n許認可の要確認（人が読んで決める）：")
+        for s in youkakunin:
+            print("  ・" + s)
+    return 0
+
+
+def naosu_all() -> int:
+    """公開済みの記事に seikei() を当てる（FUKKARU_BLOG_MODE=naosu）。
+
+    **記事のファイルを書き換えます。git には触りません。**鍵も使いません。
+    """
+    kaeta = 0
+    for f in sorted(ARTICLES.glob("*.json")):
+        mae = f.read_text(encoding="utf-8")
+        art = json.loads(mae)
+        n = seikei(art)
+        ato = json.dumps(art, ensure_ascii=False, indent=2) + "\n"
+        if n and ato != mae:
+            f.write_text(ato, encoding="utf-8")
+            kaeta += 1
+            print("  ・%s：%d か所" % (f.stem, n))
+    print("直した記事：%d 本" % kaeta)
+    return 0
+
+
 def seikei(art: dict) -> int:
     """記事の段落を整える。直した数を返す。**文字は変えない**"""
     blocks = art.get("blocks")
@@ -1049,6 +1377,16 @@ def seikei(art: dict) -> int:
             atarashii += dekita; naoshita += 1
         else:
             atarashii.append(b)
+    # ── 2026-09-14 に足した直し（どれも弾かずに直す）──
+    # 一覧の崩れは、空行で分けたあとに見る（分けたせいで1行ずつの段落になるため）
+    atarashii, n = ichiran_naosu(atarashii)
+    naoshita += n
+    for b in atarashii:
+        naoshita += kajo_naosu(b)
+    atarashii, n = hoshi_naosu(atarashii)
+    naoshita += n
+    atarashii, n = kyoka_naosu(art, atarashii)
+    naoshita += n
     if naoshita:
         art["blocks"] = atarashii
     return naoshita
@@ -1281,6 +1619,11 @@ def merge_pr(num: int) -> None:
 
 
 def main() -> int:
+    # 記事を書かずに、公開済みの記事を測る／直すとき（2026-09-14）。鍵も git も使わない
+    if MODE == "shindan":
+        return shindan_all()
+    if MODE == "naosu":
+        return naosu_all()
     if not KEY:
         log("✗ GEMINI_API_KEY がありません")
         return 1
