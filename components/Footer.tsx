@@ -93,6 +93,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </div>
               </div>
               <p className="mb-5 text-[13px] leading-[1.9]">〒417-0855<br/>静岡県富士市三ツ沢 390-9</p>
+              {/* 2026-09-15 中元さん：住まいの大きな工事は相談を受けて会社におつなぎする（フッ軽は施工しない。建設業の許可は無い） */}
+              <p className="mb-5 text-[13px] leading-[1.9] text-white/80">
+                新築・建て替え・リフォーム・外壁や屋根の塗装のご相談も承ります。お話を伺い、信頼できる会社におつなぎします。
+              </p>
               
               <p className="mb-6 text-[12px] leading-[1.9] text-white/60">
                 【法人情報】<br />
