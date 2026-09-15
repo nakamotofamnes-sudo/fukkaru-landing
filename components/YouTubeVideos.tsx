@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 
+// チャンネルのショートの新しい順に10本（2026-09-15 に並べ直した。自動では更新されない）
 const videoIds = [
-  '7eF14DgXxTM', 'pFLCFgOWZUg', 'Ht-WnIEU-10', 'pSvdsGa01bQ', 'L2iWCXV6kKg',
-  '7FgO4n_5PWo', 'jFi5wct7uMk', 'aXFs0DO3qW4', '7LcyjihJtg0', 'a8VyRDDx3SE',
+  '_l3nk4DKcVY', '7eF14DgXxTM', 'pFLCFgOWZUg', 'Ht-WnIEU-10', 'pSvdsGa01bQ',
+  'L2iWCXV6kKg', '7FgO4n_5PWo', 'jFi5wct7uMk', 'aXFs0DO3qW4', '7LcyjihJtg0',
 ];
 
 const YouTubeVideos: React.FC = () => {
