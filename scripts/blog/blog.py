@@ -452,7 +452,10 @@ VOICE = """
    （部材の数・通り道の幅・階数・先にどかすものがあるか、など）
 
 3. **写真を送ってほしいなら、「何が写っていればいいか」を書く。**
-   ×「写真をお送りください」　○「箱の全体、説明書の1ページ目、置きたい場所、通り道」
+   ×「写真をお送りください」
+   ○ 家具・物置の組立なら「箱の全体、説明書の1ページ目、置きたい場所、通り道」
+   ○ 草刈り・庭まわりなら「庭の全体、草の背丈が分かる近くの1枚、作業場所までの通り道」
+   **その記事の作業に合う写真だけを書く。**（2026-09-15、草刈りの記事に「説明書の1ページ目」が出た）
 
 4. **起きていない例外を、先回りして書かない。**
    断り書きが並ぶと、読む人は自分の用件が当てはまるか迷って、相談をやめます。
@@ -1240,6 +1243,8 @@ KYOKA_NAOSHI = (
     (r"の処分にお困り", "の手放し方にお困り"),
     (r"の処分に困る", "の手放し方に困る"),
     (r"（自治体の回収場所など）までお運びいたします", "（玄関先など、敷地内の置き場）までお運びいたします"),
+    # 見出し「処分作業について」「草の処分について」（2026-09-15 の10時の記事）。見出しは文全体が1つなので ^…$
+    (r"^(.*?)処分(?:作業|方法)?について$", r"\1出し方について"),
 )
 _KYOKA_WORD = re.compile(r"処分|回収|廃棄")
 # この言葉が同じ文にあれば「できない・案内する・自治体の話」なので、要確認に出さない
@@ -1320,6 +1325,19 @@ _LINE_URL = re.compile(r"[\s（(【]*(?:公式LINE(?:はこちら)?[:：]?\s*)?\
 NAI_OK = re.compile(r"お受けしていない|受けていない|お受けしていません|受けていません|"
                     r"行っていません|対応していません|扱っていません|ではありません")
 _NAI_ZETTAI = re.compile(r"[0-9０-９]{2,4}-[xXｘＸ]{2,4}-[xXｘＸ]{2,4}|[xX]{4}|番号は仮")
+# 2026-09-15 の10時の記事ですり抜けたもの。打ち消し（お受けしていません）があっても外す。
+#   「許可を持つ専門業者をご紹介できます」… HPに無い約束
+#   「草の収集・運搬・処分を直接行うことは、お受けしていません」… 運搬はフッ軽の仕事。事実と逆に読める
+# 「一般廃棄物収集運搬業」という許可の名前の中の「運搬」は数えない。
+_SHOUKAI = re.compile(r"業者[^。]*紹介|紹介[^。]*業者")
+_UNPAN_UCHIKESHI = re.compile(
+    r"運搬[^。]*(?:お受けしていません|お受けしていない|できません|承れません|"
+    r"行っておりません|行うことは|いたしかね|致しかね)")
+# いない人を作る言い方。文は残して言葉だけ変える
+_SAGYOIN = ((re.compile(r"作業員の"), ""), (re.compile(r"作業員が"), "代表が"), (re.compile(r"作業員"), "代表"))
+# 組立の記事の写真の頼み方が、ほかの作業の記事に混ざったとき（2026-09-15）
+_KUMITATE_SHASHIN = re.compile(r"箱の全体、?説明書の1ページ目、?(?:置きたい場所、?)?(?:通り道(?:など)?、?)?")
+_KUMITATE_KIJI = re.compile(r"組立|組み立て|家具|物置|ベッド|うんてい|解体")
 
 
 # 決まっていない料金の決まり（2026-09-14 の dry で「5坪を超えるごとに別途料金」「現地調査は無料」が出た）。
@@ -1336,11 +1354,15 @@ def _ryokin_tsukuri(b: str) -> bool:
 def _nai_hazusu(b: str) -> bool:
     if _NAI_ZETTAI.search(b) or _ryokin_tsukuri(b):
         return True
+    if _SHOUKAI.search(b) or _UNPAN_UCHIKESHI.search(b.replace("収集運搬業", "")):
+        return True
     return bool(NAI_BUN.search(b)) and not NAI_OK.search(b)
 
 
 def _nai(s: str) -> str:
     s = _LINE_URL.sub("", s)
+    for pat, ato in _SAGYOIN:
+        s = pat.sub(ato, s)
     bun = re.split(r"(?<=[。！？\n])", s)
     nokosu = [b for b in bun if not _nai_hazusu(b)]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
@@ -1355,9 +1377,12 @@ def nai_naosu(art: dict, blocks: list) -> tuple[list, int]:
         if v != art["metaDescription"]:
             art["metaDescription"] = v
             n += 1
+    nai = _nai
+    if not _KUMITATE_KIJI.search(str(art.get("title", ""))):
+        nai = lambda s: _nai(_KUMITATE_SHASHIN.sub("", s))
     out = []
     for b in blocks:
-        c = _tekiyou(b, _nai)
+        c = _tekiyou(b, nai)
         n += int(c != b)
         out.append(c)
     return out, n
