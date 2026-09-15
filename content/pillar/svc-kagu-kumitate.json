@@ -30,6 +30,22 @@
       "caption": "ロフトベッドの組み立て。**箱を開けたところから、使える形になるまで**をお引き受けします。"
     },
     {
+      "type": "ba",
+      "before": "/blog/svc-kagu-sofa-before.jpg",
+      "after": "/blog/svc-kagu-sofa-after.jpg",
+      "beforeAlt": "運び込む前の部屋。タイルカーペットが敷いてある",
+      "afterAlt": "同じ部屋に電動ソファーを置いたところ",
+      "caption": "富士市のお宅。**そのままでは部屋から出ない電動ソファー**を解体して隣の部屋へ運び、組み立て直して、電動で動くかまで確かめました。"
+    },
+    {
+      "type": "ba",
+      "before": "/blog/svc-kagu-tansu-before.jpg",
+      "after": "/blog/svc-kagu-tansu-after.jpg",
+      "beforeAlt": "扉を外した大きな洋服ダンス。代表が上の部分を押さえている",
+      "afterAlt": "扉を戻した洋服ダンスと、横に置いた整理タンス",
+      "caption": "大きな洋服ダンスの移動。扉を外して軽くしてから動かし、置いた場所で扉を戻します。"
+    },
+    {
       "type": "photo",
       "need": "代表が運んでいるところ",
       "src": "/blog/daihyo-hakobu.jpg",
