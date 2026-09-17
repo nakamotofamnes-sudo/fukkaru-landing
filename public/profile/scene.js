@@ -61,7 +61,7 @@ async function start() {
   room.rotation.y = Math.PI;
   scene.add(room);
   const avatar = new THREE.Group();
-  avatar.position.y = .048;
+  avatar.position.y = .016;
   scene.add(avatar);
   const scanner = new THREE.Group();
   scanner.visible = false;
@@ -123,8 +123,8 @@ async function start() {
   };
   try {
     const [character, environment] = await Promise.all([
-      loader.loadAsync(new URL('avatar.glb?v=20260917-2040', assets).href, e => updateProgress('avatar', e)),
-      loader.loadAsync(new URL('room.glb?v=20260917-2040', assets).href, e => updateProgress('room', e))
+      loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
+      loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e))
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
@@ -136,7 +136,14 @@ async function start() {
       if (/^rug\d/.test(object.name)) {
         object.castShadow = false;
         const level = Number(object.name.match(/^rug(\d)/)[1]);
-        object.position.y = .012 + level * .018;
+        // ラグは薄いまま重ねる（持ち上げると椅子や机の脚が沈む）。縞は描く順番で消す
+        object.position.y = level * .003;
+        object.receiveShadow = true;
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+          material.polygonOffset = true;
+          material.polygonOffsetFactor = -1 - level * 2;
+          material.polygonOffsetUnits = -4 - level * 4;
+        }
       }
     });
     room.add(roomModel);
