@@ -64,6 +64,13 @@ const Founder: React.FC = () => {
             <p className="mt-8 text-[15px] text-ink-500">
               代表 <span className="ml-1 font-semibold text-ink-900">中元 晋平</span>
             </p>
+            <a
+              href="/profile.html"
+              className="mt-5 inline-flex items-center gap-3 border-b border-ink-900 pb-1 text-[14px] font-semibold text-ink-900 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              詳しいプロフィールを見る
+              <span aria-hidden="true">↗</span>
+            </a>
           </div>
         </div>
       </div>
