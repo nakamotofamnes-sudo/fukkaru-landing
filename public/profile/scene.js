@@ -12,6 +12,7 @@ const media = matchMedia('(prefers-reduced-motion: reduce)');
 const canvas = $('scene');
 const sections = ['home', 'about', 'business', 'contact'].map($);
 const count = $('scan-count'), bar = $('scan-bar');
+const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
 let width = innerWidth, height = innerHeight, mobile = width <= 760;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
@@ -174,6 +175,7 @@ async function start() {
     ready = true;
     lastStage = 'home';
     document.body.classList.add('scene-ready');
+    if (!media.matches) document.body.classList.add('scan-reveal');
     window.profileLoaded?.();
     measure();
     document.fonts.ready.then(measure);
@@ -302,6 +304,9 @@ async function start() {
     ring.scale.setScalar(1 + (!paused ? Math.sin(elapsed * 1.5) * .01 : 0));
     count.textContent = String(Math.round(scanProgress * 100)).padStart(3, '0');
     bar.style.transform = `scaleX(${scanProgress})`;
+    // スキャンの進み具合に合わせて、プロフィールを順に出す
+    const revealAll = paused || !inAbout && aboutTop < 0;
+    for (const el of revealItems) el.classList.toggle('is-in', revealAll || scanProgress >= Number(el.dataset.r));
     const stage = contactProgress > .6 ? 'contact' : inAbout ? 'about' : 'home';
     if (stage !== lastStage) {
       if (!paused) play(stage === 'contact' ? 'Wave' : stage === 'about' ? 'Nod' : 'Idle', stage !== 'home');

@@ -5,7 +5,7 @@
   let timer;
   window.profileFallback = (message = '3Dを表示できませんでした。本文をご覧いただけます。') => {
     clearTimeout(timer);
-    document.body.classList.remove('scene-ready');
+    document.body.classList.remove('scene-ready', 'scan-reveal');
     document.documentElement.style.setProperty('--hero-opacity', 1);
     document.getElementById('status-text').textContent = message;
     document.getElementById('load-percent').hidden = true;
@@ -17,7 +17,7 @@
   document.getElementById('skip-scene').addEventListener('click', () => {
     window.profileSkipped = true;
     clearTimeout(timer);
-    document.body.classList.remove('scene-ready');
+    document.body.classList.remove('scene-ready', 'scan-reveal');
     status.hidden = true;
     document.getElementById('about').scrollIntoView({ behavior: 'smooth' });
   });
@@ -25,7 +25,7 @@
   document.getElementById('static-view').addEventListener('click', event => {
     window.profileSkipped = true;
     clearTimeout(timer);
-    document.body.classList.remove('scene-ready');
+    document.body.classList.remove('scene-ready', 'scan-reveal');
     document.documentElement.style.setProperty('--hero-opacity', 1);
     status.hidden = true;
     event.currentTarget.hidden = true;
