@@ -153,6 +153,8 @@ async function start() {
       object.frustumCulled = false;
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
         material.clippingPlanes = [normalClip];
+        // 曲げたときに裏返った面も描く（ひじの一部が消えて見えるのを防ぐ）
+        material.side = THREE.DoubleSide;
       }
     });
     avatar.add(person);
