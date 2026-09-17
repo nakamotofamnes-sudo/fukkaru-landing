@@ -123,8 +123,8 @@ async function start() {
   };
   try {
     const [character, environment] = await Promise.all([
-      loader.loadAsync(new URL('avatar.glb', assets).href, e => updateProgress('avatar', e)),
-      loader.loadAsync(new URL('room.glb', assets).href, e => updateProgress('room', e))
+      loader.loadAsync(new URL('avatar.glb?v=20260917-2040', assets).href, e => updateProgress('avatar', e)),
+      loader.loadAsync(new URL('room.glb?v=20260917-2040', assets).href, e => updateProgress('room', e))
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
