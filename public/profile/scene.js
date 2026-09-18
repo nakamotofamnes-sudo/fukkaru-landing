@@ -118,7 +118,7 @@ async function start() {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const totalBytes = { avatar: 0, room: 0 };
   const updateProgress = (key, event) => {
-    if (event.total) totalBytes[key] = event.loaded / event.total;
+    if (event.total) totalBytes[key] = Math.min(1, event.loaded / event.total);
     const percent = Math.round((totalBytes.avatar * .8 + totalBytes.room * .2) * 100);
     $('load-percent').textContent = percent + '%';
     window.profileProgress?.(percent);
