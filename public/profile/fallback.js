@@ -10,8 +10,9 @@
     preloader.classList.add('is-done');
     setTimeout(() => { preloader.hidden = true; }, 900);
   };
-  window.profileProgress = percent => {
-    shown = Math.max(shown, percent);
+  // 圧縮して届くと大きさの見込みが外れて100を超えるので、読み終わるまでは99で止める
+  window.profileProgress = (percent, done = false) => {
+    shown = Math.max(shown, done ? 100 : Math.min(99, percent));
     document.getElementById('pre-percent').textContent = String(shown).padStart(3, '0');
     document.getElementById('pre-bar').style.transform = `scaleX(${shown / 100})`;
   };
@@ -26,7 +27,7 @@
     status.hidden = false;
     setTimeout(() => { status.hidden = true; }, 6000);
   };
-  window.profileLoaded = () => { clearTimeout(timer); status.hidden = true; window.profileProgress(100); setTimeout(() => closePreloader(true), 350); };
+  window.profileLoaded = () => { clearTimeout(timer); status.hidden = true; window.profileProgress(100, true); setTimeout(() => closePreloader(true), 350); };
   window.profileSkipped = false;
   document.getElementById('skip-scene').addEventListener('click', () => {
     window.profileSkipped = true;
