@@ -64,3 +64,4 @@ body[data-stage=business] .site-header{background:linear-gradient(#25281ff5 0%,#
 .story .biz-head>p{color:#4a4d44}
 .story .biz-card{border-color:var(--line);background:#fffdf6}
 .story .biz-card p{color:#55584f}
+.mail-address{font-size:12px;letter-spacing:.02em;color:var(--muted);margin:-8px 0 18px;user-select:all}
