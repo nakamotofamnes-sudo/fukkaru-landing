@@ -58,3 +58,9 @@ body[data-stage=business] .site-header{background:linear-gradient(#25281ff5 0%,#
 .pre-track i{display:block;height:100%;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
 #pre-skip{margin-top:28px;background:transparent;border:0;color:#a4cfda;text-decoration:underline;font-size:11px;padding:8px;cursor:pointer;font-family:var(--font)}
 @media(prefers-reduced-motion:reduce){.pre-grid,.pre-core i,.pre-scan{animation:none}.preloader,.preloader.is-done .pre-copy{transition:none}}
+
+.story{background:var(--cream);color:var(--ink)}
+.story .section-kicker{color:var(--muted)}
+.story .biz-head>p{color:#4a4d44}
+.story .biz-card{border-color:var(--line);background:#fffdf6}
+.story .biz-card p{color:#55584f}
