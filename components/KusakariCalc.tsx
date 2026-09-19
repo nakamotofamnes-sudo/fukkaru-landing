@@ -6,7 +6,7 @@ const KusakariCalc: React.FC = () => {
     const w = window as unknown as { fukkaruKusakariCalc?: () => void };
     if (w.fukkaruKusakariCalc) { w.fukkaruKusakariCalc(); return; }
     const s = document.createElement('script');
-    s.src = '/tools/kusakari-calc.js?v=20260919';
+    s.src = '/tools/kusakari-calc.js?v=20260920';
     s.defer = true;
     document.body.appendChild(s);
   }, []);

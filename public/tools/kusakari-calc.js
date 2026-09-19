@@ -40,7 +40,7 @@
       '<label for="kc-city">場所</label>' +
       '<select id="kc-city">' + FREE.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '<option value="other">そのほかの地域</option></select>' +
       '<div class="kc-out" aria-live="polite"><div class="kc-price" id="kc-price"></div><ul class="kc-lines" id="kc-lines"></ul></div>' +
-      '<p class="kc-note">草の高さ・量、木の伐採、高い場所、防草シートは、現地で確かめてからお見積りします。刈った草は袋に詰めて、置き場にまとめるところまで入っています。</p>' +
+      '<p class="kc-note">草の高さ・量、木の伐採、高い場所、防草シートは、現地で確かめてからお見積りします。刈った草は袋に詰めて、置き場にまとめるところまで入っています。そのあとの出し方は、ご相談ください。</p>' +
       '<a class="kc-line" href="' + LINE + '" target="_blank" rel="noopener">写真を送って、金額を聞いてみる</a>' +
       '</div>';
     if (!document.getElementById('kc-style')) {
