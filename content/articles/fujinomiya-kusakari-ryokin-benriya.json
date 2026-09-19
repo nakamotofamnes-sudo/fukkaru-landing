@@ -104,6 +104,9 @@
       ]
     },
     {
+      "type": "calc"
+    },
+    {
       "type": "h2",
       "id": "fujinomiya-kusa-tsuika-ryokin",
       "text": "追加料金が発生するケースとその理由"
