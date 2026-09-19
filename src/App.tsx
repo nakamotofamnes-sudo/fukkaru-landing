@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import News from '../components/News';
 import Problems from '../components/Problems';
 import Features from '../components/Features';
+import KusakariCalc from '../components/KusakariCalc';
 import Services from '../components/Services';
 import Testimonials from '../components/Testimonials';
 import Founder from '../components/Founder';
@@ -262,6 +263,7 @@ const App: React.FC = () => {
       <Problems />
       <Features />
       <Services />
+      <KusakariCalc />
       <Flow />
       <Testimonials />
       <YouTubeVideos />
