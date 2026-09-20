@@ -153,7 +153,7 @@ function renderBlock(block) {
   if (block.type === 'photo') return renderPhoto(block);
   if (block.type === 'ba') return renderBA(block);
   // 草刈りの料金めやす（2026-09-19）。中身は public/tools/kusakari-calc.js
-  if (block.type === 'calc') return '<div data-kusakari-calc></div><script src="/tools/kusakari-calc.js?v=20260920" defer></script>';
+  if (block.type === 'calc') return '<div data-kusakari-calc></div><script src="/tools/kusakari-calc.js?v=20260920b" defer></script>';
   if (block.type === 'steps') return renderSteps(block);
   switch (block.type) {
     case 'lead':
