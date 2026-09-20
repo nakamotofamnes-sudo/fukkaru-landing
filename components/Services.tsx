@@ -16,7 +16,7 @@ const groups: Group[] = [
     services: [
       { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true , link: '/service/kusakari/' },
       { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します', link: '/service/kusakari/' },
-      { title: '木の伐採', price: '9,000円〜', desc: '高さ3m未満・地上からの作業', link: '/service/kusakari/' },
+      { title: '木の伐採', price: '9,000円〜', desc: '地上からの作業', link: '/service/kusakari/' },
       { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途', link: '/service/kusakari/' },
     ],
   },

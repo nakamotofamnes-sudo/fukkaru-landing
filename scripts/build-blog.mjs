@@ -173,7 +173,9 @@ function renderBlock(block) {
       const rows = block.rows
         .map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`)
         .join('');
-      return `<div class="table-wrap"><table>${head}${rows}</table></div>`;
+      // 列の数を表に持たせる。2列のときだけスマホでも収まるようにするため（下の CSS）
+      const cols = Math.max(block.headers.length, ...block.rows.map((r) => r.length));
+      return `<div class="table-wrap${cols <= 2 ? ' cols-2' : ''}"><table>${head}${rows}</table></div>`;
     }
     case 'note':
       return `<div class="note"><strong>${inline(block.title || 'メモ')}</strong><p>${inline(block.text)}</p></div>`;
@@ -364,6 +366,17 @@ strong{color:var(--ink-900);font-weight:700}
 .table-wrap{overflow-x:auto;margin:0 0 24px;border:1px solid var(--hairline);border-radius:var(--r)}
 /* 2026-09-15 中元さん：表は詰めずに広げ、スマホは横にスライドして読ませる。1列を約10文字ぶん取る（3列で約560px） */
 table{border-collapse:collapse;width:100%;min-width:560px;font-size:14.5px}
+/* 2026-09-21：その560pxが2列の表にもかかっていて、スマホ（375px）で右の列＝料金が画面の外に出ていた。
+   記事の中の表は2列が44個・3列が20個で、2列は全部この状態だった（実測）。
+   **中元さんの決めごと「1列を約10文字ぶん」はそのまま。**560px はその3列ぶんの数字なので、
+   2列のときは外して、画面の幅に収める（セルの 10em / 4.5em が下限として残る）。
+   収まらないほど長い中身なら、.table-wrap の横スクロールがこれまでどおり効く。
+   3列以上は横スクロールのまま（詰めると読めなくなる） */
+.table-wrap.cols-2 table{min-width:0}
+/* 画面の幅に収めると、左の列が 4.5em まで縮んで「料金が変／わる主な／理由」と3行に折り返した（375pxで目視）。
+   2列のときだけ左の列の下限を上げる。**上限ではないので、中身が長い表はこれまでどおり広がる。**
+   下限を足しても 6.5em＋10em＋余白＝約297px で、375pxには収まる */
+.table-wrap.cols-2 th:first-child,.table-wrap.cols-2 td:first-child{min-width:6.5em}
 th,td{border-bottom:1px solid var(--hairline);padding:12px 14px;text-align:left;min-width:10em}
 /* 2026-09-14：左の列の見出しが空の「選べる」表で、「費用」「手間」が1文字ずつ縦に折り返していた（Chromeで目視）。最小の幅だけ持たせる。nowrap にすると長い行の表がスマホではみ出すので使わない */
 th:first-child,td:first-child{min-width:4.5em}
@@ -742,7 +755,7 @@ function renderServiceIndex(groups, pillars) {
   const tables = groups.map((g) => `
   <h2 id="${esc(g.title)}">${esc(g.title)}</h2>
   <p>${esc(g.note)}</p>
-  <div class="table-wrap"><table><thead><tr><th>やること</th><th>料金</th></tr></thead><tbody>
+  <div class="table-wrap cols-2"><table><thead><tr><th>やること</th><th>料金</th></tr></thead><tbody>
     ${g.services.map((s) => `<tr><td>${esc(s.title)}${s.link ? ` <a href="${esc(s.link)}">くわしく</a>` : ''}<br><span class="svc-desc">${esc(s.desc)}</span></td><td>${esc(s.price)}</td></tr>`).join('\n    ')}
   </tbody></table></div>`).join('\n');
 
