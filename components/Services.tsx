@@ -18,6 +18,7 @@ const groups: Group[] = [
       { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します', link: '/service/kusakari/' },
       { title: '木の伐採', price: '9,000円〜', desc: '地上からの作業', link: '/service/kusakari/' },
       { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途', link: '/service/kusakari/' },
+      { title: '刈った草・木の持ち込み', price: '8,000円〜', desc: '軽トラック1車ぶん・富士市', link: '/service/kusakari/' },
     ],
   },
   {
