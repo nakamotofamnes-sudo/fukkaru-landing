@@ -68,11 +68,12 @@ function withIds(blocks) {
 }
 
 function renderToc(blocks) {
-  const h2 = blocks.filter((b) => b.type === 'h2' && b.text);
+  // 2026-09-21：`text` ではなく `heading` で書かれた見出しが、目次から丸ごと消えていた
+  const h2 = blocks.filter((b) => b.type === 'h2' && midashiText(b));
   // **3つ未満なら出さない。**2項目の目次は場所を取るだけ
   if (h2.length < 3) return '';
   const li = h2
-    .map((b) => `<li><a href="#${esc(b.id)}">${inline(b.text)}</a></li>`)
+    .map((b) => `<li><a href="#${esc(b.id)}">${inline(midashiText(b))}</a></li>`)
     .join('');
   return `<nav class="toc" aria-label="目次"><b>この記事の内容</b><ol>${li}</ol></nav>`;
 }
@@ -148,6 +149,25 @@ function renderSoudan() {
   return `<div class="soudan"><p>${esc(SOUDAN_TEXT)}</p><a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">LINEで聞いてみる</a></div>`;
 }
 
+
+// 見出しの文字を取り出す。**空の見出しを黙って出さないための一か所。**
+// 2026-09-21、svc-kaimono.json が `text` ではなく `heading` で書かれていて、
+// 本番に `<h2 id="s1"></h2>` が2つ出ていた（目次も消えていた）。
+// 弾くと記事が1本も出ない日ができるので、**直したうえで声を上げる**。
+const midashiKeikoku = [];
+function midashiText(block) {
+  return block.text || block.heading || block.title || '';
+}
+function midashi(block, tag) {
+  const t = midashiText(block);
+  if (!String(t).trim()) {
+    midashiKeikoku.push(`${tag}: ${JSON.stringify(block)}`);
+  } else if (!block.text) {
+    midashiKeikoku.push(`${tag}: text ではなく別の名前で書かれています → ${JSON.stringify(block)}`);
+  }
+  return t;
+}
+
 function renderBlock(block) {
   if (block.type === 'soudan') return renderSoudan();
   if (block.type === 'photo') return renderPhoto(block);
@@ -159,9 +179,9 @@ function renderBlock(block) {
     case 'lead':
       return `<p class="lead">${inlineBr(block.text)}</p>`;
     case 'h2':
-      return `<h2 id="${esc(block.id || '')}">${inline(block.text)}</h2>`;
+      return `<h2 id="${esc(block.id || '')}">${inline(midashi(block, 'h2'))}</h2>`;
     case 'h3':
-      return `<h3>${inline(block.text)}</h3>`;
+      return `<h3>${inline(midashi(block, 'h3'))}</h3>`;
     case 'p':
       return `<p>${inlineBr(block.text)}</p>`;
     case 'ul':
@@ -751,6 +771,26 @@ function readServiceGroups() {
   return groups;
 }
 
+// /service/ のよくある質問（2026-09-21）。
+// **この一覧ページは、内側からのリンクがサイトで最多（54本）なのに検索結果に入っていなかった。**
+// 原因は「そのページだけの中身が608字しかない」こと。表と料金だけで、読ませる文章が無かった。
+const SERVICE_FAQ = [
+  ['ここに載っていない作業も頼めますか？',
+   'まずお聞かせください。載せているのはよくいただくご依頼で、これがすべてではありません。お受けできるかどうかを、その場でお答えします。'],
+  ['小さな用事ひとつでも頼めますか？',
+   '頼めます。棚をひとつ組み立てるだけ、重いものをとなりの部屋に動かすだけ、という頼み方でかまいません。'],
+  ['見積もりにお金はかかりますか？',
+   '公式LINEに写真を送っていただくお見積りは、地域を問わず無料です。現地に伺う出張費は、富士市・富士宮市・静岡市・沼津市ならいただきません。'],
+  ['料金は、何で決まりますか？',
+   '作業の量・広さ・場所の条件で変わります。写真を見ておおよその金額をお伝えし、ご納得いただいてから始めます。当日に作業が増えそうなときは、始める前にお伝えします。'],
+  ['どこまで来てもらえますか？',
+   '静岡県全域・山梨県全域・神奈川県海老名市以西です。それ以外の地域もご相談ください。'],
+  ['誰が来ますか？',
+   'お問い合わせをお受けした代表が、そのまま当日の作業をします。写真で伺ったことが、途中で消えません。'],
+  ['作業中に物を傷つけたときは、どうなりますか？',
+   '損保ジャパンの保険に加入しています。万一のときは、まずご連絡ください。'],
+];
+
 function renderServiceIndex(groups, pillars) {
   const tables = groups.map((g) => `
   <h2 id="${esc(g.title)}">${esc(g.title)}</h2>
@@ -786,13 +826,35 @@ function renderServiceIndex(groups, pillars) {
     </ul>
     ${nav}
     ${tables}
+    <h2 id="nagare">頼んでから、終わるまで</h2>
+    <p>公式LINEに、困っているところの写真を送ってください。文字だけでもかまいません。</p>
+    <p>写真を見て、おおよその金額と、かかる時間をお伝えします。<strong>ここまでは、地域を問わず無料です。</strong></p>
+    <p>金額にご納得いただいてから、日にちを決めます。当日に作業が増えそうなときは、始める前にお伝えします。</p>
+    <p>お問い合わせをお受けした代表が、そのまま当日の作業をします。写真で伺ったことが、途中で消えません。</p>
+    <h2 id="ryokin">金額が変わるところ</h2>
+    <p>どの作業も「○○円〜」と書いてあるのは、作業の量・広さ・場所の条件で変わるためです。</p>
+    <p>たとえば家具なら大きさと数、物置なら地面の状態、草刈りなら草の量。<strong>写真を見てお伝えしますので、頼む前に金額が分かります。</strong></p>
+    <h2 id="area">伺える範囲と、万一のとき</h2>
+    <p>対応エリアは、静岡県全域・山梨県全域・神奈川県海老名市以西です。現地に伺う出張費は、富士市・富士宮市・静岡市・沼津市ならいただきません。</p>
+    <p>損保ジャパンの保険に加入しています。万一のときは、まずご連絡ください。</p>
+    <h2 id="faq">よくいただくご質問</h2>
+    <div class="faq">${SERVICE_FAQ.map(([q, a]) => `<div class="faq-item"><p class="faq-q">Q. ${esc(q)}</p><p class="faq-a">A. ${esc(a)}</p></div>`).join('')}</div>
     <div class="note"><b>お引き受けできないこと</b><p>ご家庭から出た不用品を、ごみとして引き取って処分することはできません（一般廃棄物収集運搬業の許可が無いためです）。できるのは、荷物を指定の場所まで<b>運ぶこと</b>、まだ使えるものを<b>買い取ること</b>、自治体での<b>出し方をご案内すること</b>です。</p></div>
   </div>
 </main>
 <div class="article-footer wrap">
   <p class="related"><a href="/">← トップページへ</a></p>
 </div>`;
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: SERVICE_FAQ.map(([q, a]) => ({
+      '@type': 'Question', name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
   return pageShell({
+    extraHead: `<script type="application/ld+json">${JSON.stringify(faqLd)}</script>`,
     title: `できることと料金｜${SITE_NAME}`,
     description: '富士市の便利屋フッ軽のサービスと料金の一覧です。草むしり8,000円〜、家具の組み立て8,000円〜、物置の設置・解体15,000円〜、不用品の運搬・買取5,000円〜。LINEで写真を送るだけのお見積りは無料です。',
     canonical: `${SITE_URL}/service/`,
@@ -983,7 +1045,13 @@ function main() {
     for (const t of todo) console.log('           - ' + t);
   }
 
-  console.log(`[build-blog] 完了: 記事${articles.length}件 + 一覧ページ + sitemap.xml`
+  if (midashiKeikoku.length) {
+  console.log('');
+  console.log(`[build-blog] ★見出しがおかしい箇所が ${midashiKeikoku.length} 件あります（出しはしましたが、直してください）`);
+  for (const k of midashiKeikoku) console.log(`   ${k}`);
+  console.log('');
+}
+console.log(`[build-blog] 完了: 記事${articles.length}件 + 一覧ページ + sitemap.xml`
     + (linked ? ' + トップのブログ導線' : ' ／ ★トップに導線を入れられませんでした'));
 }
 
