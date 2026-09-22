@@ -914,6 +914,9 @@ function buildSitemap(articles, pillars = []) {
     { loc: `${SITE_URL}/`, priority: '1.0' },
     { loc: `${SITE_URL}/blog/`, priority: '0.8' },
     { loc: `${SITE_URL}/service/`, priority: '0.9' },
+    // 代表のプロフィール（2026-09-22 追加）。
+    // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
+    { loc: `${SITE_URL}/profile.html`, priority: '0.6' },
     ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9' })),
     ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: a.updatedDate || a.publishDate })),
   ];
@@ -950,6 +953,7 @@ function injectBlogLinks(articles, pillars = []) {
 <h2>お役立ちブログ</h2>
 <p><a href="/service/">できることと料金</a></p>
 <p><a href="/blog/">記事の一覧を見る</a></p>
+<p><a href="/profile.html">代表のプロフィール</a></p>
 ${pillars.map((p) => `<p><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.title)}</a></p>`).join('\n')}
 <ul>
 ${items}
