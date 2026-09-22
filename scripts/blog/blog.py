@@ -1246,6 +1246,19 @@ KYOKA_NAOSHI = (
     # 見出し「処分作業について」「草の処分について」（2026-09-15 の10時の記事）。見出しは文全体が1つなので ^…$
     (r"^(.*?)処分(?:作業|方法)?について$", r"\1出し方について"),
 )
+# ── 「指定の場所まで運搬のお手伝いをします」という約束（2026-09-22）──
+# 2026-09-22 の1本目（不用品運搬）が、これで本番照合の③に引っかかった。
+# 言い換えでは括弧の中まで壊れるので、**その文ごと** 書けるかたちに差し替える。
+# 探し方は honban.py の③と同じ（向こうが鳴るものを、こちらで直す）。
+_UNPAN_SAKI = (r"(?:処分場|処理施設|回収施設|回収場所|クリーンセンター|受付施設|"
+               r"指定施設|指定場所|収集場所|集積所)")
+_UNPAN_YAKUSOKU = re.compile(
+    _UNPAN_SAKI + r"[^。]{0,24}運搬のお手伝い|"
+    + _UNPAN_SAKI + r"[^。]{0,20}へ運搬される際のお手伝い|"
+    + _UNPAN_SAKI + r"[^。]{0,10}への運搬となります|"
+    r"持ち込みを代行")
+_UNPAN_KAWARI = "ご依頼いただいた品物は、玄関先やお車まで運び出し、積み込みまでお手伝いいたします。"
+
 _KYOKA_WORD = re.compile(r"処分|回収|廃棄")
 # この言葉が同じ文にあれば「できない・案内する・自治体の話」なので、要確認に出さない
 _KYOKA_OK = re.compile(
@@ -1283,6 +1296,11 @@ def _kyoka(s: str) -> str:
         s = re.sub(pat, ato, s)
     # それでも「処分を請け負う」と読める文は、**その文だけ外す**（残りが空になるなら外さない）
     bun = re.split(r"(?<=[。！？])", s)
+    # 「指定の場所まで運搬のお手伝い」の約束は、書けるかたちの文に差し替える
+    kae = [(_UNPAN_KAWARI if _UNPAN_YAKUSOKU.search(b) else b) for b in bun]
+    if kae != bun:
+        bun = kae
+        s = "".join(bun)
     nokosu = [b for b in bun
               if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b))]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
