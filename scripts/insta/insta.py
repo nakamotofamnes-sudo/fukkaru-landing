@@ -44,6 +44,10 @@ MIRU = "--miru" in sys.argv
 # **許認可の線に触る語。**見つけたら報せます（HPには文面を載せないので事故にはなりません）
 AYAUI = ["処分", "回収", "廃棄"]
 
+# **HPに出す投稿の目印**（2026-09-23）。実物の作業写真からの投稿にだけ付きます。
+# 付けるのは Mac の material.py。**ここを変えるなら向こうも変える。**
+GENBA = "#フッ軽の現場"
+
 
 def env():
     d = {}
@@ -103,8 +107,19 @@ def main():
         print("  鍵が切れているかもしれません → /usr/local/bin/python3 ~/.fukkaru/ig_setup.py")
         return 1
 
-    erabu = d[:HONSUU]
-    print("インスタから %d件 読みました（使うのは %d件）" % (len(d), len(erabu)))
+    # **HPに出すのは、実物の作業写真からの投稿だけ**（2026-09-23 中元さんの指示）。
+    # 毎日のAI画像ばかりが並んでいて、現場が見えなくなっていたため。
+    # 目印は `#フッ軽の現場`。material.py（素材からの投稿）が機械で付けます。
+    # **目印が1件も無いときは、今までどおり全部から選びます**（欄が空になるのを防ぐ）。
+    genba = [m for m in d if GENBA in (m.get("caption") or "")]
+    if genba:
+        erabu = genba[:HONSUU]
+        print("インスタから %d件 読みました（現場の投稿 %d件 → 使うのは %d件）"
+              % (len(d), len(genba), len(erabu)))
+    else:
+        erabu = d[:HONSUU]
+        print("インスタから %d件 読みました（★「%s」の投稿がまだ無いので、"
+              "今までどおり新しい順に %d件）" % (len(d), GENBA, len(erabu)))
 
     # 文面の見張り（HPには載せませんが、中元さんの書き方の参考に報せます）
     kizukai = []
