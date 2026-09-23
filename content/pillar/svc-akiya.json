@@ -16,6 +16,8 @@
   ],
   "category": "不用品の運搬",
   "publishDate": "2026-09-24",
+  "heroImage": "/blog/svc-akiya-bg.jpg",
+  "ogImage": "/blog/svc-akiya.jpg",
   "blocks": [
     {
       "type": "lead",
