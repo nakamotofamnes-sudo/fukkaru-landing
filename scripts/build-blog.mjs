@@ -839,7 +839,7 @@ function renderServiceIndex(groups, pillars) {
     <p>損保ジャパンの保険に加入しています。万一のときは、まずご連絡ください。</p>
     <h2 id="faq">よくいただくご質問</h2>
     <div class="faq">${SERVICE_FAQ.map(([q, a]) => `<div class="faq-item"><p class="faq-q">Q. ${esc(q)}</p><p class="faq-a">A. ${esc(a)}</p></div>`).join('')}</div>
-    <div class="note"><b>お引き受けできないこと</b><p>ご家庭から出た不用品を、ごみとして引き取って処分することはできません（一般廃棄物収集運搬業の許可が無いためです）。できるのは、荷物を指定の場所まで<b>運ぶこと</b>、まだ使えるものを<b>買い取ること</b>、自治体での<b>出し方をご案内すること</b>です。</p></div>
+    <div class="note"><b>手放したいものについて</b><p><b>まだ使えるものは引き取ります</b>（古物商許可）。ごみとして出すぶんは、<b>許可を持つ回収業者と一緒に</b>片付けます。フッ軽が間に入って段取りしますので、業者を別に探していただく必要はありません。ご自身で出される場合は、指定の場所までお運びし、<b>自治体での出し方をご案内します</b>。</p></div>
   </div>
 </main>
 <div class="article-footer wrap">
