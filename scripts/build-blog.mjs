@@ -910,15 +910,27 @@ function renderIndexPage(articles, pillars = []) {
 }
 
 function buildSitemap(articles, pillars = []) {
+  // **いつ更新したかを、全部のURLに入れる（2026-09-24）。**
+  // 2026-09-24 に Search Console の生の判定を読んだら、
+  // **柱ページは一度もクロールされていなかった**（lastCrawlTime が無い）。
+  // 柱ページとトップには lastmod が1つも無く、**9/21に文章を足したことが
+  // Google には「何も変わっていない」ように見えていた。**
+  // 記事（lastmod あり）は全部クロールされているのと対照的だった。
+  const saishin = articles
+    .map((a) => a.updatedDate || a.publishDate)
+    .filter(Boolean)
+    .sort()
+    .pop();
+  const hiduke = (x) => x.updatedDate || x.publishDate || saishin;
   const urls = [
-    { loc: `${SITE_URL}/`, priority: '1.0' },
-    { loc: `${SITE_URL}/blog/`, priority: '0.8' },
-    { loc: `${SITE_URL}/service/`, priority: '0.9' },
+    { loc: `${SITE_URL}/`, priority: '1.0', lastmod: saishin },
+    { loc: `${SITE_URL}/blog/`, priority: '0.8', lastmod: saishin },
+    { loc: `${SITE_URL}/service/`, priority: '0.9', lastmod: saishin },
     // 代表のプロフィール（2026-09-22 追加）。
     // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
-    { loc: `${SITE_URL}/profile.html`, priority: '0.6' },
-    ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9' })),
-    ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: a.updatedDate || a.publishDate })),
+    { loc: `${SITE_URL}/profile.html`, priority: '0.6', lastmod: saishin },
+    ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9', lastmod: hiduke(p) })),
+    ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: hiduke(a) })),
   ];
   const body = urls
     .map(
