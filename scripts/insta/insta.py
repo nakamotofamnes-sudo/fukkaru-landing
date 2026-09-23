@@ -68,11 +68,25 @@ def toru(url):
 
 
 def toukou_wo_yomu(tok, uid):
+    """**目印の付いた投稿を探すので、深くまで読みます**（2026-09-23）。
+
+    はじめは最新24件だけ読んでいました。**目印つきが32件あるのに6件しか
+    拾えませんでした**（実測）。現場の投稿は毎日ではないので、
+    24件では足りません。1回100件・最大3回まで遡ります。
+    """
     q = urllib.parse.urlencode({
         "fields": "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp",
-        "limit": str(HONSUU + 6),      # 動画などを外す余地を持たせる
+        "limit": "100",
         "access_token": tok})
-    return toru("https://graph.instagram.com/%s/media?%s" % (uid, q)).get("data", [])
+    url = "https://graph.instagram.com/%s/media?%s" % (uid, q)
+    d = []
+    for _ in range(3):
+        r = toru(url)
+        d += r.get("data", [])
+        url = (r.get("paging") or {}).get("next")
+        if not url:
+            break
+    return d
 
 
 def chiisaku(baito):
