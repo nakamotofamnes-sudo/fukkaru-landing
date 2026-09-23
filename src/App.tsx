@@ -270,7 +270,11 @@ const App: React.FC = () => {
       <Founder />
       <Faq />
       <Reservation />
-      <Subscription />
+      {/* 2026-09-23、中元さんの指示で **定額サポート（サブスク）の節を一旦おろしました。**
+          会員が増えないため、戦略を練り直してから出し直します。
+          **消していません。**上の Subscription と plans はそのまま残してあるので、
+          この行のコメントを外せば元に戻ります。 */}
+      {/* <Subscription /> */}
       <Partners />
       <BlogTeaser />
       <Contact />
