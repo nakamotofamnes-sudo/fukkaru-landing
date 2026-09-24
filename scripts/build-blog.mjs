@@ -46,7 +46,22 @@ function inline(s) {
  * （見出しや表の中で改行することはないので、そこには使いません）
  */
 function inlineBr(s) {
-  return inline(s).replace(/\n/g, '<br>');
+  return inline(kugiru(s)).replace(/\n/g, '<br>');
+}
+
+/** 「。」で必ず改行する（2026-09-24 中元さんの指示）
+ *
+ * **1文ずつ行を分けたほうが読みやすい。**
+ * 記事53本のデータは直しません。**ここ1か所で全部の記事が変わります。**
+ *
+ * 改行しないのは2つだけです。
+ *   ・段落のいちばん最後の「。」（余分な空行になるため）
+ *   ・「。」の直後が閉じカッコのとき（「…です。」のような引用の途中）
+ */
+function kugiru(s) {
+  return String(s == null ? '' : s)
+    .replace(/。(?![」』）\)】\]"'\n])/g, '。\n')
+    .replace(/\n+$/, '');
 }
 
 /** 目次（2026-09-12）
@@ -198,13 +213,13 @@ function renderBlock(block) {
       return `<div class="table-wrap${cols <= 2 ? ' cols-2' : ''}"><table>${head}${rows}</table></div>`;
     }
     case 'note':
-      return `<div class="note"><strong>${inline(block.title || 'メモ')}</strong><p>${inline(block.text)}</p></div>`;
+      return `<div class="note"><strong>${inline(block.title || 'メモ')}</strong><p>${inlineBr(block.text)}</p></div>`;
     case 'cta':
       return renderCta(block);
     case 'faq': {
       const items = block.items
         .map(
-          (qa) => `<div class="faq-item"><p class="faq-q">Q. ${inline(qa.q)}</p><p class="faq-a">A. ${inline(qa.a)}</p>${qa.soudan ? `<a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">写真を送って聞いてみる</a>` : ''}</div>`
+          (qa) => `<div class="faq-item"><p class="faq-q">Q. ${inline(qa.q)}</p><p class="faq-a">A. ${inlineBr(qa.a)}</p>${qa.soudan ? `<a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">写真を送って聞いてみる</a>` : ''}</div>`
         )
         .join('');
       return `<div class="faq">${items}</div>`;
