@@ -1819,9 +1819,16 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
 
     # 数字の捏造よけ。実績値を書かせない約束なので、見つけたら止める。
     # ただし、サイトに載っている料金と同じ額は通す（捏造ではなく会社の事実のため）。
+    #
+    # **「1件」「1人」「1台」は通します**（2026-09-24 に狭めました）。
+    # この弁が止めたいのは「施工実績500件」「満足度98%」のような**盛った実績**です。
+    # **1は、盛れません。**その日の16時の記事は「1台」ひとつで4回とも落ち、
+    # **1本も出ませんでした。**円と割は通しません（金額と値引き率になるため）。
     allowed = set(KNOWN_NUMBERS) | set(FUJI_CITY_FEES) | site_prices()
     found = {m.group(0) for m in NUM.finditer(json.dumps(art, ensure_ascii=False))}
-    hits = sorted(h for h in found if h.replace(" ", "") not in allowed)
+    hits = sorted(h for h in found
+                  if h.replace(" ", "") not in allowed
+                  and not re.fullmatch(r"1\s*(?:件|人|台)", h))
     if hits:
         ng.append("数値が書かれています（サイトに載っていない数字は書けません）：%s"
                   % ", ".join(hits[:6]))
