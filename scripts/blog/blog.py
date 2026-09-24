@@ -1614,6 +1614,40 @@ def naosu_all() -> int:
     return 0
 
 
+# ── うんていの記事は、アリサラのうんてい屋さんにつなぐ（2026-09-24 中元さんの指示）──
+#
+# **フッ軽がするのは「組み立てと設置」です。**買う・選ぶところは専門店の仕事なので、
+# 迷っている段階の人は、先に専門店へ行っていただくほうが早い。
+# リンクは中元さんの許可済み（PR #115・memory fukkaru_arisara_link）。
+#
+# **AIに書かせません。**言っても入れ忘れます。ここで機械が必ず入れます（判定は1か所）。
+UNTEI_MIDASHI = "うんてい選びから相談したい方へ"
+UNTEI_HONBUN = (
+    "室内に置くうんていは、家の広さに合わせて作る専門店があります。"
+    "[アリサラのうんてい屋さん](https://untei.jp/)は、知育うんていのオーダーメイド専門店です。"
+    "どれを選ぶか迷っている段階なら、まず専門店にご相談ください。"
+    "フッ軽は、届いたうんていの組み立てと設置を承ります。"
+)
+
+
+def untei_annai(art: dict) -> int:
+    """うんていの記事に、専門店への案内を入れる。入れたら1を返す"""
+    if "うんてい" not in str(art.get("title", "")):
+        return 0
+    blocks = art.get("blocks")
+    if not isinstance(blocks, list):
+        return 0
+    if any(isinstance(b, dict) and b.get("title") == UNTEI_MIDASHI for b in blocks):
+        return 0                      # もう入っている
+    annai = {"type": "note", "title": UNTEI_MIDASHI, "text": UNTEI_HONBUN}
+    for i, b in enumerate(blocks):    # 締めのひと押し（cta）の直前に置く
+        if isinstance(b, dict) and b.get("type") == "cta":
+            blocks.insert(i, annai)
+            return 1
+    blocks.append(annai)
+    return 1
+
+
 def seikei(art: dict) -> int:
     """記事の段落を整える。直した数を返す。**文字は変えない**"""
     blocks = art.get("blocks")
@@ -1684,6 +1718,8 @@ def seikei(art: dict) -> int:
     naoshita += n
     if naoshita:
         art["blocks"] = atarashii
+    # **うんていの記事は、専門店への案内を必ず入れます**（2026-09-24 中元さんの指示）
+    naoshita += untei_annai(art)
     return naoshita
 
 
