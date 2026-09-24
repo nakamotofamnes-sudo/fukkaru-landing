@@ -612,8 +612,27 @@ p の中に「**太字だけの行**」や「・」「*」「1.」で始まる�
 def build_prompt(done: list[dict], service: str, area: str,
                  ng: list[str] | None = None) -> str:
     angle = ANGLES[len(done) % len(ANGLES)]
-    used = [title_shape(a.get("title", "")) for a in done[-8:]]
-    used_shapes = "\n".join("  ・%s" % u for u in used if u) or "  ・（まだありません）"
+    # **見せる範囲と、弾く範囲を合わせます**（2026-09-24）。
+    # それまで「もう使えない型」は**直近8本だけ**から作っていたのに、
+    # 弾くほう（title_clash）は**全部の記事**を見ていました。
+    # 2026-09-24の16時の記事は、同じ「家具の移動・模様替え」の富士市版とぶつかって
+    # 3回やり直し、4回目に別の理由で落ちて**1本も出ませんでした。**
+    # その富士市版は直近8本に入っていないので、AIには見えていませんでした。
+    #
+    # → 直近8本に加えて、**今回と同じ仕事の記事は、古くても必ず見せます。**
+    # **狙いの書き方と、記事の書き方は字が違います。**
+    # 狙いは「家具の移動・模様替え」、記事は「家具移動・模様替え」（「の」が無い）。
+    # そのままでは1本も拾えなかったので、助詞と記号を落としてから見比べます。
+    skey = _kotoba(service)[:4]
+    onaji = [a for a in done
+             if skey and skey in _kotoba(a.get("title", "") + a.get("category", ""))]
+    used, mita = [], set()
+    for a in done[-8:] + onaji:
+        u = title_shape(a.get("title", ""))
+        if u and u not in mita:
+            mita.add(u)
+            used.append(u)
+    used_shapes = "\n".join("  ・%s" % u for u in used) or "  ・（まだありません）"
     written = "\n".join(
         "  ・%s（slug: %s／分類: %s）" % (a.get("title", ""), a.get("slug", ""),
                                     a.get("category", ""))
@@ -790,6 +809,11 @@ def site_prices() -> set[str]:
 # 本当にかぶっている2組が 0.77 と 0.65、別物どうしは 0.56 以下でした。
 # 境目は 0.60 にしてあります。
 TITLE_SHAPE_MAX = float(os.environ.get("FUKKARU_TITLE_SHAPE_MAX") or 0.60)
+
+
+def _kotoba(s: str) -> str:
+    """助詞と記号を落とす。狙い（家具の移動）と記事（家具移動）を見比べるため"""
+    return re.sub(r"[のをにへとがはでやもか・、。！？\s　【】「」『』（）()\[\]]", "", s or "")
 
 
 def title_shape(t: str) -> str:
