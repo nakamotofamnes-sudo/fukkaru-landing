@@ -393,6 +393,11 @@ main .wrap{font-size:16px}
 h2{font-size:22px;font-weight:700;margin:48px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--hairline)}
 h3{font-size:17px;font-weight:700;margin:32px 0 12px}
 p{margin:0 0 18px}
+/* 段落と段落のあいだを広げる（2026-09-24 中元さんの指示）。
+   参考にしたページ（manablog）を実測したら、**違いはここだけ**でした。
+   文字16px・行間30px・1段落58字はほぼ同じで、**段落の下だけ60px**（こちらは18px）。
+   クラスの無い段落＝本文だけを広げます（リード・メモ・FAQ・帯は今までどおり）。 */
+main .wrap p:not([class]){margin-bottom:36px}
 ul,ol{margin:0 0 20px;padding-left:1.4em}
 li{margin:0 0 10px}
 strong{color:var(--ink-900);font-weight:700}
