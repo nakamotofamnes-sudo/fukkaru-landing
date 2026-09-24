@@ -1,24 +1,15 @@
 {
-  "torikomi": "2026-09-24T12:26:46+09:00",
+  "torikomi": "2026-09-24T14:39:44+09:00",
   "username": "fukkaru.fuji.benriya",
   "toukou": [
     {
-      "id": "18125720713859096",
+      "id": "18089037524280790",
       "hi": "2026-09-24",
       "kata": "CAROUSEL_ALBUM",
-      "ga": "/insta/18125720713859096.jpg",
+      "ga": "/insta/18089037524280790.jpg",
       "haba": 720,
       "takasa": 720,
-      "url": "https://www.instagram.com/p/Ddp6mL4I5Y8/"
-    },
-    {
-      "id": "18093834761440499",
-      "hi": "2026-09-24",
-      "kata": "CAROUSEL_ALBUM",
-      "ga": "/insta/18093834761440499.jpg",
-      "haba": 720,
-      "takasa": 720,
-      "url": "https://www.instagram.com/p/Ddp6kN-Iygn/"
+      "url": "https://www.instagram.com/p/DdqJyEEo-U8/"
     },
     {
       "id": "18051070610666309",
@@ -163,6 +154,15 @@
       "haba": 720,
       "takasa": 720,
       "url": "https://www.instagram.com/p/DaRPMhUAQgS/"
+    },
+    {
+      "id": "18071673770354859",
+      "hi": "2026-06-24",
+      "kata": "CAROUSEL_ALBUM",
+      "ga": "/insta/18071673770354859.jpg",
+      "haba": 720,
+      "takasa": 720,
+      "url": "https://www.instagram.com/p/DZ-GOZOj_zm/"
     }
   ]
 }
