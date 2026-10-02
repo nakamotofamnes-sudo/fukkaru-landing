@@ -294,7 +294,12 @@ function jsonLd(article) {
     dateModified: article.updatedDate || article.publishDate,
     author: { '@type': 'Organization', name: SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME },
-    mainEntityOfPage: articleUrl(article.slug),
+    // **ページの住所は canonical と同じにする（2026-10-02）。**
+    // 柱（basePath: 'service'）も articleUrl で /blog/<slug>/ を入れていたため、
+    // /service/akiya/ のページが「本体は /blog/akiya/（実在しない）」と名乗っていた。
+    // 無いURLでもトップが200で返っていたので、Google には「本体はトップと同じ中身の別の住所」に見えた。
+    // /service/ の柱7本だけが一度も読みに来られず、/blog/ の柱は4日で登録された差と合う
+    mainEntityOfPage: pageUrl(article.basePath || 'blog', article.slug),
   };
   const out = [data];
 
@@ -932,6 +937,52 @@ function renderIndexPage(articles, pillars = []) {
   });
 }
 
+// ── 「ページが見つかりません」（2026-10-02）──
+// それまでは firebase.json の rewrites（"**" → /index.html）で、**無いURLでもトップページが200で返っていた**
+// （ソフト404）。Google から見ると「どんなURLでも同じ中身を返すサイト」になる。
+// rewrites を外すと Firebase は dist/404.html を 404 で返すので、行き止まりにしない画面を置く
+function render404Page(pillars = []) {
+  const bodyHtml = `
+<div class="hero">
+  <div class="wrap">
+    <span class="cat">404</span>
+    <h1>ページが見つかりませんでした</h1>
+    <div class="meta">お探しのページは、移動したか、まだ無いページです</div>
+  </div>
+</div>
+<main>
+  <div class="wrap">
+    <p>お手数ですが、下のどれかからお進みください。</p>
+    <div class="cta-buttons" style="margin-bottom:28px">
+      <a class="btn btn-outline" href="/">トップページへ</a>
+      <a class="btn btn-outline" href="/service/">できることと料金</a>
+      <a class="btn btn-outline" href="/blog/">ブログ一覧</a>
+    </div>
+    ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
+      <h2>仕事ごとのまとめ</h2>
+      <ul>
+        ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n        ')}
+      </ul>
+    </nav>` : ''}
+    <div class="cta-box">
+      <p class="cta-heading">ご相談は公式LINEへ</p>
+      <p class="cta-sub">写真を1枚送っていただければ、お見積りをお出しします。</p>
+      <div class="cta-buttons">
+        <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">公式LINEで相談する</a>
+      </div>
+    </div>
+  </div>
+</main>`;
+  return pageShell({
+    title: `ページが見つかりませんでした｜${SITE_NAME}`,
+    description: 'お探しのページは見つかりませんでした。トップページ・できることと料金・ブログ一覧からお進みください。',
+    canonical: `${SITE_URL}/404.html`,
+    ogType: 'website',
+    extraHead: '<meta name="robots" content="noindex">',
+    bodyHtml,
+  });
+}
+
 function buildSitemap(articles, pillars = []) {
   // **いつ更新したかを、全部のURLに入れる（2026-09-24）。**
   // 2026-09-24 に Search Console の生の判定を読んだら、
@@ -1067,6 +1118,9 @@ function main() {
     fs.writeFileSync(path.join(svcDir, 'index.html'), renderServiceIndex(svcGroups, pillars), 'utf8');
     console.log(`[build-blog] 生成: /service/（${svcGroups.length}分類 / ${svcGroups.reduce((n, g) => n + g.services.length, 0)}項目）`);
   }
+
+  fs.writeFileSync(path.join(DIST_DIR, '404.html'), render404Page(pillars), 'utf8');
+  console.log('[build-blog] 生成: /404.html（無いURLのときに Firebase が404で返す画面）');
 
   const linked = injectBlogLinks(articles, pillars);
 
