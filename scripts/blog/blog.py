@@ -1315,19 +1315,47 @@ _KAISHU_JISHA = ("フッ軽", "当社", "弊社", "私たち", "私が", "代表
 
 # **狙いに入れた言葉を、題名に機械で入れる**（2026-10-05）。「不用品回収」はAIが言っても避ける
 # （試し運転2回とも「不用品の買取…」「不用品整理…」になった）。言葉が題名に無いと、その言葉で上位を狙えない
-DAIMEI_KOTOBA = ("不用品回収を頼む前に",)
+# （言葉, 足すときの言い回し）。**言葉が題名に入っていれば触らない**（「頼む前に」まで求めると、
+# AIが「【不用品回収】…」と入れていても頭に足し、題名に二重に入った 2026-10-05）
+DAIMEI_KOTOBA = (("不用品回収", "不用品回収を頼む前に"),)
 
 
 def daimei_kotoba(art: dict, service: str, area: str) -> int:
-    """狙いに DAIMEI_KOTOBA があって題名に無ければ、題名の頭を「<地域>で<言葉>｜」にそろえる。直した数を返す"""
+    """狙いに言葉があって題名に無ければ、題名の頭を「<地域>で<言い回し>｜」にそろえる。直した数を返す"""
     t = str(art.get("title") or "")
-    for k in DAIMEI_KOTOBA:
-        if k in service and k not in t:
+    for kotoba, k in DAIMEI_KOTOBA:
+        if kotoba in service and kotoba not in t:
             rest = re.sub(r"^[【\[]?%s[】\]]?" % re.escape(area), "", t)
             rest = re.sub(r"^(?:での|で|の|、|｜|\s)+", "", rest).strip()
             art["title"] = "%sで%s｜%s" % (area, k, rest) if rest else "%sで%s" % (area, k)
             return 1
     return 0
+
+
+def kaishu_naosu(art: dict) -> int:
+    """「不用品回収」をフッ軽の約束・呼びかけにしている文は、**弾かずに言い換える**（2026-10-05）。
+    試し運転で、見出しや相談の呼びかけ（「不用品回収のご相談は、まず写真で！」）に毎回入り、4回目でやっと通った。
+    9/23 に決めた形の言葉「不用品の片付け」（許可を持つ業者と一緒に片付ける）に置き換える。検索の言葉の一覧は触らない"""
+    n = 0
+
+    def naosu(v):
+        nonlocal n
+        if isinstance(v, str):
+            bun = re.split(r"(?<=[。！？!?])", v)
+            kae = [b.replace("不用品回収", "不用品の片付け") if kaishu_yakusoku(b) else b for b in bun]
+            if kae != bun:
+                n += 1
+                return "".join(kae)
+            return v
+        if isinstance(v, list):
+            return [naosu(x) for x in v]
+        if isinstance(v, dict):
+            return {k: (x if k in ("keywords", "slug") else naosu(x)) for k, x in v.items()}
+        return v
+    for k in list(art.keys()):
+        if k not in ("keywords", "slug"):
+            art[k] = naosu(art[k])
+    return n
 
 
 def kaishu_yakusoku(sent: str) -> str:
@@ -2090,6 +2118,9 @@ def main() -> int:
             log("  ・段落 %d個を、見出しと箇条書きに分けました（自動）" % naoshita)
         if daimei_kotoba(art, service, area):
             log("  ・題名に狙いの言葉を入れました：%s" % art["title"])
+        n_kaishu = kaishu_naosu(art)
+        if n_kaishu:
+            log("  ・「不用品回収」をフッ軽の約束にしていた所を %d か所「不用品の片付け」に言い換えました" % n_kaishu)
         ng = check(art, done, attempt, ATTEMPTS)
         if not ng:
             break
