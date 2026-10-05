@@ -1296,8 +1296,21 @@ _KYOKA_OK = re.compile(
 # **check() の弁と、seikei() の直しの両方がここを見る（判定は1か所）**（2026-09-14）。
 # 2026-09-14 の dry で、4回目（最後）が「処分いたします」で弾かれ、**その日の記事がゼロ**になりかけた。
 # 弾くのではなく、**その文だけ外す。**記事を落とすより、1文を失うほうがまし。
-KYOKA_KINSHI = ("不用品回収", "粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
+KYOKA_KINSHI = ("粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
                 "ゴミを引き取", "処分いたします", "処分します", "回収いたします")
+# **「不用品回収」は、言葉ごと弾くのをやめて、文の形で見る**（2026-10-05 中元さん「不用品回収のランクを上げたい」）。
+# 9/04 は許可が無いので言葉ごと外していた。9/23 から「まだ使えるものは引き取り、それ以外は許可を持つ
+# 回収業者と一緒に片付ける」と書けるようになった。**この言葉で上位を狙うには、ページに言葉が要る。**
+# 通すのは、許可の話をしている文と、頼む前の説明の文だけ。「フッ軽が回収する」と読める約束は今までどおり外す
+_KAISHU_OK = ("許可", "頼む前", "選ぶ", "選び方", "確かめ", "確認", "とは", "どこに頼", "違い", "注意",
+              "気をつけ", "見分け")
+
+
+def kaishu_yakusoku(sent: str) -> str:
+    """「不用品回収」が、許可の話でも頼む前の説明でもない文に出ていたら、その理由を返す"""
+    if "不用品回収" in sent and not any(w in sent for w in _KAISHU_OK):
+        return "「不用品回収」をフッ軽の仕事として書いている文です（許可の話か、頼む前の説明として書く）"
+    return ""
 _PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
 _EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
            "自治体", "市の", "指定", "ご案内", "お受けしていません", "お受けしていない")
@@ -1326,7 +1339,7 @@ def _kyoka(s: str) -> str:
         bun = kae
         s = "".join(bun)
     nokosu = [b for b in bun
-              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b))]
+              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b) or kaishu_yakusoku(b))]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
         s = "".join(nokosu)
     return s
@@ -1834,6 +1847,12 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     for w in KYOKA_KINSHI:
         if w in whole:
             ng.append("ごみの処分を請け負う書き方です（一般廃棄物の許可が無い）：%s" % w)
+    # 「不用品回収」は文の形で見る（題名・説明文・見出しも含む）。判定は kaishu_yakusoku() の1か所
+    for sent in re.split(r'[。！？"]', whole):
+        riyuu = kaishu_yakusoku(sent)
+        if riyuu:
+            ng.append("%s：%s" % (riyuu, sent.strip()[:50]))
+            break
 
     # 自社を主語にして「回収」「引き取り」を約束させない（2026-09-04 に追加）。
     # 上の弁は決まり文句だけを見ていたので、
