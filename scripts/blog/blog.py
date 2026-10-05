@@ -1296,8 +1296,75 @@ _KYOKA_OK = re.compile(
 # **check() の弁と、seikei() の直しの両方がここを見る（判定は1か所）**（2026-09-14）。
 # 2026-09-14 の dry で、4回目（最後）が「処分いたします」で弾かれ、**その日の記事がゼロ**になりかけた。
 # 弾くのではなく、**その文だけ外す。**記事を落とすより、1文を失うほうがまし。
-KYOKA_KINSHI = ("不用品回収", "粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
+KYOKA_KINSHI = ("粗大ごみを処分", "粗大ゴミを処分", "ごみを引き取",
                 "ゴミを引き取", "処分いたします", "処分します", "回収いたします")
+# **「不用品回収」は、言葉ごと弾くのをやめて、文の形で見る**（2026-10-05 中元さん「不用品回収のランクを上げたい」）。
+# 9/04 は許可が無いので言葉ごと外していた。9/23 から「まだ使えるものは引き取り、それ以外は許可を持つ
+# 回収業者と一緒に片付ける」と書けるようになった。**この言葉で上位を狙うには、ページに言葉が要る。**
+# 通すのは、許可の話をしている文と、頼む前の説明の文だけ。「フッ軽が回収する」と読める約束は今までどおり外す
+_KAISHU_OK = ("許可", "頼む前", "選ぶ", "選び方", "確かめ", "確認", "とは", "どこに頼", "違い", "注意",
+              "気をつけ", "見分け")
+
+
+# 弾くのは「フッ軽が回収する」と読める文だけ。**フッ軽が主語か、依頼を呼びかけている文**に「不用品回収」がある場合。
+# 2026-10-05 の試しで「『不用品回収』という言葉で検索すると、多くの便利屋や回収業者がヒットします」
+# （ただの説明）まで弾いていた（効きすぎ）
+_KAISHU_JISHA = ("フッ軽", "当社", "弊社", "私たち", "私が", "代表", "お任せ", "承り", "まとめて", "対応いたし",
+                 "お引き受け", "伺", "ご依頼", "ご相談", "お問い合わせ", "お気軽", "LINE", "即日", "格安", "安く")
+
+
+# **狙いに入れた言葉を、題名に機械で入れる**（2026-10-05）。「不用品回収」はAIが言っても避ける
+# （試し運転2回とも「不用品の買取…」「不用品整理…」になった）。言葉が題名に無いと、その言葉で上位を狙えない
+# （言葉, 足すときの言い回し）。**言葉が題名に入っていれば触らない**（「頼む前に」まで求めると、
+# AIが「【不用品回収】…」と入れていても頭に足し、題名に二重に入った 2026-10-05）
+DAIMEI_KOTOBA = (("不用品回収", "不用品回収を頼む前に"),)
+
+
+def daimei_kotoba(art: dict, service: str, area: str) -> int:
+    """狙いに言葉があって題名に無ければ、題名の頭を「<地域>で<言い回し>｜」にそろえる。直した数を返す"""
+    t = str(art.get("title") or "")
+    for kotoba, k in DAIMEI_KOTOBA:
+        if kotoba in service and kotoba not in t:
+            rest = re.sub(r"^[【\[]?%s[】\]]?" % re.escape(area), "", t)
+            rest = re.sub(r"^(?:での|で|の|、|｜|\s)+", "", rest).strip()
+            art["title"] = "%sで%s｜%s" % (area, k, rest) if rest else "%sで%s" % (area, k)
+            return 1
+    return 0
+
+
+def kaishu_naosu(art: dict) -> int:
+    """「不用品回収」をフッ軽の約束・呼びかけにしている文は、**弾かずに言い換える**（2026-10-05）。
+    試し運転で、見出しや相談の呼びかけ（「不用品回収のご相談は、まず写真で！」）に毎回入り、4回目でやっと通った。
+    9/23 に決めた形の言葉「不用品の片付け」（許可を持つ業者と一緒に片付ける）に置き換える。検索の言葉の一覧は触らない"""
+    n = 0
+
+    def naosu(v):
+        nonlocal n
+        if isinstance(v, str):
+            bun = re.split(r"(?<=[。！？!?])", v)
+            kae = [b.replace("不用品回収", "不用品の片付け") if kaishu_yakusoku(b) else b for b in bun]
+            if kae != bun:
+                n += 1
+                return "".join(kae)
+            return v
+        if isinstance(v, list):
+            return [naosu(x) for x in v]
+        if isinstance(v, dict):
+            return {k: (x if k in ("keywords", "slug") else naosu(x)) for k, x in v.items()}
+        return v
+    for k in list(art.keys()):
+        if k not in ("keywords", "slug"):
+            art[k] = naosu(art[k])
+    return n
+
+
+def kaishu_yakusoku(sent: str) -> str:
+    """「不用品回収」をフッ軽の仕事として約束・呼びかけしている文なら、その理由を返す（許可の話・頼む前の説明は通す）"""
+    if "不用品回収" not in sent or any(w in sent for w in _KAISHU_OK):
+        return ""
+    if any(w in sent for w in _KAISHU_JISHA):
+        return "「不用品回収」をフッ軽の仕事として書いている文です（許可の話か、頼む前の説明として書く）"
+    return ""
 _PROMISE = ("お任せ", "承り", "まとめて", "対応いたし", "お引き受け")
 _EXCUSE = ("できません", "ありません", "持っておりません", "持っていない",
            "自治体", "市の", "指定", "ご案内", "お受けしていません", "お受けしていない")
@@ -1326,7 +1393,7 @@ def _kyoka(s: str) -> str:
         bun = kae
         s = "".join(bun)
     nokosu = [b for b in bun
-              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b))]
+              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b) or kaishu_yakusoku(b))]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
         s = "".join(nokosu)
     return s
@@ -1834,6 +1901,15 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     for w in KYOKA_KINSHI:
         if w in whole:
             ng.append("ごみの処分を請け負う書き方です（一般廃棄物の許可が無い）：%s" % w)
+    # 「不用品回収」は文の形で見る（題名・説明文・見出し・本文）。判定は kaishu_yakusoku() の1か所。
+    # **検索の言葉の一覧（keywords）は見ない。**狙う言葉そのものを入れる場所で、「富士市 不用品回収」は正しい。
+    # 2026-10-05 の試しで、これを文として弾き、4回とも同じ所で止まった（効きすぎ）
+    bunsho = json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)
+    for sent in re.split(r'[。！？"]', bunsho):
+        riyuu = kaishu_yakusoku(sent)
+        if riyuu:
+            ng.append("%s：%s" % (riyuu, sent.strip()[:50]))
+            break
 
     # 自社を主語にして「回収」「引き取り」を約束させない（2026-09-04 に追加）。
     # 上の弁は決まり文句だけを見ていたので、
@@ -2040,6 +2116,11 @@ def main() -> int:
         naoshita = seikei(art)
         if naoshita:
             log("  ・段落 %d個を、見出しと箇条書きに分けました（自動）" % naoshita)
+        if daimei_kotoba(art, service, area):
+            log("  ・題名に狙いの言葉を入れました：%s" % art["title"])
+        n_kaishu = kaishu_naosu(art)
+        if n_kaishu:
+            log("  ・「不用品回収」をフッ軽の約束にしていた所を %d か所「不用品の片付け」に言い換えました" % n_kaishu)
         ng = check(art, done, attempt, ATTEMPTS)
         if not ng:
             break
