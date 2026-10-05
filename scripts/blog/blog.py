@@ -1847,8 +1847,11 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     for w in KYOKA_KINSHI:
         if w in whole:
             ng.append("ごみの処分を請け負う書き方です（一般廃棄物の許可が無い）：%s" % w)
-    # 「不用品回収」は文の形で見る（題名・説明文・見出しも含む）。判定は kaishu_yakusoku() の1か所
-    for sent in re.split(r'[。！？"]', whole):
+    # 「不用品回収」は文の形で見る（題名・説明文・見出し・本文）。判定は kaishu_yakusoku() の1か所。
+    # **検索の言葉の一覧（keywords）は見ない。**狙う言葉そのものを入れる場所で、「富士市 不用品回収」は正しい。
+    # 2026-10-05 の試しで、これを文として弾き、4回とも同じ所で止まった（効きすぎ）
+    bunsho = json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)
+    for sent in re.split(r'[。！？"]', bunsho):
         riyuu = kaishu_yakusoku(sent)
         if riyuu:
             ng.append("%s：%s" % (riyuu, sent.strip()[:50]))
