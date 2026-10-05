@@ -1313,6 +1313,23 @@ _KAISHU_JISHA = ("フッ軽", "当社", "弊社", "私たち", "私が", "代表
                  "お引き受け", "伺", "ご依頼", "ご相談", "お問い合わせ", "お気軽", "LINE", "即日", "格安", "安く")
 
 
+# **狙いに入れた言葉を、題名に機械で入れる**（2026-10-05）。「不用品回収」はAIが言っても避ける
+# （試し運転2回とも「不用品の買取…」「不用品整理…」になった）。言葉が題名に無いと、その言葉で上位を狙えない
+DAIMEI_KOTOBA = ("不用品回収を頼む前に",)
+
+
+def daimei_kotoba(art: dict, service: str, area: str) -> int:
+    """狙いに DAIMEI_KOTOBA があって題名に無ければ、題名の頭を「<地域>で<言葉>｜」にそろえる。直した数を返す"""
+    t = str(art.get("title") or "")
+    for k in DAIMEI_KOTOBA:
+        if k in service and k not in t:
+            rest = re.sub(r"^[【\[]?%s[】\]]?" % re.escape(area), "", t)
+            rest = re.sub(r"^(?:での|で|の|、|｜|\s)+", "", rest).strip()
+            art["title"] = "%sで%s｜%s" % (area, k, rest) if rest else "%sで%s" % (area, k)
+            return 1
+    return 0
+
+
 def kaishu_yakusoku(sent: str) -> str:
     """「不用品回収」をフッ軽の仕事として約束・呼びかけしている文なら、その理由を返す（許可の話・頼む前の説明は通す）"""
     if "不用品回収" not in sent or any(w in sent for w in _KAISHU_OK):
@@ -2071,6 +2088,8 @@ def main() -> int:
         naoshita = seikei(art)
         if naoshita:
             log("  ・段落 %d個を、見出しと箇条書きに分けました（自動）" % naoshita)
+        if daimei_kotoba(art, service, area):
+            log("  ・題名に狙いの言葉を入れました：%s" % art["title"])
         ng = check(art, done, attempt, ATTEMPTS)
         if not ng:
             break
