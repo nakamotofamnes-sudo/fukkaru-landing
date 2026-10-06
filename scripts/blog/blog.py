@@ -1382,7 +1382,26 @@ def kyoka_yakusoku(sent: str) -> str:
     return ""
 
 
+# **お客様の家のごみを、フッ軽が施設へ運び込むと読める文**は、9/23 の形の文に差し替える（2026-10-06）。
+# 「年末の片付け」の記事に「一般廃棄物として処分が必要なものについては…指定の施設へ搬入いたします」が出て、
+# 見張りを全部すり抜けて公開された。**作業で出たもの（刈った草・剪定した枝・解体した物置）をフッ軽が持ち込むのは
+# 書いてよい**（9/14 中元さん）ので、それとお客様ご自身で出す話は触らない
+_HANNYU = re.compile(r"(?:施設|クリーンセンター|処分場|処理場)(?:へ|に|まで)(?:搬入|持ち込み|持込|お持ち|運び込)(?:いたします|します|ます)")
+_HANNYU_GOMI = re.compile(r"一般廃棄物|家庭ごみ|家庭のごみ|不用品|処分が必要|ごみとして")
+_HANNYU_OK = re.compile(r"刈った|刈り取|草|剪定|枝|作業で出|解体した|ご自身|お客様が|お客様ご自身")
+_HANNYU_KAWARI = ("ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。"
+                  "フッ軽が間に入って段取りしますので、業者を別に探していただく必要はありません。")
+
+
+def hannyu_naosu(s: str) -> str:
+    bun = re.split(r"(?<=[。！？])", s)
+    kae = [(_HANNYU_KAWARI if (_HANNYU.search(b) and _HANNYU_GOMI.search(b) and not _HANNYU_OK.search(b)) else b)
+           for b in bun]
+    return "".join(kae)
+
+
 def _kyoka(s: str) -> str:
+    s = hannyu_naosu(s)
     for pat, ato in KYOKA_NAOSHI:
         s = re.sub(pat, ato, s)
     # それでも「処分を請け負う」と読める文は、**その文だけ外す**（残りが空になるなら外さない）
