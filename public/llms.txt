@@ -5,9 +5,9 @@
 ## ページ
 
 - [トップ（料金とできること）](https://fukkaru.creo-sumai.jp/)
-- [作業の一覧](https://fukkaru.creo-sumai.jp/service/)
-- [家具の組み立て](https://fukkaru.creo-sumai.jp/service/kagu-kumitate/)
-- [物置の組み立て・設置](https://fukkaru.creo-sumai.jp/service/monooki/)
-- [草刈り・草むしり](https://fukkaru.creo-sumai.jp/service/kusakari/)
-- [高圧洗浄](https://fukkaru.creo-sumai.jp/service/senjo/)
+- [作業の一覧](https://fukkaru.creo-sumai.jp/blog/service/)
+- [家具の組み立て](https://fukkaru.creo-sumai.jp/blog/kagu-kumitate/)
+- [物置の組み立て・設置](https://fukkaru.creo-sumai.jp/blog/monooki/)
+- [草刈り・草むしり](https://fukkaru.creo-sumai.jp/blog/kusakari/)
+- [高圧洗浄](https://fukkaru.creo-sumai.jp/blog/senjo/)
 - [ブログ](https://fukkaru.creo-sumai.jp/blog/)

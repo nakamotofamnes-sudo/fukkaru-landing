@@ -35,6 +35,88 @@
           }
         ]
       }
+    ],
+    "redirects": [
+      {
+        "source": "/service",
+        "destination": "/blog/service/",
+        "type": 301
+      },
+      {
+        "source": "/service/",
+        "destination": "/blog/service/",
+        "type": 301
+      },
+      {
+        "source": "/service/kusakari",
+        "destination": "/blog/kusakari/",
+        "type": 301
+      },
+      {
+        "source": "/service/kusakari/",
+        "destination": "/blog/kusakari/",
+        "type": 301
+      },
+      {
+        "source": "/service/kagu-kumitate",
+        "destination": "/blog/kagu-kumitate/",
+        "type": 301
+      },
+      {
+        "source": "/service/kagu-kumitate/",
+        "destination": "/blog/kagu-kumitate/",
+        "type": 301
+      },
+      {
+        "source": "/service/monooki",
+        "destination": "/blog/monooki/",
+        "type": 301
+      },
+      {
+        "source": "/service/monooki/",
+        "destination": "/blog/monooki/",
+        "type": 301
+      },
+      {
+        "source": "/service/senjo",
+        "destination": "/blog/senjo/",
+        "type": 301
+      },
+      {
+        "source": "/service/senjo/",
+        "destination": "/blog/senjo/",
+        "type": 301
+      },
+      {
+        "source": "/service/kaimono",
+        "destination": "/blog/kaimono/",
+        "type": 301
+      },
+      {
+        "source": "/service/kaimono/",
+        "destination": "/blog/kaimono/",
+        "type": 301
+      },
+      {
+        "source": "/service/akiya",
+        "destination": "/blog/akiya/",
+        "type": 301
+      },
+      {
+        "source": "/service/akiya/",
+        "destination": "/blog/akiya/",
+        "type": 301
+      },
+      {
+        "source": "/service/fuji-gomi-dashikata",
+        "destination": "/blog/fuji-gomi-dashikata/",
+        "type": 301
+      },
+      {
+        "source": "/service/fuji-gomi-dashikata/",
+        "destination": "/blog/fuji-gomi-dashikata/",
+        "type": 301
+      }
     ]
   }
 }

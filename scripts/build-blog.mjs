@@ -14,6 +14,10 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const PILLAR_DIR = path.join(ROOT, 'content', 'pillar');
 const BLOG_OUT_DIR = path.join(DIST_DIR, 'blog');
 const SITE_URL = 'https://fukkaru.creo-sumai.jp';
+// 作業の一覧ページの置き場所（2026-10-08、/service/ から /blog/ の下へ引っ越した）。
+// /service/ の8ページは、9/16 から3週間、Google が一度も読みに来なかった。同じ作りで /blog/ の下に置いた
+// 1本は4日で登録された。古い住所は firebase.json の redirects が新しい住所へ送る
+const SVC_PATH = '/blog/service/';
 const SITE_NAME = 'フッ軽（ふっかる）';
 const LINE_URL = 'https://lin.ee/qXlO1gC';
 
@@ -271,7 +275,7 @@ function renderCta(block) {
     ${block?.dekinai ? '<p class="cta-sub">頼めるか迷った物も、写真を送ってください。どれに当たるかお答えします。</p>' : ''}
     <div class="cta-buttons">
       <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">公式LINEで相談する（登録＋成約で最大3,000円割引）</a>
-      <a class="btn btn-outline" href="/service/">料金とサービス一覧を見る</a>
+      <a class="btn btn-outline" href="${SVC_PATH}">料金とサービス一覧を見る</a>
     </div>
   </div>`;
 }
@@ -885,7 +889,7 @@ function renderServiceIndex(groups, pillars) {
     extraHead: `<script type="application/ld+json">${JSON.stringify(faqLd)}</script>`,
     title: `できることと料金｜${SITE_NAME}`,
     description: '富士市の便利屋フッ軽のサービスと料金の一覧です。草むしり8,000円〜、家具の組み立て8,000円〜、物置の設置・解体15,000円〜、不用品の運搬・買取5,000円〜。LINEで写真を送るだけのお見積りは無料です。',
-    canonical: `${SITE_URL}/service/`,
+    canonical: `${SITE_URL}${SVC_PATH}`,
     ogType: 'website',
     bodyHtml: bodyHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
   });
@@ -919,7 +923,7 @@ function renderIndexPage(articles, pillars = []) {
     ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
       <h2>仕事ごとのまとめ</h2>
       <ul>
-        <li><a href="/service/">できることと料金</a></li>
+        <li><a href="${SVC_PATH}">できることと料金</a></li>
         ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n        ')}
       </ul>
     </nav>` : ''}
@@ -955,7 +959,7 @@ function render404Page(pillars = []) {
     <p>お手数ですが、下のどれかからお進みください。</p>
     <div class="cta-buttons" style="margin-bottom:28px">
       <a class="btn btn-outline" href="/">トップページへ</a>
-      <a class="btn btn-outline" href="/service/">できることと料金</a>
+      <a class="btn btn-outline" href="${SVC_PATH}">できることと料金</a>
       <a class="btn btn-outline" href="/blog/">ブログ一覧</a>
     </div>
     ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
@@ -999,7 +1003,7 @@ function buildSitemap(articles, pillars = []) {
   const urls = [
     { loc: `${SITE_URL}/`, priority: '1.0', lastmod: saishin },
     { loc: `${SITE_URL}/blog/`, priority: '0.8', lastmod: saishin },
-    { loc: `${SITE_URL}/service/`, priority: '0.9', lastmod: saishin },
+    { loc: `${SITE_URL}${SVC_PATH}`, priority: '0.9', lastmod: saishin },
     // 代表のプロフィール（2026-09-22 追加）。
     // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
     { loc: `${SITE_URL}/profile.html`, priority: '0.6', lastmod: saishin },
@@ -1037,7 +1041,7 @@ function injectBlogLinks(articles, pillars = []) {
 <noscript>
 <nav aria-label="お役立ちブログ">
 <h2>お役立ちブログ</h2>
-<p><a href="/service/">できることと料金</a></p>
+<p><a href="${SVC_PATH}">できることと料金</a></p>
 <p><a href="/blog/">記事の一覧を見る</a></p>
 <p><a href="/profile.html">代表のプロフィール</a></p>
 ${pillars.map((p) => `<p><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.title)}</a></p>`).join('\n')}
@@ -1113,10 +1117,10 @@ function main() {
 
   const svcGroups = readServiceGroups();
   if (svcGroups.length) {
-    const svcDir = path.join(DIST_DIR, 'service');
+    const svcDir = path.join(DIST_DIR, SVC_PATH);
     fs.mkdirSync(svcDir, { recursive: true });
     fs.writeFileSync(path.join(svcDir, 'index.html'), renderServiceIndex(svcGroups, pillars), 'utf8');
-    console.log(`[build-blog] 生成: /service/（${svcGroups.length}分類 / ${svcGroups.reduce((n, g) => n + g.services.length, 0)}項目）`);
+    console.log(`[build-blog] 生成: ${SVC_PATH}（${svcGroups.length}分類 / ${svcGroups.reduce((n, g) => n + g.services.length, 0)}項目）`);
   }
 
   fs.writeFileSync(path.join(DIST_DIR, '404.html'), render404Page(pillars), 'utf8');
