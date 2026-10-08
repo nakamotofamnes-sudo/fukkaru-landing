@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { fixArms, buildClips } from './anim.js?v=20261008-3';
-import { setupOffice } from './office.js?v=20261008-3';
+import { fixArms, buildClips } from './anim.js?v=20261008-4';
+import { setupOffice } from './office.js?v=20261008-4';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
@@ -135,7 +135,7 @@ async function start() {
       loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
       loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e)),
       // 腕の作り直しの控え（無ければ、その場で計算する。少し待たせるだけで、形は同じ）
-      fetch(new URL('armfix.bin?v=20261008-3', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
+      fetch(new URL('armfix.bin?v=20261008-4', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
@@ -233,12 +233,19 @@ async function start() {
   }
   // 顔を、見ている人（カメラ）のほうへ少し向ける。机に向かっているあいだは向けない
   const lookBones = [], yAxis = new THREE.Vector3(0, 1, 0), xAxis = new THREE.Vector3(1, 0, 0), qa = new THREE.Quaternion(), va = new THREE.Vector3(), vb = new THREE.Vector3();
-  for (const root of [person, hologram]) if (root) lookBones.push({ chest: root.getObjectByName('chest'), neck: root.getObjectByName('neck'), head: root.getObjectByName('head') });
+  for (const root of [person, hologram]) if (root) lookBones.push({ chest: root.getObjectByName('chest'), neck: root.getObjectByName('neck'), head: root.getObjectByName('head'), neckWas: new THREE.Quaternion(), headWas: new THREE.Quaternion(), turned: false });
+  // 動きを進める前に、前のコマで足した「顔の向き」を外す。
+  // 動きの側は、値が前のコマと同じだと骨に書き込まない。外さないと、そのコマだけ向きが二重に足されて、顔が一瞬とぶ
+  // （2026-10-08 中元さん「顔が毎秒変に揺れている」。1秒120コマの画面では1.5秒ごとに出ていた）
+  function undoLook() {
+    for (const b of lookBones) if (b.turned) { b.neck.quaternion.copy(b.neckWas); b.head.quaternion.copy(b.headWas); b.turned = false; }
+  }
   function lookAtViewer(dt) {
     const facing = activeAction !== 'Type' && !(activeAction === 'Greet' && actionSets[0].Greet.time < turnDone - .25);
     lookW = THREE.MathUtils.damp(lookW, facing ? 1 : 0, 3.5, dt);
     if (lookW < .002) return;
     for (const b of lookBones) {
+      b.neckWas.copy(b.neck.quaternion); b.headWas.copy(b.head.quaternion); b.turned = true;
       b.chest.updateWorldMatrix(true, false);
       const front = va.set(0, 0, 1).applyQuaternion(b.chest.getWorldQuaternion(qa)), to = vb.copy(camera.position).sub(b.head.getWorldPosition(new THREE.Vector3()));
       let yaw = Math.atan2(to.x, to.z) - Math.atan2(front.x, front.z);
@@ -375,6 +382,7 @@ async function start() {
     if (!paused && greetAt && time >= greetAt) { greetAt = 0; if (activeAction === 'Type') play('Greet', true); }
     if (!paused) {
       elapsed += dt;
+      undoLook();
       for (const mixer of mixers) mixer.update(dt);
       lookAtViewer(dt);
       office.update(elapsed, { typing: activeAction === 'Type', visible: room.visible && !sceneHidden });
