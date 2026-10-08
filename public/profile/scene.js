@@ -137,6 +137,9 @@ async function start() {
       if (!object.isMesh) return;
       object.castShadow = true;
       object.receiveShadow = true;
+      // 植木の葉が内側へ倒れていて、先がすぼまり「つぼみ」のように見えていた（2026-10-08 中元さん「逆になっている」）。
+      // 倒す向きを外側へ返す。office.blend の側で直したら、この2行は外す（二重に返すと元に戻る）
+      if (/^leaf/.test(object.name)) { object.quaternion.x *= -1; object.quaternion.z *= -1; }
       // Coplanar circular rugs produced distracting stripes in the draft.
       if (/^rug\d/.test(object.name)) {
         object.castShadow = false;
