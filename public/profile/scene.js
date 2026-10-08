@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { fixArms, buildClips } from './anim.js?v=20261009-1';
-import { setupOffice } from './office.js?v=20261009-1';
+import { fixArms, buildClips } from './anim.js?v=20261008-3';
+import { setupOffice } from './office.js?v=20261008-3';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
@@ -25,7 +25,7 @@ let person, hologram, roomModel, office;
 let greetAt = 0, turnDone = 0, lookW = 0;
 // 幕開け：読み込み画面が閉じる瞬間に、引いた位置から寄っていく（motion.js が合図を出す）
 let introStart = -1, smoothY = scrollY;
-window.profileCameraIntro = () => { introStart = performance.now(); greetAt = introStart + 2300; };
+window.profileCameraIntro = () => { introStart = performance.now(); greetAt = introStart + 2900; };
 
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'default' });
@@ -135,7 +135,7 @@ async function start() {
       loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
       loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e)),
       // 腕の作り直しの控え（無ければ、その場で計算する。少し待たせるだけで、形は同じ）
-      fetch(new URL('armfix.bin?v=20261009-1', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
+      fetch(new URL('armfix.bin?v=20261008-3', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
@@ -233,7 +233,7 @@ async function start() {
   }
   // 顔を、見ている人（カメラ）のほうへ少し向ける。机に向かっているあいだは向けない
   const lookBones = [], yAxis = new THREE.Vector3(0, 1, 0), xAxis = new THREE.Vector3(1, 0, 0), qa = new THREE.Quaternion(), va = new THREE.Vector3(), vb = new THREE.Vector3();
-  for (const root of [person, hologram]) lookBones.push({ chest: root.getObjectByName('chest'), neck: root.getObjectByName('neck'), head: root.getObjectByName('head') });
+  for (const root of [person, hologram]) if (root) lookBones.push({ chest: root.getObjectByName('chest'), neck: root.getObjectByName('neck'), head: root.getObjectByName('head') });
   function lookAtViewer(dt) {
     const facing = activeAction !== 'Type' && !(activeAction === 'Greet' && actionSets[0].Greet.time < turnDone - .25);
     lookW = THREE.MathUtils.damp(lookW, facing ? 1 : 0, 3.5, dt);
@@ -377,6 +377,7 @@ async function start() {
       elapsed += dt;
       for (const mixer of mixers) mixer.update(dt);
       lookAtViewer(dt);
+      office.update(elapsed, { typing: activeAction === 'Type', visible: room.visible && !sceneHidden });
     }
     holoMaterial.uniforms.time.value = elapsed;
     // No offscreen WebGL work while visitors read the service photographs.

@@ -1,10 +1,11 @@
 // 人物の動きを、ページの側で組み立てる（2026-10-08）。
 // avatar.glb に入っている Idle / Nod / Wave は使わず、ここで作った動きに差し替える。
+// 確かめ方：~/.fukkaru/satsuei/3d/seq.py（時刻を指定してコマに並べ、手足の速さを数える）
 //
 // 書き方の約束
 // ・姿勢は「休みの姿勢から、体の向き（x=本人の左・y=上・z=正面）で何度回すか」で書く。親が回れば、子の軸も一緒に回る。
 // ・位置はメートル。原点は足もとの真ん中（scene.js の avatar の中）。
-// ・この3Dは袖の下に胴の面が無い。二の腕は休みの向きから20度あまりまで。手は、ひじから先で上げる。
+// ・腕は、読み込んだ直後に fixArms で作り直してから動かす（そのままでは、二の腕を20度あまり上げると袖の付け根が裂ける）。
 // ・足は床に置いた位置から逆算して脚を曲げる（体を揺らしても、足がすべらない）。
 import * as THREE from 'three';
 
@@ -18,7 +19,6 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const seg = (t, a, b) => clamp((t - a) / (b - a));
 const ss = n => { n = clamp(n); return n * n * (3 - 2 * n); };                                   // ゆっくり出て、ゆっくり止まる
 const io = n => { n = clamp(n); return n < .5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2; }; // 出入りをもう少し強く
-const out = n => 1 - Math.pow(1 - clamp(n), 3);                                                  // すっと出て、ゆっくり止まる
 const bump = (t, a, b) => Math.sin(Math.PI * seg(t, a, b));                                      // 0 → 1 → 0
 const axisQ = (v, deg) => Q().setFromAxisAngle(v, deg * DEG);
 
@@ -265,6 +265,7 @@ function applyPatch(mesh, m, patch, J) {
   sg.boundingSphere = g.boundingSphere; sg.boundingBox = g.boundingBox;
   const sewn = new THREE.SkinnedMesh(sg, mesh.material);
   sewn.name = 'sewn'; sewn.position.copy(mesh.position); sewn.quaternion.copy(mesh.quaternion); sewn.scale.copy(mesh.scale);
+  sewn.frustumCulled = false; sewn.castShadow = mesh.castShadow;
   mesh.parent.add(sewn); sewn.bind(mesh.skeleton, mesh.bindMatrix);
 }
 
