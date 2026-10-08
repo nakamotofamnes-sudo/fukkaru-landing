@@ -6,6 +6,8 @@
   // 読み込み画面：数字は実際の進み具合を追いかけて、なめらかに増やす
   const closePreloader = (animate = false) => {
     if (!preloader || preloader.hidden) return;
+    // 動きの設計（motion.js）があれば任せる：読み込み画面が名前の点へ縮み、題字が組み上がる
+    if (window.profileIntro) { window.profileIntro(preloader, animate); return; }
     if (!animate) { preloader.hidden = true; return; }
     preloader.classList.add('is-done');
     setTimeout(() => { preloader.hidden = true; }, 900);

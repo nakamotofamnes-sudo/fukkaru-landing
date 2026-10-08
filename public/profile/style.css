@@ -65,3 +65,111 @@ body[data-stage=business] .site-header{background:linear-gradient(#25281ff5 0%,#
 .story .biz-card{border-color:var(--line);background:#fffdf6}
 .story .biz-card p{color:#55584f}
 .mail-address{font-size:12px;letter-spacing:.02em;color:var(--muted);margin:-8px 0 18px;user-select:all}
+
+/* ── 動きの設計（2026-10-08）：点が、線になり、仕組みになる。動かすのは motion.js ── */
+:root{--ease-out:cubic-bezier(.16,1,.3,1);--ease-io:cubic-bezier(.65,0,.35,1)}
+/* 題字：名前を1字ずつ。枠は字より少し広く取る（詰めた字間で端が欠けないように） */
+.mo-ch{display:inline-block;overflow:hidden;vertical-align:top;padding:.06em .07em;margin:-.06em -.07em}
+.mo-ch-i{display:inline-block}
+/* 名前の点：読み込み画面がここへ縮むので、丸として描く（「.」の字は読み上げ用に残す） */
+.mo-on .name-dot{display:inline-block;width:.24em;height:.24em;margin-left:.09em;border-radius:50%;background:var(--orange);overflow:hidden;text-indent:-9em;vertical-align:baseline}
+.mo-wait .mo-ch-i{transform:translateY(108%)}
+.mo-wait .name-dot{opacity:0}
+.mo-wait .site-header{opacity:0;transform:translateY(-18px)}
+.mo-wait .hero .eyebrow,.mo-wait .english-name,.mo-wait .hero-message,.mo-wait .hero .text-link,.mo-wait .room-caption,.mo-wait .hero-tools{opacity:0;transform:translateY(14px)}
+.mo-wait .scroll-cue{opacity:0}
+.mo-wait .english-name{letter-spacing:.62em}
+.mo-wait .hero .tape{clip-path:inset(-30% 100% -30% 0);transform:rotate(-10deg) translateX(-12px)}
+.mo-play .mo-ch-i{transition:transform 1.05s var(--ease-out) calc(var(--i)*75ms)}
+.mo-play .name-dot{transition:opacity .01s linear .77s}
+.mo-play .hero .eyebrow{transition:opacity .7s ease .5s,transform .9s var(--ease-out) .5s}
+.mo-play .english-name{transition:opacity .8s ease .65s,letter-spacing 1.5s var(--ease-out) .65s,transform .9s var(--ease-out) .65s}
+.mo-play .hero .tape{clip-path:inset(-30% 0 -30% 0);transition:clip-path .7s var(--ease-io) .95s,transform 1s var(--ease-out) .95s}
+.pre-iris{position:fixed;inset:0;z-index:59;background:var(--orange);pointer-events:none}
+.mo-play .hero-message{transition:opacity .8s ease 1.2s,transform 1s var(--ease-out) 1.2s}
+.mo-play .hero .text-link{transition:opacity .8s ease 1.4s,transform 1s var(--ease-out) 1.4s}
+.mo-play .site-header{transition:opacity .8s ease 1.1s,transform 1s var(--ease-out) 1.1s,color .4s}
+.mo-play .room-caption,.mo-play .hero-tools{transition:opacity .9s ease 1.75s,transform 1s var(--ease-out) 1.75s}
+.mo-play .scroll-cue{transition:opacity .9s ease 2.1s}
+/* 見出し：行ごとに、下からせり上がる。最後に点が着地する */
+.mo-line{display:block;overflow:hidden;padding:.09em .05em;margin:-.09em -.05em}
+.mo-line-i{display:block}
+.mo-on .mo-group .mo-line-i{transform:translateY(108%);transition:transform 1.05s var(--ease-out) calc(var(--i)*95ms + 60ms)}
+.mo-on .mo-group.is-seen .mo-line-i{transform:none}
+.mo-on .mo-group .orange-dot{display:inline-block;transform:scale(0);transform-origin:50% 82%;transition:transform .7s var(--ease-out) calc(var(--i)*95ms + .6s)}
+.mo-on .mo-group.is-seen .orange-dot{transform:none}
+.mo-on .mo-group [data-mo=rise]{opacity:0;transform:translateY(22px);transition:opacity .8s ease calc(var(--i)*80ms + .1s),transform 1s var(--ease-out) calc(var(--i)*80ms + .1s),border-color .6s ease,background-color .6s ease}
+.mo-on .mo-group.is-seen [data-mo=rise]{opacity:1;transform:none}
+.mo-on .mo-group [data-mo=tape]{clip-path:inset(-30% 100% -30% 0);transition:clip-path .7s var(--ease-io) .05s}
+.mo-on .mo-group.is-seen [data-mo=tape]{clip-path:inset(-30% 0 -30% 0)}
+.mo-on .mo-group [data-mo=step]{opacity:0;transform:translateX(-18px);transition:opacity .7s ease calc(var(--i)*140ms + .3s),transform .95s var(--ease-out) calc(var(--i)*140ms + .3s)}
+.mo-on .mo-group.is-seen [data-mo=step]{opacity:1;transform:none}
+/* 上のメニュー：いまいる場所の印が、すべって移る */
+.mo-on .main-nav{isolation:isolate}
+.nav-pill{position:absolute;inset:0;background:var(--ink);z-index:-1;opacity:0;clip-path:inset(50% 50% 50% 50% round 99px);transition:clip-path .65s var(--ease-out),opacity .3s,background .4s}
+.nav-pill.is-on{opacity:1}
+html.mo-on body .main-nav a[aria-current]{background:transparent}
+body[data-stage=about] .nav-pill{background:#67dbea}
+body[data-stage=business] .nav-pill{background:#f1ede4}
+.line-button>span:last-child{transition:transform .35s var(--ease-out)}
+.line-button:hover>span:last-child{transform:translate(3px,-3px)}
+/* 動く図：ご相談内容の4枚を1本の輪でつなぎ、点が光になって回る */
+.biz-grid.has-circuit{position:relative}
+.circuit{position:absolute;overflow:visible;pointer-events:none}
+.circuit path{fill:none}
+.c-rail{stroke:#f1ede438;stroke-width:1}
+.c-stems path{stroke:#f1ede438;stroke-width:1;opacity:0;transition:opacity .6s ease 1.4s}
+.c-tail{stroke:var(--orange);stroke-linecap:round;opacity:0;transition:opacity .5s ease 1.7s}
+.c-tail.t1{stroke-width:2}
+.c-tail.t2{stroke-width:1.4;stroke-opacity:.36}
+.c-head{fill:var(--orange);filter:drop-shadow(0 0 5px #f47c35) drop-shadow(0 0 13px #f47c3588);opacity:0;transition:opacity .4s ease 1.7s}
+.c-node circle{transform-box:fill-box;transform-origin:center}
+.c-node .core{fill:var(--ink);stroke:#f1ede48c;stroke-width:1.2;transform:scale(0);transition:transform .7s var(--ease-out) calc(var(--i)*170ms + .45s),stroke .5s ease,fill .5s ease}
+.c-node .ping{fill:none;stroke:var(--orange);stroke-width:1.4;opacity:0}
+.c-node.is-hit .ping{animation:cPing .95s var(--ease-out)}
+.c-node.is-hit .core{stroke:var(--orange);fill:var(--orange)}
+@keyframes cPing{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(4.8)}}
+.c-label{font:600 10px/1 var(--font);letter-spacing:.22em;fill:#a9ab9f;paint-order:stroke;stroke:var(--ink);stroke-width:14px;stroke-linejoin:round;dominant-baseline:middle;opacity:0;transition:opacity .6s ease 1.8s}
+.circuit.is-drawn .c-stems path,.circuit.is-drawn .c-tail,.circuit.is-drawn .c-head,.circuit.is-drawn .c-label{opacity:1}
+.circuit.is-drawn .c-node .core{transform:none}
+.circuit.is-static .c-tail{display:none}
+#business .biz-card{position:relative;transition:border-color .6s ease,background-color .6s ease}
+#business .biz-card h3{margin-top:22px}
+#business .biz-card.is-live{border-color:#f47c35b3;background-color:#ffffff12}
+.biz-icon{position:absolute;top:17px;right:18px;width:34px;height:34px;overflow:visible;fill:none;stroke:#f1ede4;stroke-opacity:.46;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke-opacity .6s ease}
+.biz-icon .acc{fill:var(--orange);stroke:none}
+.biz-icon .spark,.biz-icon .trend,.biz-icon .pin circle{stroke:var(--orange);stroke-opacity:1}
+.biz-card.is-live .biz-icon,.biz-card.is-still .biz-icon{stroke-opacity:.95}
+.biz-icon .d,.biz-icon .trend{stroke-dasharray:32;stroke-dashoffset:0}
+.biz-icon .pin,.biz-icon .bar{transform-box:fill-box;transform-origin:50% 100%}
+.biz-icon .ripple,.biz-icon .spark{transform-box:fill-box;transform-origin:center}
+.biz-icon .post{transform-box:fill-box;transform-origin:0 50%}
+.is-live .biz-icon .d{animation:icDraw .75s var(--ease-out) both}
+.is-live .biz-icon .d2{animation-delay:.12s}.is-live .biz-icon .d3{animation-delay:.24s}
+.is-live .biz-icon .trend{animation:icDraw .85s var(--ease-out) .3s both}
+@keyframes icDraw{from{stroke-dashoffset:32}to{stroke-dashoffset:0}}
+.is-live .biz-icon .pin{animation:icPin .7s var(--ease-out) both}
+@keyframes icPin{from{transform:translateY(-10px);opacity:0}55%{opacity:1}to{transform:none;opacity:1}}
+.is-live .biz-icon .ripple{animation:icRipple 1.05s var(--ease-out) .32s both}
+@keyframes icRipple{from{transform:scale(.15);opacity:0}30%{opacity:1}to{transform:none;opacity:.6}}
+.is-live .biz-icon .p1{animation:icPost .6s var(--ease-out) both}
+.is-live .biz-icon .p2{animation:icPost .6s var(--ease-out) .16s both}
+@keyframes icPost{from{transform:translateX(-8px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
+.is-live .biz-icon .spark{animation:icSpark .9s var(--ease-out) .3s both}
+@keyframes icSpark{from{transform:scale(0) rotate(-40deg)}to{transform:none}}
+.is-live .biz-icon .b1{animation:icBar .6s var(--ease-out) both}
+.is-live .biz-icon .b2{animation:icBar .6s var(--ease-out) .1s both}
+.is-live .biz-icon .b3{animation:icBar .6s var(--ease-out) .2s both}
+@keyframes icBar{from{transform:scaleY(.05)}to{transform:none}}
+.circuit-toggle{display:block;margin:36px 0 0 auto;padding:6px 2px;background:transparent;color:#a9ab9f;font-size:10px;letter-spacing:.06em;border-bottom:1px solid #f1ede42e}
+.circuit-toggle:hover{color:#f1ede4;border-color:#f1ede488}
+@media(max-width:760px){.circuit-toggle{margin-top:30px}.biz-icon{top:15px;right:16px}}
+/* 場面転換：次の場面が、丸い山になってせり上がる（高さは motion.js がスクロールに合わせて決める） */
+.scene-cap{position:absolute;left:0;right:0;bottom:calc(100% - 1px);height:0;background:inherit;border-radius:50% 50% 0 0/100% 100% 0 0;pointer-events:none}
+/* 山を画面の外まで広げるのは、はみ出しを切れるブラウザだけ（切れないと横スクロールが出る。hidden は固定表示を壊すので使わない） */
+@supports(overflow-x:clip){.mo-on main{overflow-x:clip}.scene-cap{left:-7%;right:-7%}}
+.scene-cap b{position:absolute;left:50%;top:-6px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--orange);opacity:var(--dot,0);transform:scale(var(--dot,0))}
+#story .scene-cap{background:var(--cream)}
+#business .scene-cap{background:var(--ink)}
+/* 印刷するときは、動きの途中の形を残さない */
+@media print{.mo-on .mo-group [data-mo],.mo-on .mo-group .mo-line-i,.mo-on .mo-group .orange-dot,.mo-wait *{opacity:1!important;transform:none!important;clip-path:none!important}.scene-cap,.preloader,.pre-iris,.circuit-toggle{display:none!important}}
