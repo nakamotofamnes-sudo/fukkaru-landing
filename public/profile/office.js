@@ -20,7 +20,7 @@ export function setupOffice(roomModel) {
   const desk = gather(/^(desk_|keyboard|mouse|laptop_|mon|code\d|lamp_|mug|notebook|pen)/);
   const chair = gather(/^chair/, [-1, 0, -.55]);
   // 机を、立っている人の真後ろへ寄せる（キーボードに手が届く。振り向くと机を背にして立つ形になる）
-  move(desk, 1.0, .63);
+  move(desk, 1.0, .47);
   // 椅子は、立ち上がって横へ押しやった位置に
   move(chair, -.2, .5);
   chair.rotation.y = .9;

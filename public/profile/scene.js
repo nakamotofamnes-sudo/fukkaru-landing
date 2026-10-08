@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { fixArms, buildClips } from './anim.js?v=20261009-1';
+import { setupOffice } from './office.js?v=20261009-1';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
@@ -18,10 +20,12 @@ let width = innerWidth, height = innerHeight, mobile = width <= 760;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
 let lastStage = '', frame = 0, elapsed = 0, lastTime = 0;
 let pointerX = 0, pointerY = 0, easedX = 0, easedY = 0;
-let person, hologram, roomModel;
+let person, hologram, roomModel, office;
+// 最初の場面：机で打っている → 幕が開いて少ししたら振り向く（greetAt＝振り向きはじめる時刻）
+let greetAt = 0, turnDone = 0, lookW = 0;
 // 幕開け：読み込み画面が閉じる瞬間に、引いた位置から寄っていく（motion.js が合図を出す）
 let introStart = -1, smoothY = scrollY;
-window.profileCameraIntro = () => { introStart = performance.now(); };
+window.profileCameraIntro = () => { introStart = performance.now(); greetAt = introStart + 2300; };
 
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'default' });
@@ -127,9 +131,11 @@ async function start() {
     window.profileProgress?.(percent);
   };
   try {
-    const [character, environment] = await Promise.all([
+    const [character, environment, armfix] = await Promise.all([
       loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
-      loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e))
+      loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e)),
+      // 腕の作り直しの控え（無ければ、その場で計算する。少し待たせるだけで、形は同じ）
+      fetch(new URL('armfix.bin?v=20261009-1', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
@@ -154,6 +160,7 @@ async function start() {
         }
       }
     });
+    office = setupOffice(roomModel);
     room.add(roomModel);
     person = character.scene;
     const bounds = new THREE.Box3().setFromObject(person);
@@ -173,6 +180,10 @@ async function start() {
       }
     });
     avatar.add(person);
+    // 腕の作り直し（関節の位置・肩の動き方・暗い色）と、動きの組み立て。anim.js にまとめてある
+    fixArms(person, armfix);
+    const built = buildClips(person);
+    turnDone = built.times.T1;
     hologram = cloneSkeleton(person);
     hologram.traverse(object => {
       if (!object.isMesh) return;
@@ -185,10 +196,11 @@ async function start() {
     for (const root of [person, hologram]) {
       const mixer = new THREE.AnimationMixer(root);
       mixers.push(mixer);
-      actionSets.push(Object.fromEntries(character.animations.map(clip => [clip.name, mixer.clipAction(clip)])));
+      actionSets.push(Object.fromEntries(Object.values(built.clips).map(clip => [clip.name, mixer.clipAction(clip)])));
     }
     mixers[0].addEventListener('finished', () => play('Idle'));
-    play(paused ? 'Idle' : 'Wave', !paused);
+    play(paused ? 'Idle' : 'Type');
+    if (!paused && !greetAt) greetAt = performance.now() + 4200;   // 幕開けの合図が来なくても、振り向く
     ready = true;
     lastStage = 'home';
     document.body.classList.add('scene-ready');
@@ -207,22 +219,42 @@ async function start() {
   function play(name, once = false) {
     if (activeAction === name || !actionSets[0]?.[name]) return;
     const previous = activeAction;
+    // 机に向いているところから別の動きへ移るときは、少し長めにつなぐ（体の向きが180度ちがう）
+    const fade = previous === 'Type' && name !== 'Greet' || previous === 'Greet' && name !== 'Idle' ? .6 : .35;
     activeAction = name;
     for (const set of actionSets) {
       const action = set[name];
       action.reset().setEffectiveTimeScale(1).setEffectiveWeight(1);
       action.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
       action.clampWhenFinished = once;
-      action.fadeIn(.35).play();
-      if (previous && set[previous]) set[previous].fadeOut(.35);
+      action.fadeIn(fade).play();
+      if (previous && set[previous]) set[previous].fadeOut(fade);
+    }
+  }
+  // 顔を、見ている人（カメラ）のほうへ少し向ける。机に向かっているあいだは向けない
+  const lookBones = [], yAxis = new THREE.Vector3(0, 1, 0), xAxis = new THREE.Vector3(1, 0, 0), qa = new THREE.Quaternion(), va = new THREE.Vector3(), vb = new THREE.Vector3();
+  for (const root of [person, hologram]) lookBones.push({ chest: root.getObjectByName('chest'), neck: root.getObjectByName('neck'), head: root.getObjectByName('head') });
+  function lookAtViewer(dt) {
+    const facing = activeAction !== 'Type' && !(activeAction === 'Greet' && actionSets[0].Greet.time < turnDone - .25);
+    lookW = THREE.MathUtils.damp(lookW, facing ? 1 : 0, 3.5, dt);
+    if (lookW < .002) return;
+    for (const b of lookBones) {
+      b.chest.updateWorldMatrix(true, false);
+      const front = va.set(0, 0, 1).applyQuaternion(b.chest.getWorldQuaternion(qa)), to = vb.copy(camera.position).sub(b.head.getWorldPosition(new THREE.Vector3()));
+      let yaw = Math.atan2(to.x, to.z) - Math.atan2(front.x, front.z);
+      yaw = THREE.MathUtils.clamp(Math.atan2(Math.sin(yaw), Math.cos(yaw)), -.75, .75) * .5 * lookW;
+      const pitch = THREE.MathUtils.clamp(Math.atan2(to.y, Math.hypot(to.x, to.z)), -.3, .3) * .35 * lookW;
+      b.neck.quaternion.premultiply(qa.setFromAxisAngle(yAxis, yaw * .4));
+      b.head.quaternion.premultiply(qa.setFromAxisAngle(yAxis, yaw * .6)).premultiply(qa.setFromAxisAngle(xAxis, -pitch));
     }
   }
 
   document.querySelectorAll('[data-wave]').forEach(button => button.addEventListener('click', () => {
     if (!ready) return;
     if (paused) { paused = false; updateMotionButton(); }
-    // The same gesture may be replayed after it returns to Idle.
-    if (activeAction !== 'Wave') play('Wave', true);
+    // 机に向いているあいだに押されたら、振り向くところから。振っている最中は重ねない
+    if (activeAction === 'Type') { greetAt = 0; play('Greet', true); }
+    else if (activeAction !== 'Wave' && activeAction !== 'Greet') play('Wave', true);
   }));
   $('motion-toggle').addEventListener('click', () => { paused = !paused; updateMotionButton(); });
   media.addEventListener('change', () => { paused = media.matches; updateMotionButton(); });
@@ -337,12 +369,14 @@ async function start() {
     for (const el of revealItems) el.classList.toggle('is-in', revealAll || scanProgress >= Number(el.dataset.r));
     const stage = contactProgress > .6 ? 'contact' : inAbout ? 'about' : 'home';
     if (stage !== lastStage) {
-      if (!paused) play(stage === 'contact' ? 'Wave' : stage === 'about' ? 'Nod' : 'Idle', stage !== 'home');
+      if (!paused) { greetAt = 0; play(stage === 'contact' ? 'Wave' : stage === 'about' ? 'Nod' : 'Idle', stage !== 'home'); }
       lastStage = stage;
     }
+    if (!paused && greetAt && time >= greetAt) { greetAt = 0; if (activeAction === 'Type') play('Greet', true); }
     if (!paused) {
       elapsed += dt;
       for (const mixer of mixers) mixer.update(dt);
+      lookAtViewer(dt);
     }
     holoMaterial.uniforms.time.value = elapsed;
     // No offscreen WebGL work while visitors read the service photographs.
