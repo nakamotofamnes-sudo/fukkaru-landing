@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { fixArms, buildClips } from './anim.js?v=20261008-5';
-import { setupOffice } from './office.js?v=20261008-5';
+import { fixArms, buildClips } from './anim.js?v=20261008-6';
+import { setupOffice } from './office.js?v=20261008-6';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
@@ -135,7 +135,7 @@ async function start() {
       loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
       loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e)),
       // 腕の作り直しの控え（無ければ、その場で計算する。少し待たせるだけで、形は同じ）
-      fetch(new URL('armfix.bin?v=20261008-5', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
+      fetch(new URL('armfix.bin?v=20261008-6', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;

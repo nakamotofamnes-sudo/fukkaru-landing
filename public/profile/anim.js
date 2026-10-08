@@ -42,6 +42,7 @@ const ARM_BONES = ['upperarm', 'elbowfix', 'forearm', 'hand'];
 // 混ざる幅（メートル）。SLEEVE_FROM＝肩のまん中から腕に沿ってこの先は、袖がそっくり腕につく（筒のまま上がる）。
 // TORSO_FROM＝わきの下で、肩のまん中からこの先は胴のまま。広く混ぜると、腕を上げたとき胴の脇まで外へ張り出して体が三角に見える
 const SLEEVE_FROM = .08, TORSO_FROM = .215;
+const HEM = .172;   // 袖口の線（肩のまん中から腕に沿った距離）
 export function fixArms(root, patchData, { knots = [.22, .58] } = {}) {
   root.updateWorldMatrix(true, true);
   const av = root.parent.matrixWorld, toAv = av.clone().invert(), bone = {}, meshes = [];
@@ -160,6 +161,8 @@ function computePatch(m, J, knots) {
     // 橋を切る：腕の面と胴の面をつないでいる三角形のうち、肩より10cm以上 下にあるもの（袖口の高さで、前後の切れ目をつないでいる）
     const cut = new Set();
     for (const [t, a, b, c] of faces) { const cls = [a, b, c].map(w => armShare(w) >= .5); if (cls.some(x => x) && cls.some(x => !x) && (rel[a][1] + rel[b][1] + rel[c][1]) / 3 < -.10) cut.add(t); }
+    // ★袖口の内側に、橋の切り跡（白っぽい輪・しわ・ギザギザ）が残っている。2026-10-08、切り口のまわりを2まわり広げて取りのぞいたら、
+    //   肌の面まで取れて穴が見えた（左は伝う道も切れた）ので戻した。直すなら、取りのぞく範囲を「袖の側だけ」にしぼるか、3Dの側（Blender）で袖口を作り直す
     for (const t of cut) removed.push(t / 3);
     const { nb, rim } = rimOf(cut);
     // 切った跡のふちを伝って、前の切れ目の下の端から、後ろの切れ目の下の端へ（腕の側・胴の側それぞれ）
@@ -315,7 +318,7 @@ function applyPatch(mesh, m, patch, J) {
       if (P[i * 3] * sx < .04) continue;
       const x = P[i * 3] - C.x, y = P[i * 3 + 1] - C.y, z = P[i * 3 + 2] - C.z, d = Math.hypot(x, y, z), al = x * axis.x + y * axis.y + z * axis.z;
       let a = 0; for (let k = 0; k < 4; k++) if (arm.has(m.si[i * 4 + k])) a += m.sw[i * 4 + k];
-      const near = 1 - smooth(.17, .25, d), skin = a * smooth(.155, .19, al), shirt = y < .06 ? near : 0;
+      const near = 1 - smooth(.17, .25, d), skin = a * smooth(HEM - .008, HEM + .008, al), shirt = y < .06 ? near : 0;
       // x が1を超えるぶん＝わきに近い肌（二の腕の内側）。ここは筋のような黒ずみが残りやすいので、いちばん強く均す
       tone[i * 2] = Math.max(skin, shirt) + skin * near; tone[i * 2 + 1] = skin;
     }
@@ -339,8 +342,12 @@ function applyPatch(mesh, m, patch, J) {
     const uvFrom = patch.uvSrc[k];
     v.set(patch.normal[k * 3], patch.normal[k * 3 + 1], patch.normal[k * 3 + 2]).applyMatrix3(toRaw).normalize().toArray(nor, k * 3);
     uv[k * 2] = g.attributes.uv.getX(uvFrom); uv[k * 2 + 1] = g.attributes.uv.getY(uvFrom);
-    for (let c = 0; c < 4; c++) { sj[k * 4 + c] = patch.joints[(nc + k) * 4 + c]; swt[k * 4 + c] = patch.weights[(nc + k) * 4 + c] / 255; }
-    st[k * 2] = 1;
+    let onArm = 0;
+    for (let c = 0; c < 4; c++) { sj[k * 4 + c] = patch.joints[(nc + k) * 4 + c]; swt[k * 4 + c] = patch.weights[(nc + k) * 4 + c] / 255; if (/^(upperarm|armfix|elbowfix|forearm)/.test(names[sj[k * 4 + c]])) onArm += swt[k * 4 + c]; }
+    // 足した面は無地なので、色は位置で決める（y が2＝シャツ、3＝肌。袖の内側のうち、袖口の線 HEM より先は肌）
+    v.set(patch.pos[k * 3], patch.pos[k * 3 + 1], patch.pos[k * 3 + 2]).applyMatrix4(m.M);
+    const s = v.x > 0 ? 'L' : 'R', along = v.sub(J[s].C).dot(J[s].E.clone().sub(J[s].C).normalize());
+    st[k * 2] = 1; st[k * 2 + 1] = onArm > .5 && along > HEM ? 3 : 2;
   }
   const sg = new THREE.BufferGeometry();
   sg.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(patch.pos), 3)); sg.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); sg.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
@@ -390,6 +397,7 @@ function toneFix(material) {
         vec3 c = diffuseColor.rgb;
         float amount = min(vTone.x, 1.), sk = clamp(vTone.y / max(amount, .001), 0., 1.);
         sk = mix(sk, step(c.b * 1.1, c.r), smoothstep(.012, .05, max(c.r, c.b)) * .85);   // 色あいがはっきりしていれば、絵に従う
+        if (vTone.y > 1.5) { sk = step(2.5, vTone.y); c = vec3(0.); }                      // 足した面：位置で決めた色を、そのまま塗る
         float inner = clamp(vTone.x - 1., 0., 1.) * sk;                                    // わきに近い肌
         vec3 target = mix(vec3(.027, .078, .102), vec3(.58, .36, .235), sk);
         float lt = dot(target, vec3(.2126, .7152, .0722)), l = dot(c, vec3(.2126, .7152, .0722));
@@ -398,7 +406,7 @@ function toneFix(material) {
         diffuseColor.rgb = mix(c, target * mix(mix(mix(.66, .82, sk), .93, inner), 1., smoothstep(0., lt * top, l)), k);
       }`);
   };
-  material.customProgramCacheKey = () => 'tone-fix-3';
+  material.customProgramCacheKey = () => 'tone-fix-4';
   material.needsUpdate = true;
 }
 
@@ -602,42 +610,41 @@ export function buildClips(root) {
   }
 
   // 手を振る（立ち姿から始まり、立ち姿に戻る）。
-  // 形は中元さんの見本（2026-10-08）：ひじを肩より少し上・外へ出し、ひじから先を立てて、開いた手のひらを正面へ。
-  // ひじから先を左右に大きく振る。まん中で1回、大きく振り抜く
-  const WAVE = 3.7, REST_A = 12, TOP_A = 130;   // 二の腕の角度（真下＝0・真上＝180）
+  // 腕を斜め上へ伸ばし、ひじは軽く曲げるだけ。開いた手のひらを正面へ向けて、手首から先で小さく3往復。
+  // ★ひじを大きく曲げ伸ばしして振らない。2026-10-08、見本の絵に合わせて「ひじを外へ出して前腕を大きく振る」形にしたら、
+  //   中元さんに「腕の動きがキモい」と言われて戻した（ひじの曲がりが 50±26度 だった。いまは 24±9度）
+  const WAVE = 3.4, REST_A = 12, TOP_A = 142;   // 二の腕の角度（真下＝0・真上＝180）
   const UPPER = pos.forearmR.distanceTo(pos.upperarmR), FORE = pos.handR.distanceTo(pos.forearmR);
   function wavePose(t) {
-    const up = ss(seg(t, .08, .78)), down = ss(seg(t, 2.86, 3.54)), k = up * (1 - down);            // k＝腕が上がっている度合い
+    const up = ss(seg(t, .08, .8)), down = ss(seg(t, 2.5, 3.2)), k = up * (1 - down);              // k＝腕が上がっている度合い
     const pose = idleBase(t, 1 - k * .6);
-    // 振り：4往復。まん中の1往復だけ大きい。手首は少し遅れてついてくる
-    const s = seg(t, .72, 2.9), fade = ss(seg(t, .7, .95)) * (1 - ss(seg(t, 2.6, 2.9))), big = 1 + .75 * bump(s, .3, .7) ** 2;
-    const swing = Math.sin(TAU * 4 * s) * fade * big, late = Math.sin(TAU * 4 * s - 1.1) * fade * big;
+    const s = seg(t, .74, 2.5), fade = ss(seg(t, .72, 1.0)) * (1 - ss(seg(t, 2.15, 2.5)));
+    const swing = Math.sin(TAU * 3 * s) * fade, late = Math.sin(TAU * 3 * s - 1.1) * fade;         // 振り（3往復）と、遅れてついてくる手首
     // 体も一緒に：ひと息ためてから、上げるほうの肩が上がり、体は少しだけ反対へ。体重は左足へ
     const dip = bump(t, 0, .34) * (1 - up);
-    pose.hipsPos[0] += k * .014 + swing * .004; pose.hipsPos[1] += -dip * .007 + k * .004;
+    pose.hipsPos[0] += k * .014 + swing * .003; pose.hipsPos[1] += -dip * .007 + k * .004;
     pose.hips.premultiply(R('z', k * 1.4));
-    pose.spine.premultiply(R('x', dip * 1.6 - k * .6, 'z', -k * 2.2 + swing * .5));
-    pose.chest.premultiply(R('x', dip * 2 - k * 1.2, 'z', -k * 3 + swing * .7, 'y', -k * 3));
+    pose.spine.premultiply(R('x', dip * 1.6 - k * .6, 'z', -k * 2.2 + swing * .4));
+    pose.chest.premultiply(R('x', dip * 2 - k * 1.2, 'z', -k * 3 + swing * .5, 'y', -k * 3));
     pose.neck.premultiply(R('z', k * 2.4));
     pose.head.premultiply(R('z', k * 3 - swing * .5, 'x', -k * 1 + bump(t, .55, 1.05) * 2.5));
     pose.upperarmL = R('x', k * 3, 'z', k * 4 - swing * .7); pose.forearmL = R('x', -9 - k * 6);
     // 腕：体の斜め前から上げて、上で外へ開く。途中はひじを曲げて、手が体の近くを通る
-    const a = lerp(REST_A, TOP_A - swing * 5 + bump(t, .68, 1.02) * 4, k) * DEG, plane = lerp(64, 20, ss(seg(k, .35, 1))) * DEG;
+    const a = lerp(REST_A, TOP_A - swing * 4 + bump(t, .68, 1.02) * 4, k) * DEG, plane = lerp(64, 22, ss(seg(k, .35, 1))) * DEG;
     const side = V(-Math.cos(plane), 0, Math.sin(plane)), U = side.multiplyScalar(Math.sin(a)).add(V(0, -Math.cos(a), 0)).normalize();
-    pose.shoulderR = R('z', -20 * ss(seg(a / DEG, 45, 130)), 'y', -4 * k);
+    pose.shoulderR = R('z', -22 * ss(seg(a / DEG, 45, 140)), 'y', -4 * k);
     const S = rig.fk(pose).P.upperarmR;
-    // ひじ：上げきったところで50度ほど曲げると、ひじから先がまっすぐ立つ。そこから左右に振る（内へは大きく、外へは小さく）
-    const bend = (lerp(9, 50, k) + Math.sin(Math.PI * Math.pow(k, .8)) * 28 + (swing > 0 ? swing * 26 : swing * 17) * k) * DEG;
+    const bend = (lerp(9, 24, k) + Math.sin(Math.PI * Math.pow(k, .8)) * 42 + swing * 9 * k) * DEG;
     const fwd = V(0, 0, 1).addScaledVector(U, -U.z).normalize(), upw = V(0, 1, 0).addScaledVector(U, -U.y).normalize();
     const toward = fwd.lerp(upw, ss(seg(k, .08, .92))).normalize();                                // ひじを曲げる向き（下では前へ、上では頭のほうへ）
     const F = U.clone().multiplyScalar(Math.cos(bend)).addScaledVector(toward, Math.sin(bend)).normalize();
     const wrist = S.clone().addScaledVector(U, UPPER).addScaledVector(F, FORE);
     const palm = V(1, 0, 0).lerp(V(.2, 0, 1), ss(seg(k, .15, .75))).normalize();
     rig.arm(pose, 'R', wrist, F.clone().multiplyScalar(-1).add(U), { palm, share: .34 });
-    pose.handR.multiply(R('x', late * 16 * k, 'z', -6 * k));                                       // 手首：振りに遅れて横へ。少し反らす
+    pose.handR.multiply(R('x', late * 20 * k, 'z', -8 * k));                                       // 手首：振りに遅れて横へ。少し反らす
     pose.open = ss(seg(k, .25, .8));                                                               // 上げながら、手を開く
     // おろした腕は、行きすぎてから戻る
-    pose.upperarmR.premultiply(R('x', Math.sin(seg(t, 3.34, WAVE) * Math.PI) * 3.5));
+    pose.upperarmR.premultiply(R('x', Math.sin(seg(t, 3.0, WAVE) * Math.PI) * 3.5));
     return legs(pose);
   }
 
