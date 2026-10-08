@@ -5,7 +5,7 @@
 // 向きの約束：scene.js が部屋を180度回して置く。部品を動かすときは「見る人から見た向き」で書き、置くときに符号を返す。
 // 新しく足すものは stage（見る人から見た向きのままの入れ物）に入れる。
 import * as THREE from 'three';
-import { KEYBOARD } from './anim.js?v=20261008-6';
+import { KEYBOARD } from './anim.js?v=20261008-7';
 
 const C = { navy: '#10253a', deep: '#0b1a28', panel: '#16324a', line: '#2b4a64', cream: '#f4efe6', paper: '#f7f1e8', ink: '#1c1c1a', orange: '#f47c35', cyan: '#67dbea', yellow: '#f2b233', mute: '#8fa3b5' };
 const TAU = Math.PI * 2;

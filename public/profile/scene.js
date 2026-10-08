@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { fixArms, buildClips } from './anim.js?v=20261008-6';
-import { setupOffice } from './office.js?v=20261008-6';
+import { fixArms, buildClips } from './anim.js?v=20261008-7';
+import { setupOffice } from './office.js?v=20261008-7';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
@@ -131,11 +131,9 @@ async function start() {
     window.profileProgress?.(percent);
   };
   try {
-    const [character, environment, armfix] = await Promise.all([
-      loader.loadAsync(new URL('avatar.glb?v=20260917-2130', assets).href, e => updateProgress('avatar', e)),
-      loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e)),
-      // 腕の作り直しの控え（無ければ、その場で計算する。少し待たせるだけで、形は同じ）
-      fetch(new URL('armfix.bin?v=20261008-6', assets)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
+    const [character, environment] = await Promise.all([
+      loader.loadAsync(new URL('avatar.glb?v=20261008-7', assets).href, e => updateProgress('avatar', e)),
+      loader.loadAsync(new URL('room.glb?v=20260917-2130', assets).href, e => updateProgress('room', e))
     ]);
     if (window.profileSkipped || failed) { dispose(); return; }
     roomModel = environment.scene;
@@ -180,15 +178,15 @@ async function start() {
       }
     });
     avatar.add(person);
-    // 腕の作り直し（関節の位置・肩の動き方・暗い色）と、動きの組み立て。anim.js にまとめてある
-    fixArms(person, armfix);
+    // 腕の直し（関節の位置・暗い色・開いた手）と、動きの組み立て。anim.js にまとめてある
+    fixArms(person);
     const built = buildClips(person);
     turnDone = built.times.T1;
     hologram = cloneSkeleton(person);
     hologram.traverse(object => {
       if (!object.isMesh) return;
-      // わきの下に足した面は、腕を下ろしていると体の内側にある。透ける場面では明るい形になって見えるので、出さない
-      if (object.name === 'sewn') { object.visible = false; return; }
+      // わきの下に張り直した面（sode）は、腕を下ろしていると体の内側にある。透ける場面では明るい形になって見えるので、出さない
+      if (object.name === 'sode') { object.visible = false; return; }
       object.material = holoMaterial;
       object.castShadow = false;
       object.frustumCulled = false;

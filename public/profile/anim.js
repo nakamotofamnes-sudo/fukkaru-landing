@@ -5,7 +5,7 @@
 // 書き方の約束
 // ・姿勢は「休みの姿勢から、体の向き（x=本人の左・y=上・z=正面）で何度回すか」で書く。親が回れば、子の軸も一緒に回る。
 // ・位置はメートル。原点は足もとの真ん中（scene.js の avatar の中）。
-// ・腕は、読み込んだ直後に fixArms で作り直してから動かす（そのままでは、二の腕を20度あまり上げると袖の付け根が裂ける）。
+// ・腕は、読み込んだ直後に fixArms で関節を置き直してから動かす（骨が、腕より6〜8cm前に置いてあるため）。
 // ・足は床に置いた位置から逆算して脚を曲げる（体を揺らしても、足がすべらない）。
 import * as THREE from 'three';
 
@@ -32,288 +32,58 @@ export function R(...parts) {
 // ─────────── 腕の作り直し（読み込んだ直後に1回だけ） ───────────
 // この3Dは、腕の骨がまっすぐ体の横（前後のまん中）に置いてあるのに、腕そのものは6〜8cm後ろにある。
 // そのため、ひじも肩も「腕の外」を軸に曲がっていた。関節を腕のまん中へ置き直す。
-// 肩は、袖がそっくり二の腕について動く作りで、しかも袖と胴が、わきの前と後ろで縫い合わされていなかった
-// （20度あまり上げると付け根が裂け、口が開いて中が見える）。縫い合わせて、胴から腕へなだらかに移るように付け直し、
-// あいだに補助の骨（armfix）を1本はさむ。
-// 付け直しの計算は重い（このMacで0.7秒）。結果を armfix.bin に控えてあり、ページはそれを読むだけ。
-// avatar.glb を作り替えたら、控えも作り直す（/fukkaru-3d の手順）。控えが合わないときは、その場で計算する。
-const JOINT = { C: [.195, 1.335, -.062], E: [.248, 1.080, -.081], W: [.252, .792, .027] };   // 肩・ひじ・手首（左。右は x を返す）
+// 袖口・わきの形と、肩の重み（胴 → 鎖骨 → 補助の骨 armfix → 二の腕）は、3Dのファイルの側で作り直してある
+// （2026-10-08。作り方は ~/.fukkaru/satsuei/3d/sode/tsukuru.py。張り直した面は sode という別の部品）。
+// ここでやるのは、関節の置き直し・暗い色の直し・右手の開いた形の3つ。
+const JOINT = { C: [.195, 1.335, -.062], E: [.248, 1.080, -.081], W: [.252, .792, .027] };   // 肩・ひじ・手首（左。右は x を返す）。tsukuru.py にも同じ数字がある
 const ARM_BONES = ['upperarm', 'elbowfix', 'forearm', 'hand'];
-// 混ざる幅（メートル）。SLEEVE_FROM＝肩のまん中から腕に沿ってこの先は、袖がそっくり腕につく（筒のまま上がる）。
-// TORSO_FROM＝わきの下で、肩のまん中からこの先は胴のまま。広く混ぜると、腕を上げたとき胴の脇まで外へ張り出して体が三角に見える
-const SLEEVE_FROM = .08, TORSO_FROM = .215;
 const HEM = .172;   // 袖口の線（肩のまん中から腕に沿った距離）
-export function fixArms(root, patchData, { knots = [.22, .58] } = {}) {
+export function fixArms(root) {
+  if (root.userData.armsFixed) return;
+  root.userData.armsFixed = true;
   root.updateWorldMatrix(true, true);
   const av = root.parent.matrixWorld, toAv = av.clone().invert(), bone = {}, meshes = [];
   root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh) meshes.push(o); });
-  if (bone.armfixR) return null;
   const before = new Map(Object.values(bone).map(b => [b, b.matrixWorld.clone()]));
   const place = (b, p) => { b.position.copy(b.parent.worldToLocal(p.clone().applyMatrix4(av))); b.updateWorldMatrix(false, true); };
   const J = {};
   for (const [s, sx] of [['L', 1], ['R', -1]]) {
     const j = J[s] = Object.fromEntries(Object.entries(JOINT).map(([k, p]) => [k, V(p[0] * sx, p[1], p[2])]));
-    place(bone['upperarm' + s], j.C); place(bone['forearm' + s], j.E); place(bone['elbowfix' + s], j.E); place(bone['hand' + s], j.W);
-    const up = bone['upperarm' + s], fix = new THREE.Bone();
-    fix.name = 'armfix' + s; fix.position.copy(up.position); fix.quaternion.copy(up.quaternion);
-    up.parent.add(fix); fix.updateWorldMatrix(false, false); bone[fix.name] = fix;
+    place(bone['upperarm' + s], j.C); place(bone['armfix' + s], j.C); place(bone['forearm' + s], j.E); place(bone['elbowfix' + s], j.E); place(bone['hand' + s], j.W);
   }
   // 骨を動かしても、休みの姿勢の形は変えない（逆行列を、動かしたぶんだけ直す）
   const done = new Set();
   for (const mesh of meshes) {
     const sk = mesh.skeleton; if (done.has(sk)) continue; done.add(sk);
     sk.bones.forEach((b, i) => { sk.boneInverses[i] = b.matrixWorld.clone().invert().multiply(before.get(b)).multiply(sk.boneInverses[i]); });
-    for (const s of ['L', 'R']) { sk.bones.push(bone['armfix' + s]); sk.boneInverses.push(sk.boneInverses[sk.bones.indexOf(bone['upperarm' + s])].clone()); }
-    sk.boneMatrices = new Float32Array(sk.bones.length * 16);
-    if (sk.boneTexture) sk.boneTexture.dispose();
-    sk.boneTexture = null;
   }
-  // 内張り（torso_fill）は、わきの穴を隠すための当て布だった。縫い合わせたので外す
-  let result = null;
   for (const mesh of meshes) {
-    if (mesh.name === 'torso_fill') { mesh.removeFromParent(); continue; }
+    if (mesh.name === 'sode') continue;   // 張り直した面は、色も形もファイルの側で決めてある
     const m = readMesh(mesh, toAv);
-    let patch = patchData && decodePatch(patchData, m.n);
-    const computed = !patch;
-    if (!patch) patch = computePatch(m, J, knots);
-    applyPatch(mesh, m, patch, J);
-    result = { patch, computed };
+    tonePatch(mesh, m, J);
+    openHand(mesh, m, J);
   }
-  return result;
 }
 
 // 頂点ごとの「どの骨について動くか」と、休みの姿勢での位置（足もとの真ん中から・メートル）を読む
 function readMesh(mesh, toAv) {
   const g = mesh.geometry, sk = mesh.skeleton, n = g.attributes.position.count, names = sk.bones.map(b => b.name);
-  const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), P = new Float32Array(n * 3), raw = new Float32Array(n * 3), v = V();
+  const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), P = new Float32Array(n * 3), v = V();
   const M = toAv.clone().multiply(sk.bones[0].matrixWorld).multiply(sk.boneInverses[0]);
   for (let i = 0; i < n; i++) {
     for (let k = 0; k < 4; k++) { si[i * 4 + k] = g.attributes.skinIndex.getComponent(i, k); sw[i * 4 + k] = g.attributes.skinWeight.getComponent(i, k); }
-    v.fromBufferAttribute(g.attributes.position, i).toArray(raw, i * 3);   // raw＝頂点の入れ物の中の位置（整数に詰めたものを戻した値）
-    v.applyMatrix4(M); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z;
+    v.fromBufferAttribute(g.attributes.position, i).applyMatrix4(M); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z;
   }
-  return { g, n, names, si, sw, P, raw, M };
+  return { g, n, names, si, sw, P, M };
 }
 
-// 肩の作り直しを計算する（重い）。返すのは「変わる頂点の重み」「取りのぞく面」「足す面（わきの下）」
-// ① わきの下を張り直す。この3Dは、袖と胴が前後2本の切れ目で分かれていて、下の端（袖口の高さ）だけ橋のようにつながっている。
-//    袖の内側の面も、胴の脇の面も無い（腕を下ろした姿では、すき間に隠れて見えない）。
-//    橋を切り、袖の内側（半分の筒）と胴の脇（壁）を張る。2枚は、肩のまん中の高さの折り目でつながり、本のように開く。
-//    （2026-10-08 中元さんの見本：袖は腕に沿った筒のまま上がり、胴とのあいだに膜が張らない）
-// ② 胴＝0・腕＝1 と決まっている所を固定し、あいだ（肩の上と、折り目のまわり）を面づたいに、なだらかに埋める
-function computePatch(m, J, knots) {
-  const { n: n0, names, P } = m, index = m.g.index.array, cap = n0 + 8000;
-  const si = new Uint16Array(cap * 4), sw = new Float32Array(cap * 4); si.set(m.si); sw.set(m.sw);
-  const added = { pos: [], normal: [], uvSrc: [], tris: [] }, removed = [], back = m.M.clone().invert(), report = {};
-  let n = n0;
+// 色の直しをかける範囲を、頂点に印（tone）として持たせる（x＝どれだけ直すか、y＝そのうち肌の割合）。
+// 腕の内側・手のひら・わきの下は、3Dを作るときに体の陰になっていて、絵が焦げ茶〜黒で塗られている。
+// （同じ計算が tsukuru.py にもある。張り直した面の色を、となりの面とそろえるため。ここを変えたら、あちらも）
+function tonePatch(mesh, m, J) {
+  const { g, n, names, P } = m, tone = new Float32Array(n * 2), smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
   for (const [s, sx] of [['L', 1], ['R', -1]]) {
-    const C = J[s].C, axis = J[s].E.clone().sub(C).normalize(), R = .31;
-    const armBones = ARM_BONES.map(b => names.indexOf(b + s));
-    const iUp = names.indexOf('upperarm' + s), iFix = names.indexOf('armfix' + s), iClav = names.indexOf('shoulder' + s), iChest = names.indexOf('chest');
-    // 肩のまわりの頂点を集め、同じ位置の頂点（絵の継ぎ目で分かれているもの）を1つにまとめる
-    const id = new Int32Array(n0).fill(-1), key = new Map(), members = [], rel = [];
-    let plain = -1, plainD = 9;   // 胸の前の、無地のところ（足した面に塗る色を借りる）
-    for (let i = 0; i < n0; i++) {
-      const x = P[i * 3] - C.x, y = P[i * 3 + 1] - C.y, z = P[i * 3 + 2] - C.z;
-      if (x * x + y * y + z * z > R * R) continue;
-      const k = Math.round(P[i * 3] * 4000) + ',' + Math.round(P[i * 3 + 1] * 4000) + ',' + Math.round(P[i * 3 + 2] * 4000);
-      let w = key.get(k); if (w === undefined) { w = members.length; key.set(k, w); members.push([]); rel.push([x, y, z]); }
-      id[i] = w; members[w].push(i);
-      const dp = Math.hypot(P[i * 3] - sx * .105, P[i * 3 + 1] - 1.2, P[i * 3 + 2] - .2);
-      if (dp < plainD && si[i * 4] === iChest && sw[i * 4] > .9) { plainD = dp; plain = i; }
-    }
-    const armShare = w => { const i = members[w][0]; let x = 0; for (let k = 0; k < 4; k++) if (armBones.includes(si[i * 4 + k])) x += sw[i * 4 + k]; return x; };
-    const at = w => V(...rel[w]), dist = w => Math.hypot(...rel[w]);
-    const faces = [];
-    for (let t = 0; t < index.length; t += 3) { const a = id[index[t]], b = id[index[t + 1]], c = id[index[t + 2]]; if (a >= 0 && b >= 0 && c >= 0) faces.push([t, a, b, c]); }
-    // ふち（三角形が片側にしか無い辺）をたどる道具
-    const rimOf = skip => {
-      const nb = Array.from({ length: members.length }, () => new Set()), edges = new Map(), rim = new Map();
-      for (const [t, a, b, c] of faces) { if (skip.has(t)) continue;
-        for (const [p, q] of [[a, b], [b, c], [c, a]]) { if (p === q) continue; nb[p].add(q); nb[q].add(p); const e = p < q ? p * 1e5 + q : q * 1e5 + p; edges.set(e, (edges.get(e) || 0) + 1); } }
-      for (const [e, c] of edges) { if (c !== 1) continue; const a = Math.floor(e / 1e5), b = e % 1e5; if (dist(a) > .27 || dist(b) > .27) continue;
-        (rim.get(a) || rim.set(a, []).get(a)).push(b); (rim.get(b) || rim.set(b, []).get(b)).push(a); }
-      return { nb, rim };
-    };
-    // ① 切れ目は前と後ろに1本ずつ（どちらも、肩の高さから袖口の高さまでの細長い輪）
-    const whole = rimOf(new Set()), seen = new Set(), slits = [];
-    for (const start of whole.rim.keys()) {
-      if (seen.has(start)) continue;
-      const walk = [start]; seen.add(start);
-      for (let cur = start; ;) { const next = whole.rim.get(cur).find(o => !seen.has(o)); if (next === undefined) break; walk.push(next); seen.add(next); cur = next; }
-      const ys = walk.map(w => rel[w][1]);
-      if (walk.length >= 40 && Math.max(...ys) - Math.min(...ys) > .1 && whole.rim.get(walk[walk.length - 1]).includes(start)) slits.push(walk);
-    }
-    if (slits.length !== 2) { report[s] = { fail: '切れ目が2本見つからない', found: slits.map(l => l.length) }; continue; }
-    const meanZ = l => l.reduce((sum, w) => sum + rel[w][2], 0) / l.length;
-    slits.sort((p, q) => meanZ(q) - meanZ(p));   // 前、後ろ
-    // 1本の切れ目を、腕の側の縁と胴の側の縁に分ける（どちらも上から下へ）
-    const sides = l => {
-      const ys = l.map(w => rel[w][1]), top = ys.indexOf(Math.max(...ys)), bottom = ys.indexOf(Math.min(...ys));
-      const walk = step => { const out = []; for (let i = top; ; i = (i + step + l.length) % l.length) { out.push(l[i]); if (i === bottom) break; } return out; };
-      let a = walk(1), b = walk(-1); const mean = chain => chain.reduce((sum, w) => sum + armShare(w), 0) / chain.length;
-      if (mean(a) < mean(b)) [a, b] = [b, a];
-      while (a.length > 3 && armShare(a[a.length - 1]) < .5) a.pop();
-      while (b.length > 3 && armShare(b[b.length - 1]) >= .5) b.pop();
-      return { a, b };
-    };
-    const front = sides(slits[0]), rear = sides(slits[1]);
-    // 橋を切る：腕の面と胴の面をつないでいる三角形のうち、肩より10cm以上 下にあるもの（袖口の高さで、前後の切れ目をつないでいる）
-    const cut = new Set();
-    for (const [t, a, b, c] of faces) { const cls = [a, b, c].map(w => armShare(w) >= .5); if (cls.some(x => x) && cls.some(x => !x) && (rel[a][1] + rel[b][1] + rel[c][1]) / 3 < -.10) cut.add(t); }
-    // ★袖口の内側に、橋の切り跡（白っぽい輪・しわ・ギザギザ）が残っている。2026-10-08、切り口のまわりを2まわり広げて取りのぞいたら、
-    //   肌の面まで取れて穴が見えた（左は伝う道も切れた）ので戻した。直すなら、取りのぞく範囲を「袖の側だけ」にしぼるか、3Dの側（Blender）で袖口を作り直す
-    for (const t of cut) removed.push(t / 3);
-    const { nb, rim } = rimOf(cut);
-    // 切った跡のふちを伝って、前の切れ目の下の端から、後ろの切れ目の下の端へ（腕の側・胴の側それぞれ）
-    const across = (from, to, ok) => {
-      const prev = new Map([[from, -1]]), queue = [from];
-      for (let q = 0; q < queue.length && !prev.has(to); q++) for (const o of rim.get(queue[q]) || []) if (!prev.has(o) && (o === to || ok(o))) { prev.set(o, queue[q]); queue.push(o); }
-      if (!prev.has(to)) return null;
-      const out = []; for (let w = to; w !== -1; w = prev.get(w)) out.push(w); return out.reverse();
-    };
-    const join = (f, r, ok) => { const mid = across(f[f.length - 1], r[r.length - 1], ok); return { chain: [...f, ...(mid ? mid.slice(1, -1) : []), ...r.slice().reverse()], bridged: mid ? mid.length : -1 }; };
-    const armJoin = join(front.a, rear.a, w => armShare(w) >= .5), torsoJoin = join(front.b, rear.b, w => armShare(w) < .5);
-    const armRim = armJoin.chain, torsoRim = torsoJoin.chain;
-    report[s] = { slits: slits.map(l => l.length), cut: cut.size, armRim: armRim.length, torsoRim: torsoRim.length, armBridge: armJoin.bridged, torsoBridge: torsoJoin.bridged };
-    // 面を足す道具。足した頂点は kinds に種類を控える（1＝袖の内側、2＝胴の脇、3＝折り目）
-    const kinds = new Map(), ROWS = 14, COLS = 8;
-    const push = (p, normal, from, w) => {   // p＝肩のまん中からの位置
-      for (let k = 0; k < 4; k++) { si[n * 4 + k] = si[from * 4 + k]; sw[n * 4 + k] = sw[from * 4 + k]; }
-      const raw = p.clone().add(C).applyMatrix4(back);
-      added.pos.push(raw.x, raw.y, raw.z); added.normal.push(normal.x, normal.y, normal.z); added.uvSrc.push(plain);
-      members[w].push(n); return { v: n++ - n0, w, p };
-    };
-    const fresh = (p, normal, from, kind) => { const w = members.length; members.push([]); rel.push([p.x, p.y, p.z]); nb.push(new Set()); kinds.set(w, kind); return push(p, normal, from, w); };
-    const copyOf = (w, normal) => push(at(w), normal, members[w][0], w);
-    const face = (a, b, c, outward) => {
-      if (a.w === b.w || b.w === c.w || a.w === c.w) return;
-      const normal = b.p.clone().sub(a.p).cross(c.p.clone().sub(a.p)), mid = a.p.clone().add(b.p).add(c.p).divideScalar(3);
-      added.tris.push(...(normal.dot(outward(mid)) < 0 ? [a.v, c.v, b.v] : [a.v, b.v, c.v]));
-      nb[a.w].add(b.w); nb[b.w].add(a.w); nb[b.w].add(c.w); nb[c.w].add(b.w); nb[a.w].add(c.w); nb[c.w].add(a.w);
-    };
-    // 2本の折れ線のあいだを、長さの割合をそろえながら三角形で埋める
-    const zip = (a, b, outward) => {
-      const along = line => { const d = [0]; for (let i = 1; i < line.length; i++) d.push(d[i - 1] + line[i].p.distanceTo(line[i - 1].p)); const total = d[d.length - 1] || 1; return d.map(x => x / total); };
-      const da = along(a), db = along(b);
-      for (let i = 0, j = 0; i < a.length - 1 || j < b.length - 1;) {
-        const stepA = j >= b.length - 1 || i < a.length - 1 && da[i + 1] <= db[j + 1];
-        if (stepA) { face(a[i], b[j], a[i + 1], outward); i++; } else { face(a[i], b[j], b[j + 1], outward); j++; }
-      }
-    };
-    // 折り目：前の上の端から後ろの上の端へ、まっすぐ。肩の回る軸のすぐ近くを通るので、腕を上げてもほとんど伸びない
-    const foldFrom = at(armRim[0]).lerp(at(torsoRim[0]), .5), foldTo = at(armRim[armRim.length - 1]).lerp(at(torsoRim[torsoRim.length - 1]), .5);
-    const fold = []; for (let j = 1; j < COLS; j++) fold.push(fresh(foldFrom.clone().lerp(foldTo, j / COLS), V(0, -1, 0), members[torsoRim[0]][0], 3).w);
-    // 袖の筒の向き（腕の軸のまわり）。inward＝胴のほう
-    const inward = V(-sx, 0, 0).addScaledVector(axis, sx * axis.x).normalize(), around = axis.clone().cross(inward);
-    const sleevePoint = (pf, pb, t, u) => {
-      const cyl = p => { const al = p.dot(axis), radial = p.clone().addScaledVector(axis, -al); return { al, rho: radial.length(), th: Math.atan2(radial.dot(around), radial.dot(inward)) }; };
-      const f = cyl(pf), b = cyl(pb), th = lerp(f.th, b.th, t), rho = Math.max(lerp(f.rho, b.rho, t), .045), dir = inward.clone().multiplyScalar(Math.cos(th)).addScaledVector(around, Math.sin(th));
-      const round = axis.clone().multiplyScalar(lerp(f.al, b.al, t)).addScaledVector(dir, rho), k = ss(seg(u, 0, .3));
-      return { p: pf.clone().lerp(pb, t).lerp(round, k), normal: inward.clone().lerp(dir, k).normalize() };
-    };
-    const side = V(sx, 0, 0);
-    // 胴の脇は、前の縁と後ろの縁のあいだを、内へくぼませて張る（わきのくぼみ。平らに張ると、板が横へ突き出て見える）
-    const torsoPoint = (pf, pb, t, u) => {
-      const hollow = .04 * Math.sin(Math.PI * t) * ss(seg(u, 0, .25)), lean = Math.cos(Math.PI * t) * .6;
-      return { p: pf.clone().lerp(pb, t).addScaledVector(side, -hollow), normal: V(side.x, 0, lean).normalize() };
-    };
-    function patch(chain, kind, point, outward, edgeNormal) {
-      const d = [0]; for (let i = 1; i < chain.length; i++) d.push(d[i - 1] + at(chain[i]).distanceTo(at(chain[i - 1])));
-      const total = d[d.length - 1], near = x => { let best = 0; for (let i = 1; i < d.length; i++) if (Math.abs(d[i] - x) < Math.abs(d[best] - x)) best = i; return best; };
-      const copies = new Map(), edge = i => copies.get(i) || copies.set(i, copyOf(chain[i], edgeNormal(at(chain[i])))).get(i);
-      const run = (from, to) => { const out = []; for (let i = from; from <= to ? i <= to : i >= to; i += from <= to ? 1 : -1) out.push(edge(i)); return out; };
-      const fi = [], bi = [], rows = [];
-      for (let k = 0; k < ROWS; k++) { fi.push(Math.max(near(total * k / ROWS / 2), k ? fi[k - 1] : 0)); bi.push(Math.min(near(total * (1 - k / ROWS / 2)), k ? bi[k - 1] : chain.length - 1)); }
-      for (let k = 0; k < ROWS; k++) {
-        const pf = at(chain[fi[k]]), pb = at(chain[bi[k]]), row = [];
-        for (let j = 1; j < COLS; j++) { if (!k) row.push(copyOf(fold[j - 1], edgeNormal(at(fold[j - 1])))); else { const q = point(pf, pb, j / COLS, k / ROWS); row.push(fresh(q.p, q.normal, members[chain[fi[k]]][0], kind)); } }
-        rows.push(row);
-      }
-      for (let k = 0; k < ROWS - 1; k++) {
-        zip(run(fi[k], fi[k + 1]), [rows[k][0], rows[k + 1][0]], outward);
-        for (let j = 0; j < COLS - 2; j++) { face(rows[k][j], rows[k][j + 1], rows[k + 1][j + 1], outward); face(rows[k][j], rows[k + 1][j + 1], rows[k + 1][j], outward); }
-        zip([rows[k][COLS - 2], rows[k + 1][COLS - 2]], run(bi[k], bi[k + 1]), outward);
-      }
-      zip(run(fi[ROWS - 1], bi[ROWS - 1]), rows[ROWS - 1], outward);
-      return { first: edge(0), last: edge(chain.length - 1), top: rows[0] };
-    }
-    const fromAxis = p => p.clone().addScaledVector(axis, -p.dot(axis)).normalize();
-    const sleeve = patch(armRim, 1, sleevePoint, fromAxis, p => fromAxis(p).lerp(inward, .5).normalize());
-    const wall = patch(torsoRim, 2, torsoPoint, () => side, () => side.clone());
-    // 折り目の両端の、小さなすき間をふさぐ
-    face(sleeve.first, wall.first, sleeve.top[0], () => V(0, 0, 1)); face(sleeve.last, wall.last, sleeve.top[COLS - 2], () => V(0, 0, -1));
-    // ② 元の「腕につく割合」と、固定する所
-    const count = members.length, h = new Float32Array(count), fixed = new Uint8Array(count);
-    for (let w = 0; w < count; w++) {
-      const a = h[w] = armShare(w), [x, y, z] = rel[w], d = Math.hypot(x, y, z), al = x * axis.x + y * axis.y + z * axis.z, kind = kinds.get(w) | 0;
-      if (d > R - .012 && !kind) fixed[w] = 1;                                                    // いちばん外は、元のまま
-      else if (kind === 1 ? al >= .05 : a >= .9 && al >= SLEEVE_FROM) { h[w] = 1; fixed[w] = 1; }  // 腕（袖は、筒のまま腕につく）
-      else if (kind === 2 ? y < -.05 : a <= .02 && d >= (y < -.12 ? TORSO_FROM : .17)) { h[w] = 0; fixed[w] = 1; }   // 胴
-    }
-    const adj = nb.map(set => Int32Array.from(set));
-    for (let it = 0; it < 260; it++) for (let w = 0; w < count; w++) {
-      if (fixed[w] || !adj[w].length) continue;
-      let sum = 0; for (const o of adj[w]) sum += h[o];
-      h[w] += 1.86 * (sum / adj[w].length - h[w]);
-    }
-    // 胴 → 鎖骨 → 補助の骨 → 二の腕 の順に、なだらかに受け渡す
-    const [kc, kf] = knots, hat = (x, a, b, c) => x <= a || x >= c ? 0 : x < b ? (x - a) / (b - a) : (c - x) / (c - b);
-    for (let w = 0; w < count; w++) {
-      if (dist(w) > R - .012 && !kinds.has(w)) continue;
-      const t = clamp(h[w]), wT = t < kc ? 1 - t / kc : 0, wC = hat(t, 0, kc, kf), wF = hat(t, kc, kf, 1), wA = t > kf ? (t - kf) / (1 - kf) : 0;
-      for (const i of members[w]) {
-        const mix = new Map(); let torso = 0, arm = 0;
-        for (let k = 0; k < 4; k++) { const b = si[i * 4 + k], x = sw[i * 4 + k]; if (!x) continue; if (armBones.includes(b)) arm += x; else torso += x; }
-        for (let k = 0; k < 4; k++) { const b = si[i * 4 + k], x = sw[i * 4 + k]; if (!x) continue;
-          if (armBones.includes(b)) { if (wA) mix.set(b, (mix.get(b) || 0) + wA * x / arm); } else if (wT) mix.set(b, (mix.get(b) || 0) + wT * x / torso); }
-        if (wT && !torso) mix.set(iChest, (mix.get(iChest) || 0) + wT);
-        if (wA && !arm) mix.set(iUp, (mix.get(iUp) || 0) + wA);
-        if (wC) mix.set(iClav, (mix.get(iClav) || 0) + wC);
-        if (wF) mix.set(iFix, (mix.get(iFix) || 0) + wF);
-        const best = [...mix].sort((p, q) => q[1] - p[1]).slice(0, 4), total = best.reduce((sum, e) => sum + e[1], 0);
-        for (let k = 0; k < 4; k++) { si[i * 4 + k] = best[k] ? best[k][0] : 0; sw[i * 4 + k] = best[k] ? best[k][1] / total : 0; }
-      }
-    }
-  }
-  // 控えに入れる形（重みは 0〜255 の整数）にまとめる。変わった頂点だけ
-  const pack = i => { const q = [0, 0, 0, 0]; let left = 255, big = 0; for (let k = 0; k < 4; k++) { q[k] = Math.round(sw[i * 4 + k] * 255); left -= q[k]; if (q[k] > q[big]) big = k; } q[big] += left; return q; };
-  const changed = [];
-  for (let i = 0; i < n0; i++) { let same = true; for (let k = 0; k < 4; k++) if (si[i * 4 + k] !== m.si[i * 4 + k] || Math.abs(sw[i * 4 + k] - m.sw[i * 4 + k]) > .003) { same = false; break; } if (!same) changed.push(i); }
-  const ns = n - n0, all = [...changed, ...Array.from({ length: ns }, (_, k) => n0 + k)], joints = new Uint8Array(all.length * 4), weights = new Uint8Array(all.length * 4);
-  all.forEach((i, r) => { const q = pack(i); for (let k = 0; k < 4; k++) { joints[r * 4 + k] = q[k] ? si[i * 4 + k] : 0; weights[r * 4 + k] = q[k]; } });
-  return { n0, report, changed: Uint32Array.from(changed), removed: Uint32Array.from(removed.sort((a, b) => a - b)), pos: Float32Array.from(added.pos), uvSrc: Uint32Array.from(added.uvSrc),
-    normal: Int8Array.from(added.normal.map(x => Math.round(clamp(x, -1, 1) * 127))), tris: Uint16Array.from(added.tris), joints, weights };
-}
-
-// 控えの形：[印, 頂点の数, 変わる頂点の数, 足す頂点の数, 足す三角形の数, 取りのぞく三角形の数] のあとに、各配列が並ぶ
-const MAGIC = 0x33584641;   // 'AFX3'
-export function encodePatch(p) {
-  const head = Uint32Array.of(MAGIC, p.n0, p.changed.length, p.uvSrc.length, p.tris.length / 3, p.removed.length);
-  const parts = [head, p.changed, p.removed, p.uvSrc, p.pos, p.tris, p.normal, p.joints, p.weights].map(a => new Uint8Array(a.buffer, a.byteOffset, a.byteLength));
-  const out = new Uint8Array(parts.reduce((sum, a) => sum + a.length + (4 - a.length % 4) % 4, 0)); let o = 0;
-  for (const a of parts) { out.set(a, o); o += a.length + (4 - a.length % 4) % 4; }
-  return out.buffer;
-}
-function decodePatch(buffer, n) {
-  try {
-    const head = new Uint32Array(buffer, 0, 6);
-    if (head[0] !== MAGIC || head[1] !== n) return null;
-    const nc = head[2], ns = head[3], nt = head[4], nr = head[5]; let o = 24;
-    const take = (Type, len) => { const a = new Type(buffer, o, len); o += a.byteLength + (4 - a.byteLength % 4) % 4; return a; };
-    return { n0: n, changed: take(Uint32Array, nc), removed: take(Uint32Array, nr), uvSrc: take(Uint32Array, ns), pos: take(Float32Array, ns * 3),
-      tris: take(Uint16Array, nt * 3), normal: take(Int8Array, ns * 3), joints: take(Uint8Array, (nc + ns) * 4), weights: take(Uint8Array, (nc + ns) * 4) };
-  } catch { return null; }
-}
-
-// 計算した（または控えから読んだ）結果を、3Dに当てる
-function applyPatch(mesh, m, patch, J) {
-  const { g, n, names, P } = m, si = m.si.slice(), sw = m.sw.slice(), nc = patch.changed.length, ns = patch.uvSrc.length;
-  // 色の直しをかける範囲（x＝どれだけ直すか、y＝そのうち肌の割合）。元の重みで決める。
-  // 腕の内側・手のひら・わきの下は、3Dを作るときに体の陰になっていて、絵が焦げ茶〜黒で塗られている
-  const tone = new Float32Array(n * 2), smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
-  for (const [s, sx] of [['L', 1], ['R', -1]]) {
-    const C = J[s].C, axis = J[s].E.clone().sub(C).normalize(), arm = new Set(ARM_BONES.map(b => names.indexOf(b + s)));
+    const C = J[s].C, axis = J[s].E.clone().sub(C).normalize(), arm = new Set([...ARM_BONES, 'armfix'].map(b => names.indexOf(b + s)));
     for (let i = 0; i < n; i++) {
       if (P[i * 3] * sx < .04) continue;
       const x = P[i * 3] - C.x, y = P[i * 3 + 1] - C.y, z = P[i * 3 + 2] - C.z, d = Math.hypot(x, y, z), al = x * axis.x + y * axis.y + z * axis.z;
@@ -323,41 +93,8 @@ function applyPatch(mesh, m, patch, J) {
       tone[i * 2] = Math.max(skin, shirt) + skin * near; tone[i * 2 + 1] = skin;
     }
   }
-  for (let r = 0; r < nc; r++) { const i = patch.changed[r]; for (let k = 0; k < 4; k++) { si[i * 4 + k] = patch.joints[r * 4 + k]; sw[i * 4 + k] = patch.weights[r * 4 + k] / 255; } }
-  g.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
-  g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
   g.setAttribute('tone', new THREE.BufferAttribute(tone, 2));
-  if (patch.removed.length) {   // わきの下の橋（腕と胴をつないでいた面）を外す
-    const gone = new Set(patch.removed), old = g.index.array, keep = new Uint32Array(old.length - gone.size * 3); let o = 0;
-    for (let t = 0; t < old.length; t += 3) if (!gone.has(t / 3)) { keep[o++] = old[t]; keep[o++] = old[t + 1]; keep[o++] = old[t + 2]; }
-    g.setIndex(new THREE.BufferAttribute(keep, 1));
-  }
   for (const material of [mesh.material].flat()) toneFix(material);
-  openHand(mesh, m, J);
-  if (!ns) return;
-  // 足す面（袖の内側・胴の脇）は、小さな別の部品にして同じ骨につなぐ（元の頂点の入れ物は作り直さない）
-  const nor = new Float32Array(ns * 3), uv = new Float32Array(ns * 2), sj = new Uint16Array(ns * 4), swt = new Float32Array(ns * 4), st = new Float32Array(ns * 2);
-  const toRaw = new THREE.Matrix3().setFromMatrix4(m.M).invert(), v = V();   // 向きを、頂点の入れ物の中の向きへ戻す
-  for (let k = 0; k < ns; k++) {
-    const uvFrom = patch.uvSrc[k];
-    v.set(patch.normal[k * 3], patch.normal[k * 3 + 1], patch.normal[k * 3 + 2]).applyMatrix3(toRaw).normalize().toArray(nor, k * 3);
-    uv[k * 2] = g.attributes.uv.getX(uvFrom); uv[k * 2 + 1] = g.attributes.uv.getY(uvFrom);
-    let onArm = 0;
-    for (let c = 0; c < 4; c++) { sj[k * 4 + c] = patch.joints[(nc + k) * 4 + c]; swt[k * 4 + c] = patch.weights[(nc + k) * 4 + c] / 255; if (/^(upperarm|armfix|elbowfix|forearm)/.test(names[sj[k * 4 + c]])) onArm += swt[k * 4 + c]; }
-    // 足した面は無地なので、色は位置で決める（y が2＝シャツ、3＝肌。袖の内側のうち、袖口の線 HEM より先は肌）
-    v.set(patch.pos[k * 3], patch.pos[k * 3 + 1], patch.pos[k * 3 + 2]).applyMatrix4(m.M);
-    const s = v.x > 0 ? 'L' : 'R', along = v.sub(J[s].C).dot(J[s].E.clone().sub(J[s].C).normalize());
-    st[k * 2] = 1; st[k * 2 + 1] = onArm > .5 && along > HEM ? 3 : 2;
-  }
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(patch.pos), 3)); sg.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); sg.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-  sg.setAttribute('skinIndex', new THREE.BufferAttribute(sj, 4)); sg.setAttribute('skinWeight', new THREE.BufferAttribute(swt, 4)); sg.setAttribute('tone', new THREE.BufferAttribute(st, 2));
-  sg.setIndex(new THREE.BufferAttribute(patch.tris, 1));
-  sg.boundingSphere = g.boundingSphere; sg.boundingBox = g.boundingBox;
-  const sewn = new THREE.SkinnedMesh(sg, mesh.material);
-  sewn.name = 'sewn'; sewn.position.copy(mesh.position); sewn.quaternion.copy(mesh.quaternion); sewn.scale.copy(mesh.scale);
-  sewn.frustumCulled = false; sewn.castShadow = mesh.castShadow;
-  mesh.parent.add(sewn); sewn.bind(mesh.skeleton, mesh.bindMatrix);
 }
 
 // 右手を開いた形を、もう1つの形として持たせる（morph。0＝元の丸めた手、1＝指を伸ばした手）。
@@ -397,7 +134,6 @@ function toneFix(material) {
         vec3 c = diffuseColor.rgb;
         float amount = min(vTone.x, 1.), sk = clamp(vTone.y / max(amount, .001), 0., 1.);
         sk = mix(sk, step(c.b * 1.1, c.r), smoothstep(.012, .05, max(c.r, c.b)) * .85);   // 色あいがはっきりしていれば、絵に従う
-        if (vTone.y > 1.5) { sk = step(2.5, vTone.y); c = vec3(0.); }                      // 足した面：位置で決めた色を、そのまま塗る
         float inner = clamp(vTone.x - 1., 0., 1.) * sk;                                    // わきに近い肌
         vec3 target = mix(vec3(.027, .078, .102), vec3(.58, .36, .235), sk);
         float lt = dot(target, vec3(.2126, .7152, .0722)), l = dot(c, vec3(.2126, .7152, .0722));
@@ -406,7 +142,7 @@ function toneFix(material) {
         diffuseColor.rgb = mix(c, target * mix(mix(mix(.66, .82, sk), .93, inner), 1., smoothstep(0., lt * top, l)), k);
       }`);
   };
-  material.customProgramCacheKey = () => 'tone-fix-4';
+  material.customProgramCacheKey = () => 'tone-fix-5';
   material.needsUpdate = true;
 }
 
