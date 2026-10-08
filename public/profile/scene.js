@@ -19,6 +19,9 @@ let layout = {}, mixers = [], actionSets = [], activeAction = '';
 let lastStage = '', frame = 0, elapsed = 0, lastTime = 0;
 let pointerX = 0, pointerY = 0, easedX = 0, easedY = 0;
 let person, hologram, roomModel;
+// 幕開け：読み込み画面が閉じる瞬間に、引いた位置から寄っていく（motion.js が合図を出す）
+let introStart = -1, smoothY = scrollY;
+window.profileCameraIntro = () => { introStart = performance.now(); };
 
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'default' });
@@ -254,9 +257,15 @@ async function start() {
     if (failed || window.profileSkipped) return;
     frame = requestAnimationFrame(tick);
     if (document.hidden) { lastTime = time; return; }
-    const dt = Math.min((time - (lastTime || time)) / 1000, .04);
+    const rawDt = (time - (lastTime || time)) / 1000;
+    const dt = Math.min(rawDt, .04);
     lastTime = time;
-    const y = scrollY;
+    // パソコンでは、スクロールにカメラが少し遅れてついてくる（かくかくしない）。
+    // スマホは3Dを本文の位置に合わせているので、遅らせない
+    // 追いかける速さは実際の経過時間で決める（描くのが遅い機械で、いつまでも追いつかないのを防ぐ）
+    smoothY = mobile || paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
+    if (Math.abs(smoothY - scrollY) < .5) smoothY = scrollY;
+    const y = smoothY;
     if (!layout.about) return;
     const aboutTop = layout.about.top - y;
     const aboutBottom = aboutTop + layout.about.height;
@@ -280,6 +289,11 @@ async function start() {
       const aboutView = [Math.sin((aboutProgress - .5) * .22) * 5.9, 1.65, 5.9, 0, 1.0, 0];
       view = mix(view, aboutView, dark);
       if (contactProgress > 0) view = mix(view, [-2.8, 2.2, 6.5, 0, .8, 0], contactProgress);
+    }
+    if (introStart >= 0) {
+      const t = clamp((time - introStart) / 2800), far = Math.pow(1 - t, 4);
+      if (t >= 1) introStart = -1;
+      view = mix(view, mobile ? [view[0] + .6, view[1] + .9, view[2] + 2.6, view[3], view[4], view[5]] : [view[0] + 2.1, view[1] + 1.25, view[2] + 3.0, view[3], view[4] + .1, view[5]], far);
     }
     easedX = THREE.MathUtils.damp(easedX, paused || mobile ? 0 : pointerX, 3, dt);
     easedY = THREE.MathUtils.damp(easedY, paused || mobile ? 0 : pointerY, 3, dt);
