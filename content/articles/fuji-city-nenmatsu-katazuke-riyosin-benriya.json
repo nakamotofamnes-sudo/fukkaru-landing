@@ -211,11 +211,7 @@
     },
     {
       "type": "p",
-      "text": "富士市では、家庭から出るごみは原則無料ですが、事業活動によって出たごみ（事業系一般廃棄物）は、新環境クリーンセンターへ持ち込む際に料金が発生します。"
-    },
-    {
-      "type": "p",
-      "text": "フッ軽合同会社がお客様の代わりに搬入する場合も、この料金がかかります。"
+      "text": "買取が難しい家具や家電などは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。"
     },
     {
       "type": "p",
@@ -274,7 +270,7 @@
     }
   ],
   "publishDate": "2026-10-06",
-  "updatedDate": "2026-10-06",
+  "updatedDate": "2026-10-09",
   "ogImage": "/blog/fuji-city-nenmatsu-katazuke-riyosin-benriya.jpg",
   "heroImage": "/blog/fuji-city-nenmatsu-katazuke-riyosin-benriya-bg.jpg"
 }
