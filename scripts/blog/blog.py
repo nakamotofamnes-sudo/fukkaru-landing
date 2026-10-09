@@ -1547,7 +1547,8 @@ def hannyu_naosu(s: str) -> str:
 def _bun_kagi(s: str) -> list:
     """文に分ける。**かぎかっこ（「」『』）の中の「。」「？」「！」では切らない。**
     「『この棚は、壁に固定する作業も必要？』といったご相談も承ります。」を「？」で切ると、
-    前半だけ外れて「』といったご相談も承ります。」が残った（2026-10-09 夜の試し）"""
+    前半だけ外れて「』といったご相談も承ります。」が残った（2026-10-09 夜の試し）。
+    かぎかっこが最後まで閉じていない段落は、ふつうに切る（閉じないまま全部が1文になると、段落ごと消える）"""
     out, ima, fukasa = [], "", 0
     for ch in s:
         ima += ch
@@ -1560,15 +1561,19 @@ def _bun_kagi(s: str) -> list:
             ima = ""
     if ima:
         out.append(ima)
+    if fukasa > 0:
+        return [x for x in re.split(r"(?<=[。！？\n])", s) if x] or [s]
     return out or [s]
 
 
 # 答えの言い方は2通り：できると言う言い方（A）と、「お任せください」（B）
-_SHOBUN_GO_A = (r"(?:ご)?(?:対応可能です|対応できます|対応いたします|対応しております|対応しています|"
+_SHOBUN_GO_A = (r"(?:ご)?(?:対応可能です|対応できます|対応いたします|対応します|対応しております|対応しています|"
                 r"承ります|承っております|お引き受けします|お引き受けいたします|"
                 r"お受けしています|お受けしております)")
 _SHOBUN_GO_B = r"お任せ(?:ください|いただけます)"
 _SHOBUN_KOTAE_GO = "(?:" + _SHOBUN_GO_A + "|" + _SHOBUN_GO_B + ")"
+# 答えの前に入る添え言葉（「処分もあわせてお任せください」「処分もまとめて承ります」）
+_SHOBUN_SOERU = r"(?:あわせて|併せて|まとめて|迅速に|すぐに|柔軟に|一括で)?"
 # かぎかっこの中は、**手放したいという願い**のときだけ見る。「捨てるのも大変だし、どこに頼めばいいか分からない…」のような
 # ただの困りごとまで拾うと、「…運搬・買取・引取のご相談は、フッ軽合同会社にお任せください」（正しい文）に当たった
 # （2026-10-09 夜の試し運転3本目。言い方まで直して「フッ軽合同会社も、ご相談いただけます」という壊れた文にしていた）
@@ -1580,26 +1585,47 @@ _SHOBUN_KOTAE = re.compile(
     r"「[^」]*" + _SHOBUN_NEGAI + r"[^」]*」[^。]{0,60}" + _SHOBUN_KOTAE_GO + r"|"
     # ② 「処分したい…にも、対応可能です」
     r"(?:処分|廃棄)し(?:たい|てほしい|て欲しい)[^。]{0,40}" + _SHOBUN_KOTAE_GO + r"|"
-    # ③ 「処分にも対応可能です」「処分も承ります」「処分は、フッ軽が対応いたします」
-    r"(?:処分|廃棄)(?:作業)?(?:にも|も|に|は|を)、?(?:" + _SHOBUN_JISHA + r"(?:が|にて|で|に)、?)?" + _SHOBUN_KOTAE_GO)
-# 9/23 の形（回収業者と）が同じ文にある・ご自身で出す話・市の話・フッ軽が作業で出したもの・運び出し（荷物の仕事）・打ち消しには、触らない。
-# **「まだ使える」「買取」は目印にしない**（「買取できないものの処分にも対応できます」が通ってしまう。足すのは正しい文だけなので、効きすぎてもうそにならない）
-_SHOBUN_KOTAE_OK = re.compile(r"回収業者|許可を持つ|ご自身|ご自分|お客様が|自治体|市の|市では|出し方|ご案内|"
-                              # 打ち消しは、文や節の終わりにあるものだけ（「買取できないものの処分にも対応できます」の「できない」は打ち消しではない）
-                              r"(?:できません|できない|お受けしていません|お受けできません|お受けしていない)(?=[。、がの]|$)|"
-                              r"作業で出|刈った|剪定した|解体した|伐採した|運び出")
+    # ③ 「処分にも対応可能です」「処分も承ります」「処分は、フッ軽が対応いたします」「処分に関するご要望にも対応いたします」
+    r"(?:処分|廃棄)(?:作業)?(?:に関する(?:ご要望|ご相談|ご依頼))?(?:にも|も|に|は|を)、?"
+    r"(?:" + _SHOBUN_JISHA + r"(?:が|にて|で|に)、?)?" + _SHOBUN_SOERU + _SHOBUN_KOTAE_GO)
+# **触らない文**（別の目が、足した直しの効きすぎを見つけた。2026-10-09 夜）：
+#   ・9/23 の形（回収業者と）が同じ文にある
+#   ・市・施設・お店の話（「家電量販店では古い家電の処分も承ります」は、お店の説明。フッ軽の約束ではない）
+#   ・お客様がご自身で出す話・出し方の案内・打ち消し
+#   ・**フッ軽が作業で出したもの**（刈った草・剪定した枝・解体した物置は、富士市ではフッ軽が持ち込める。
+#     「刈り取った草の処分もお任せください」に 9/23 の文を足すと、草刈りの記事の形とずれる）
+# 「まだ使える」「買取」「富士市の」「ご自身では運べない」「お客様が不要になった」は、目印にしない
+# （フッ軽の約束の文にも出てくる。足すのは正しい文だけなので、効きすぎてもうそにならない）
+_SHOBUN_KOTAE_OK = re.compile(
+    r"回収業者|許可を持つ|自治体|市の(?:収集|ごみ|ゴミ|ルール|決まり|施設|集積所|回収|ページ|窓口)|市では|市が|"
+    r"(?:ご自身|ご自分)で[^。]{0,16}(?:出す|出され|お出し|持ち込|搬入|運ぶ|運ば)|"
+    r"お客様が[^。]{0,16}(?:出す|出され|持ち込|搬入|運ぶ|運ば)|お客様ご自身|出し方|ご案内|"
+    # 打ち消しは、文や節の終わりにあるものだけ（「買取できないものの処分にも対応できます」の「できない」は打ち消しではない）
+    r"(?:できません|できない|お受けしていません|お受けできません|お受けしていない)(?=[。、がの]|$)|"
+    r"作業で出|草|枝|剪定|刈|伐採|解体|抜いた|"
+    r"クリーンセンター|量販店|ホームセンター|ショップ|販売店|購入店|お店|店舗|メーカー|郵便局|組合|リサイクル")
+# 「運び出しも承ります」は荷物の仕事。「運び出しと処分もお任せください」は処分の約束
+_SHOBUN_HAKOBIDASHI_TO = re.compile(r"運び出し?(?:と|・|や|から|、)[^。]{0,8}(?:処分|廃棄)")
 _SHOBUN_WADAI = re.compile(r"処分|廃棄|捨て")
 _SHOBUN_TASU_MADA = "まだ使えるものは引き取ります（古物商許可）。"
+# 質問と答え：質問が「処分もお願いできますか」で、答えが「はい、対応可能です」（答えに「処分」の語が無いので、文だけ見ても分からない）
+_SHOBUN_FAQ_Q = re.compile(r"(?:処分|廃棄|捨て)[^。？?]{0,30}(?:お願い|頼め|でき|可能|もらえ|対応|引き受)")
+_SHOBUN_FAQ_A = re.compile(r"^(?:はい|もちろん|ええ)")
+_SHOBUN_FAQ_DEKIRU = re.compile(_SHOBUN_GO_A + r"|" + _SHOBUN_GO_B + r"|可能です|できます")
 
 
 def shobun_kotae(b: str) -> bool:
     """1つの文が、お客様の「処分したい」にフッ軽が「対応可能・承ります」と答えているなら True"""
-    return bool(_SHOBUN_KOTAE.search(b) and not _SHOBUN_KOTAE_OK.search(b))
+    if not _SHOBUN_KOTAE.search(b) or _SHOBUN_KOTAE_OK.search(b):
+        return False
+    if "運び出" in b and not _SHOBUN_HAKOBIDASHI_TO.search(b):
+        return False
+    return True
 
 
 def _shobun_kotae_kotoba(b: str) -> str:
     """答えの言い方だけを「ご相談いただけます・ご相談ください」にそろえる（処分の話より後ろの言葉だけ。前の文節は触らない）。
-    **直せる形のときだけ直す。**形が分からなければ言葉は触らない（後ろに 9/23 の形の文が足されるので、それでも線は守れる）"""
+    **直せる形のときだけ直す。**形が分からなければ言葉は触らない（すぐ後ろに 9/23 の形の文が足されるので、それでも線は守れる）"""
     m = _SHOBUN_WADAI.search(b)
     if not m:
         return b
@@ -1608,11 +1634,19 @@ def _shobun_kotae_kotoba(b: str) -> str:
     ato = re.sub(r"ご相談(?:にも|も|には|は|に)、?" + _SHOBUN_GO_A, "ご相談も、お寄せください", ato)
     # 「処分は、フッ軽が対応いたします」→「処分は、ご相談いただけます」
     ato = re.sub(_SHOBUN_JISHA + r"(?:が|にて|で)、?" + _SHOBUN_GO_A, "ご相談いただけます", ato)
-    # 「…にも、対応可能です」「…も承ります」→「…も、ご相談いただけます」（前に助詞があるときだけ）
-    ato = re.sub(r"(?:にも|も|には|は|に|を)、?" + _SHOBUN_GO_A, "も、ご相談いただけます", ato)
+    # 「…にも、対応可能です」「…も承ります」「…もまとめて承ります」→「…も、ご相談いただけます」（前に助詞があるときだけ）
+    ato = re.sub(r"(?:にも|も|には|は|に|を)、?" + _SHOBUN_SOERU + _SHOBUN_GO_A, "も、ご相談いただけます", ato)
     # 「…も、お任せください」「フッ軽合同会社にお任せください」→ 言葉だけ「ご相談ください」（前の助詞はそのまま）
     ato = re.sub(_SHOBUN_GO_B, "ご相談ください", ato)
     return mae + ato
+
+
+def _shobun_faq(q: str, a: str) -> bool:
+    """質問が「処分もお願いできますか」で、答えが「はい（できます）」で始まり、9/23 の形が無い"""
+    if not _SHOBUN_FAQ_Q.search(q) or "回収業者" in a or _SHOBUN_KOTAE_OK.search(q + a):
+        return False
+    atama = _bun_kagi(a)[0] if a else ""
+    return bool(_SHOBUN_FAQ_A.search(atama) and (len(atama) <= 8 or _SHOBUN_FAQ_DEKIRU.search(atama)))
 
 
 def shobun_kotae_naosu(art: dict, blocks: list) -> tuple[list, int]:
@@ -1624,25 +1658,63 @@ def shobun_kotae_naosu(art: dict, blocks: list) -> tuple[list, int]:
         if kae != bun:
             art["metaDescription"] = "".join(kae)
             n += 1
-    out = []
+    out, tashita = [], False     # 段落として足すのは、1つの記事に1回だけ（同じ段落が2回並ばないように）
+
+    def nakami(xs):
+        return "".join(json.dumps(x, ensure_ascii=False) for x in xs if isinstance(x, dict))
     for i, b in enumerate(blocks):
+        if isinstance(b, dict) and b.get("type") in ("p", "lead") and isinstance(b.get("text"), str):
+            bun = _bun_kagi(b["text"])
+            atari = [k for k, x in enumerate(bun) if shobun_kotae(x)]
+            if atari:
+                kae = [_shobun_kotae_kotoba(x) if k in atari else x for k, x in enumerate(bun)]
+                # 近く（もう並べた2つ・この段落・次の2つ）に 9/23 の形があれば、足さない
+                mawari = nakami(out[-2:]) + nakami(blocks[i:i + 3])
+                if not tashita and "回収業者と" not in mawari:
+                    # **当たった文のすぐ後ろで段落を割って足す**（段落の終わりに足すと、間に別の文が挟まって、
+                    # 本番照合③-3 が見る範囲から外れる。言い方を直せなかった文が残るときに、そうなった）
+                    saigo = atari[-1]
+                    c = dict(b)
+                    c["text"] = "".join(kae[:saigo + 1])
+                    out.append(c)
+                    if "まだ使える" not in mawari:
+                        out.append({"type": "p", "text": _SHOBUN_TASU_MADA})
+                    out.append({"type": "p", "text": _HANNYU_KAWARI})
+                    nokori = "".join(kae[saigo + 1:]).strip()
+                    if nokori:
+                        out.append({"type": "p", "text": nokori})
+                    tashita = True
+                    n += 1
+                    continue
+                if kae != bun:
+                    c = dict(b)
+                    c["text"] = "".join(kae)
+                    out.append(c)
+                    n += 1
+                    continue
+        elif isinstance(b, dict) and b.get("type") == "faq" and isinstance(b.get("items"), list):
+            items, kawatta = [], False
+            for qa in b["items"]:
+                if (isinstance(qa, dict) and isinstance(qa.get("q"), str) and isinstance(qa.get("a"), str)
+                        and _shobun_faq(qa["q"], qa["a"])):
+                    bun = _bun_kagi(qa["a"])
+                    if _SHOBUN_FAQ_DEKIRU.search(bun[0]):
+                        bun[0] = "はい、ご相談いただけます。"
+                    a = "".join(bun)
+                    if not a.endswith(("。", "！", "？")):
+                        a += "。"
+                    a += ("" if "まだ使える" in a else _SHOBUN_TASU_MADA) + _HANNYU_KAWARI
+                    qa = dict(qa)
+                    qa["a"] = a
+                    kawatta = True
+                items.append(qa)
+            if kawatta:
+                c = dict(b)
+                c["items"] = items
+                out.append(c)
+                n += 1
+                continue
         out.append(b)
-        if not (isinstance(b, dict) and b.get("type") in ("p", "lead") and isinstance(b.get("text"), str)):
-            continue
-        bun = _bun_kagi(b["text"])
-        if not any(shobun_kotae(x) for x in bun):
-            continue
-        c = dict(b)
-        c["text"] = "".join(_shobun_kotae_kotoba(x) if shobun_kotae(x) else x for x in bun)
-        out[-1] = c
-        n += 1
-        # 前後2つの段落までに 9/23 の形があれば、足さない（同じ文が二重になる）
-        mawari = "".join(json.dumps(x, ensure_ascii=False) for x in blocks[max(0, i - 2): i + 3] if isinstance(x, dict))
-        if "回収業者と" in mawari:
-            continue
-        if "まだ使える" not in mawari:
-            out.append({"type": "p", "text": _SHOBUN_TASU_MADA})
-        out.append({"type": "p", "text": _HANNYU_KAWARI})
     return out, n
 
 
@@ -1918,35 +1990,55 @@ def nai_naosu(art: dict, blocks: list) -> tuple[list, int]:
 #   ・それでも残る文は、文ごと外す。段落・箇条書きの1つ・質問と答えの1組が丸ごとその話なら、それごと外す
 #   ・「受けていません」と書いた文と、お客様がご自身でする話は、外さない
 #   ・**物置の話には当てない**（物置の転倒防止は別の仕事。受けているかは聞いていないので、触らない）
-_KABE = re.compile(r"壁(?:面)?(?:へ|に|と)の?固定|壁(?:面)?に(?:しっかり)?固定|壁(?:面)?[^。、]{0,6}固定|固定[^。、]{0,6}壁|"
-                   r"壁(?:面)?(?:へ|に)の?(?:取り付け|取付|ビス留め|ネジ留め)")
-_KABE_TENTO = re.compile(r"転倒防止[^。]{0,12}(?:金具|器具|取り付け|取付|固定|作業|承|対応)|(?:金具|器具)[^。]{0,8}転倒防止")
-_KABE_KAGU = re.compile(r"家具|本棚|食器棚|タンス|たんす|棚|ラック|ベッド|デスク|机")
-_KABE_OK = re.compile(r"お受けしていない|受けていない|お受けしていません|受けていません|行っていません|対応していません|"
-                      r"ご自身|ご自分|お客様が|お客様ご自身|ホームセンター|市販")
+# **探し方は狭くしてある**（別の目が、はじめの探し方の効きすぎを見つけた。2026-10-09 夜）。
+# はじめは「壁＋6文字以内＋固定」「固定…壁」「壁に取り付け」を家具の言葉なしで拾っていて、関係のない文を丸ごと外した：
+#   「外壁の高圧洗浄は固定料金ではなく…」「防草シートは、壁際を固定ピンで押さえます」「側面の壁板を固定してから、屋根を載せます」
+#   「壁面に取り付けられたエアコンの室外機を避けて洗浄します」「ネジで固定する際に壁を傷つけないよう、養生をします」
+# いま拾うのは3つだけ。①は名前の形なので、どの記事でも。②③は、その文に家具の言葉があるか、家具の記事のときだけ
+_KABE_MEI = re.compile(r"(?<!外)壁(?:面)?(?:へ|と)の固定")                                   # ① 壁への固定・壁との固定
+_KABE_DOU = re.compile(r"(?<!外)壁(?:面)?に(?:しっかり(?:と)?)?(?:固定|ビス留め|ネジ留め)")   # ② 壁に固定する
+_KABE_TENTO = re.compile(r"転倒防止[^。]{0,12}(?:金具|器具|取り付け|取付|固定|作業|承|対応)|(?:金具|器具)[^。]{0,8}転倒防止")   # ③
+_KABE_KAGU = re.compile(r"家具|本棚|食器棚|タンス|たんす|棚|ラック|ベッド|デスク|机|チェスト|収納")
+_KABE_KIJI = re.compile(r"家具|本棚|食器棚|タンス|棚|ラック|ベッド|デスク|机|チェスト|収納|ニトリ|IKEA|イケア")
+# 外さない文：受けていないと正直に書いた文／約束でない文（固定しなくてよい）／お客様がご自身で固定する話
+_KABE_OK = re.compile(r"お受けしていない|受けていない|お受けしていません|受けていません|お受けできません|お受けしておりません|"
+                      r"承っておりません|承っていません|行っていません|行っておりません|対応していません|対応できません|"
+                      r"いたしかねます|致しかねます|含まれません|必要はありません|しなくても|"
+                      r"(?:ご自身|ご自分)で[^。]{0,12}固定(?:して|する|でき|しておく)|お客様が[^。]{0,12}固定(?:して|する|でき)|"
+                      r"ホームセンター|市販")
 _KABE_NARABI = (
-    (re.compile(r"壁(?:面)?(?:へ|と)の固定(?:作業)?(?:や、?|、|・)"), ""),
-    (re.compile(r"(?:や、?|、|・)壁(?:面)?(?:へ|と)の固定(?:作業)?(?:が必要な場合)?"), ""),
+    # 「…が特殊な場合や、壁との固定が必要な場合も」→「…が特殊な場合も」
+    (re.compile(r"(場合)や、?壁(?:面)?(?:へ|と)の固定(?:作業)?が必要な場合"), r"\1"),
+    (re.compile(r"(?<!外)壁(?:面)?(?:へ|と)の固定(?:作業)?(?:や、?|、|・)"), ""),
+    (re.compile(r"(?:や、?|、|・)(?<!外)壁(?:面)?(?:へ|と)の固定(?:作業)?"), ""),
 )
 
 
-def kabe_bun(b: str) -> bool:
-    """1つの文が、家具を壁に固定する作業をフッ軽の仕事として書いていれば True（honban.py の⑧も同じ言葉を見る）"""
+def kabe_kiji(art: dict) -> bool:
+    """家具の記事か（題名で見る。物置の記事は別）"""
+    t = str((art or {}).get("title") or "")
+    return bool(_KABE_KIJI.search(t)) and "物置" not in t
+
+
+def kabe_bun(b: str, kagu_kiji: bool = False) -> bool:
+    """1つの文が、家具を壁に固定する作業をフッ軽の仕事として書いていれば True（honban.py の③-4 も同じ探し方）"""
     if _KABE_OK.search(b) or "物置" in b:
         return False
-    return bool(_KABE.search(b) or (_KABE_TENTO.search(b) and _KABE_KAGU.search(b)))
+    if _KABE_MEI.search(b):
+        return True
+    return bool((_KABE_DOU.search(b) or _KABE_TENTO.search(b)) and (kagu_kiji or _KABE_KAGU.search(b)))
 
 
-def _kabe(s: str) -> str:
+def _kabe(s: str, kagu_kiji: bool = False) -> str:
     """言葉だけ外す → 残った文は文ごと外す。**全部がその話なら空文字を返す**（呼ぶ側が、段落や箇条書きの1つごと外す）"""
-    if not (_KABE.search(s) or _KABE_TENTO.search(s)):
+    if not (_KABE_MEI.search(s) or _KABE_DOU.search(s) or _KABE_TENTO.search(s)):
         return s
     out = []
     for b in _bun_kagi(s):
-        if kabe_bun(b):
+        if kabe_bun(b, kagu_kiji):
             for pat, ato in _KABE_NARABI:
                 b = pat.sub(ato, b)
-            if kabe_bun(b):
+            if kabe_bun(b, kagu_kiji):
                 continue
         out.append(b)
     return "".join(out)
@@ -1954,9 +2046,10 @@ def _kabe(s: str) -> str:
 
 def kabe_naosu(art: dict, blocks: list) -> tuple[list, int]:
     n = 0
+    kk = kabe_kiji(art)
     v = art.get("metaDescription")
     if isinstance(v, str):
-        c = _kabe(v)
+        c = _kabe(v, kk)
         if c != v and c.strip():
             art["metaDescription"] = c
             n += 1
@@ -1967,7 +2060,7 @@ def kabe_naosu(art: dict, blocks: list) -> tuple[list, int]:
             continue
         c, kawatta, suteru = dict(b), False, False
         if isinstance(c.get("text"), str):
-            t = _kabe(c["text"])
+            t = _kabe(c["text"], kk)
             if t != c["text"]:
                 if t.strip():
                     c["text"] = t
@@ -1979,17 +2072,17 @@ def kabe_naosu(art: dict, blocks: list) -> tuple[list, int]:
             items = []
             for x in c["items"]:
                 if isinstance(x, str):
-                    t = _kabe(x)
+                    t = _kabe(x, kk)
                     if t != x:
                         kawatta = True
                         if t.strip():
                             items.append(t)
                         continue
                 elif isinstance(x, dict) and isinstance(x.get("q"), str) and isinstance(x.get("a"), str):
-                    if kabe_bun(x["q"]):
+                    if kabe_bun(x["q"], kk):
                         kawatta = True     # 質問がその話なら、答えごと外す
                         continue
-                    a = _kabe(x["a"])
+                    a = _kabe(x["a"], kk)
                     if a != x["a"]:
                         kawatta = True
                         if not a.strip():
@@ -2137,7 +2230,7 @@ def kyoka_miru(art: dict) -> list[str]:
         for s in _bun_kagi(t):
             if shobun_kotae(s):       # 「処分したい」に「対応可能・承ります」と答えている（9/23 の形が続いているか、人が読む）
                 out.append("処分への答え：" + s.strip()[:70])
-            if kabe_bun(s):           # 受けていない作業（家具を壁に固定する）
+            if kabe_bun(s, kabe_kiji(art)):   # 受けていない作業（家具を壁に固定する）
                 out.append("受けていない作業（壁への固定）：" + s.strip()[:60])
     return out
 
