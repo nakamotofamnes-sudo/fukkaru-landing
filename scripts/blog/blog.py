@@ -1618,8 +1618,12 @@ _SHOBUN_TASU_MADA = "まだ使えるものは引き取ります（古物商許�
 # **質問は、フッ軽に頼む言葉（お願い・頼める・もらえる・引き受け・任せ・依頼）があるものだけ。**
 # 「処分＋できますか」だけで拾うと、「ベッドは自分で処分できますか？」「はい、できます。集積所に出してください。」の答えを
 # 「はい、ご相談いただけます。集積所に出してください。まだ使えるものは引き取ります…」に取り違えた（別の目が見つけた）
-_SHOBUN_FAQ_Q = re.compile(r"(?:処分|廃棄|捨て)[^。？?]{0,30}(?:お願い|頼め|もらえ|引き受|任せ|依頼)")
-_SHOBUN_FAQ_Q_JIBUN = re.compile(r"自分で|ご自身で|自力で|自宅で")
+# 頼む言葉は、質問の終わりにあるものだけ（「粗大ごみの処分を依頼する場合、費用はかかりますか？」は、頼む質問ではない。
+# 本番照合③-3 と同じ形にそろえた）。「業者に頼めますか」のように、頼む相手がほかの業者の質問も除く
+_SHOBUN_FAQ_Q = re.compile(r"(?:処分|廃棄|捨て)[^。？?]{0,30}(?:お願い|頼め|もらえ|引き受|任せ|依頼)[^。？?]{0,12}[？?]\s*$")
+_SHOBUN_FAQ_Q_JIBUN = re.compile(r"自分で|ご自身で|自力で|自宅で|業者に|お店に|市に|自治体に")
+# 答えの1文目に、運び出し・解体・運搬・買取の約束があるときは、1文目を書き換えない（その約束が消える）。足すだけにする
+_SHOBUN_FAQ_NOKOSU = re.compile(r"運び出|解体|運搬|買取|買い取")
 _SHOBUN_FAQ_A = re.compile(r"^(?:はい|もちろん|ええ)")
 _SHOBUN_FAQ_DEKIRU = re.compile(_SHOBUN_GO_A + r"|" + _SHOBUN_GO_B + r"|可能です|できます|もちろんです|大丈夫です|問題ありません")
 
@@ -1713,7 +1717,7 @@ def shobun_kotae_naosu(art: dict, blocks: list) -> tuple[list, int]:
                 if (isinstance(qa, dict) and isinstance(qa.get("q"), str) and isinstance(qa.get("a"), str)
                         and _shobun_faq(qa["q"], qa["a"])):
                     bun = _bun_kagi(qa["a"])
-                    if _SHOBUN_FAQ_DEKIRU.search(bun[0]):
+                    if _SHOBUN_FAQ_DEKIRU.search(bun[0]) and not _SHOBUN_FAQ_NOKOSU.search(bun[0]):
                         bun[0] = "はい、ご相談いただけます。"
                     a = "".join(bun)
                     if not a.endswith(("。", "！", "？")):
