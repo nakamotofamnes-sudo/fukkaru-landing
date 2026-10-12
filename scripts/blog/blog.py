@@ -1831,7 +1831,10 @@ def tesuryo_naosu(s: str) -> str:
 _KAISHU_YAKUSOKU_KEI = re.compile(r"(?:(?<!不用品)回収|収集運搬)(?:・運搬|・処分|・引取|・引き取り)?(?:も|を)?"
                                   r"(?:いたし|承|お引き受け|可能|でき)")
 _KAISHU_SURU = re.compile(r"(?<!不用品)回収(?:・運搬|・処分|・引取|・引き取り)?(?:する|し(?:ます|て|た))")
-_KAISHU_JISHA = re.compile(r"フッ軽|当社|弊社|私たち|代表|買取|買い取|お見積|ご依頼|ご相談|お任せ")
+# ★名前は _KAISHU_JISHA にしない（2026-10-12）。上の kaishu_yakusoku() が、同じ名前の「言葉の並び」を使っている。
+#   10/9 にここで同じ名前を決めて上書きしてしまい、「不用品回収」の狙いが回ってきた 10/12 10時に、道具が止まって記事が出なかった
+#   （いまある記事の文では通らない道だった）。同じ名前を2回決めていないかは、tameshi/naoshi.py が見る
+_KAISHU_SURU_JISHA = re.compile(r"フッ軽|当社|弊社|私たち|代表|買取|買い取|お見積|ご依頼|ご相談|お任せ")
 _KAISHU_SURU_OK = re.compile(r"自治体|市では|市の|市が|市町村|収集日|集積所|お店|販売店|店舗|メーカー|地区|週に|毎週|月に|"
                              r"業者|回収日|許可|ご自身|頼む|選|注意|とは|"
                              r"できません|できない|お受けしていません|してもらえ|されません|していません|されていません")
@@ -1852,7 +1855,7 @@ def _kaishu_yakusoku_bun(b: str) -> bool:
         return True
     if _KAISHU_SURU_OK.search(b):
         return False
-    return bool(_KAISHU_YAKUSOKU_KEI.search(b) or (_KAISHU_SURU.search(b) and _KAISHU_JISHA.search(b)))
+    return bool(_KAISHU_YAKUSOKU_KEI.search(b) or (_KAISHU_SURU.search(b) and _KAISHU_SURU_JISHA.search(b)))
 
 
 def kaishu_suru_naosu(s: str) -> str:

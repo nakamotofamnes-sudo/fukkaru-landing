@@ -284,5 +284,58 @@ onaji('壁への固定：段落・箇条書きの1つ・質問と答えの1組�
       [{'type': 'ul', 'items': ['大きい家具']}, {'type': 'faq', 'items': [{'q': '所要時間は？', 'a': '1〜2時間です。'}]}, {'type': 'h3', 'text': '壁への固定について'}])
 onaji('作業員数（並びの中だけ外す）', m._nai('作業内容と範囲: 家具の種類、作業場所の広さ、作業員数（必要に応じて）など'), '作業内容と範囲: 家具の種類、作業場所の広さなど')
 
+# ━━ 「不用品回収」の言い換え（2026-10-12：名前の重なりで、道具が止まった） ━━
+# blog.py の中で _KAISHU_JISHA を2回決めていた（10/5 は言葉の並び、10/9 の #261 は正規表現）。あとのほうが上書きして、
+# 「不用品回収」の狙いが回ってきた 10/12 10時に kaishu_yakusoku が TypeError で止まり、その回の記事が出なかった。
+# いまある記事の文では通らない道だったので、全記事の比べ（kuraberu.py）も、試し運転9本も、通っていた。
+import ast
+import collections
+_namae = collections.defaultdict(list)
+for _n in ast.parse(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blog.py'), encoding='utf-8').read()).body:
+    if isinstance(_n, ast.Assign):
+        for _t in _n.targets:
+            if isinstance(_t, ast.Name):
+                _namae[_t.id].append(_n.lineno)
+    elif isinstance(_n, (ast.FunctionDef, ast.ClassDef)):
+        _namae[_n.name].append(_n.lineno)
+kazoeru('道具の中で、同じ名前を2回決めていない', ['%s（%s 行目）' % (k, '・'.join(map(str, v))) for k, v in _namae.items() if len(v) > 1])
+
+
+def _kaishu(s):
+    """止まったら、止まった理由を文字で返す（試しを最後まで走らせるため）"""
+    a = {'title': '題名', 'blocks': [{'type': 'p', 'text': s}]}
+    try:
+        m.kaishu_naosu(a)
+    except Exception as e:
+        return '止まった：%s %s' % (type(e).__name__, e)
+    return a['blocks'][0]['text']
+
+
+KAISHU_IIKAE = [    # フッ軽の約束・呼びかけ →「不用品の片付け」に言い換える
+    ('不用品回収はフッ軽にお任せください。', '不用品の片付けはフッ軽にお任せください。'),
+    ('不用品回収のご相談は、まず写真で！', '不用品の片付けのご相談は、まず写真で！'),
+    ('富士市の不用品回収なら、お気軽にLINEでどうぞ。', '富士市の不用品の片付けなら、お気軽にLINEでどうぞ。'),
+    ('不用品回収も、代表が最初から最後まで担当します。', '不用品の片付けも、代表が最初から最後まで担当します。'),
+    ('写真をお送りください。不用品回収のご依頼もお待ちしています。', '写真をお送りください。不用品の片付けのご依頼もお待ちしています。'),
+]
+KAISHU_NOKOSU = [   # 許可の話・頼む前の説明・ただの説明 → 触らない（この言葉で上位を狙うので、ページに言葉が要る）
+    '不用品回収を頼む前に、許可を確かめましょう。',
+    '「不用品回収」という言葉で検索すると、多くの便利屋や回収業者がヒットします。',
+    '不用品回収の業者を選ぶときは、一般廃棄物の許可を持っているかを見ます。',
+    '不用品回収とは、ご家庭で要らなくなったものを集めて運ぶ仕事のことです。',
+    '無許可の不用品回収には注意が必要です。',
+    '富士市で不用品回収を頼む前に知っておくこと',
+    '不用品の片付けは、フッ軽にご相談ください。',
+]
+kazoeru('不用品回収：言い換える文 %d（止まらない）' % len(KAISHU_IIKAE), ['%s → 出た: %r' % (a, _kaishu(a)) for a, w in KAISHU_IIKAE if _kaishu(a) != w])
+kazoeru('不用品回収：残す文 %d' % len(KAISHU_NOKOSU), ['%s → 出た: %r' % (a, _kaishu(a)) for a in KAISHU_NOKOSU if _kaishu(a) != a])
+# 「回収します」の見分け（10/9 の正規表現のほう）は、名前を分けても同じに動く
+KAISHU_SURU = [
+    ('フッ軽が回収します。', True), ('不用品の回収も承ります。', True), ('当社が回収して、運びます。', True),
+    ('市が回収します。', False), ('集積所に出すと、週に1回、回収されます。', False), ('販売店が回収します。', False),
+    ('回収します。', False),
+]
+kazoeru('回収します：フッ軽の約束だけ拾う %d' % len(KAISHU_SURU), ['%s → 出た: %r' % (a, m._kaishu_yakusoku_bun(a)) for a, w in KAISHU_SURU if m._kaishu_yakusoku_bun(a) != w])
+
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)
