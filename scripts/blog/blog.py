@@ -105,6 +105,16 @@ FACTS = """
   書かない。夜間・休日の対応も書かない（2026-09-14、中元さんに確認）
 ・**家具を壁に固定する作業（転倒防止の金具の取り付けなど）は受けていない。**
   書かない（2026-10-09、中元さんに確認）
+・**物置（2026-10-12・10-13、中元さんに確認）**
+  ・設置・解体は 15,000円〜（料金表の「物置の設置・解体」）。**移設も 15,000円〜**
+  ・**転倒防止のアンカーでの固定は、受けている**（土用・コンクリート用・アスファルト用）。
+    金額は決まっていないので書かない（別料金とも、込みとも書かない。写真を見てお見積り）。
+    上の、家具を壁に固定する作業とは別の仕事。**アンカーの話を書くのは、物置の記事だけ**
+  ・**基礎工事までは、受けていない。**モルタルでの調整はしている
+  ・**料金表の「8,000円〜」が付くのは、まだ使える物置の引き取りだけ。サイズにより変わる**（お客様からいただく額）。
+    書くときは「まだ使える物置の引き取りは、サイズにより 8,000円〜です」
+  ・**傷んで使えない物置は、一般廃棄物の許可を持つ回収業者と、フッ軽が一緒に片付ける。こちらには金額を付けない**
+    （写真を見てお見積り）。この 8,000円〜 を、傷んだ物置や不用品の片付けの額として書かない
 ・**保険：損保ジャパンの保険に加入している**（2026-09-14、中元さんに確認）。
   書いてよいのは「損保ジャパンの保険に加入しています」まで。**補償の範囲は聞いていないので
   「保険で保証します」「補償します」とは書かない。**「万一のときは、まずご連絡ください」と添える
@@ -1249,6 +1259,31 @@ _KAJO_KO = re.compile(r"^\s*(?:[\*\-・●○]|\d+[\.．])\s+(.+)$")
 _KAJO_ATAMA = re.compile(r"^(?:\*\*(.+?)\*\*|(.+?))\s*[:：]\s*(?:\*\*)?$")
 
 
+# 箇条書きの1つ目に、見出しの「この記事でわかること」が項目として入る（2026-10-09・10-13 の記事。手で外した）。
+# 見出しだけなら、その1つを外す。頭に付いていたら（「この記事でわかること：料金の目安」）、頭だけ外す。
+# 残りが1つになるとき・文の中にあるとき・番号つきの一覧は、触らない
+_WAKARU = re.compile(r"^\s*\**\s*この記事で(?:わかる|分かる)こと\s*\**\s*")
+_WAKARU_ATAMA = re.compile(r"^\s*\**\s*この記事で(?:わかる|分かる)こと\s*\**\s*[:：]\s*\**\s*")
+
+
+def wakaru_naosu(b) -> int:
+    if not (isinstance(b, dict) and b.get("type") == "ul"
+            and isinstance(b.get("items"), list) and b["items"] and isinstance(b["items"][0], str)):
+        return 0
+    a = b["items"][0]
+    atama = _WAKARU_ATAMA.match(a)          # コロンつき（「この記事でわかること：料金の目安」「この記事で分かること：」）
+    if atama and a[atama.end():].strip():
+        b["items"][0] = a[atama.end():].strip()     # 頭だけ外す
+        return 1
+    mm = atama or _WAKARU.match(a)
+    if not mm or a[mm.end():].strip():      # 文の中にある（「この記事でわかることを3つ…」）なら触らない
+        return 0
+    if len(b["items"]) < 3:                 # 見出しだけ。残りが1つになるなら外さない
+        return 0
+    b["items"] = b["items"][1:]
+    return 1
+
+
 def kajo_naosu(b) -> int:
     """箇条書きの中の入れ子を、1行1項目に直す
 
@@ -1955,6 +1990,9 @@ _SAGYOIN = (# 2026-10-09 夜の試し運転：「作業場所の広さ、作業�
             # 文ごと外す直し（外すと空になるので残す）をすり抜けた。言葉だけ言い換える
             (re.compile(r"(?:当社|弊社)?スタッフ(?:一同)?(?:が|は)"), "代表が"),
             (re.compile(r"(?:当社|弊社)?スタッフ(?:一同)?"), "代表"))
+# 2026-10-13 16時の記事：表の「最適な素材選定・品質保証」が、外す直しも弁も本番照合もすり抜けて公開された（保証は約束していない）。
+# **並びの終わりに付いた言葉だけ外す。**商品・メーカーの保証の話（文の中の「品質保証が付いた…」「品質保証のある製品」）は触らない
+_HOSHO_NARABI = re.compile(r"[・、]品質保証(?:付き)?(?=$|[、・。）)\n])")
 # 組立の記事の写真の頼み方が、ほかの作業の記事に混ざったとき（2026-09-15）
 _KUMITATE_SHASHIN = re.compile(r"箱の全体、?説明書の1ページ目、?(?:置きたい場所、?)?(?:通り道(?:など)?、?)?")
 _KUMITATE_KIJI = re.compile(r"組立|組み立て|家具|物置|ベッド|うんてい|解体")
@@ -2065,12 +2103,39 @@ def _nai(s: str) -> str:
     s = _LINE_URL.sub("", s)
     for pat, ato in _SAGYOIN:
         s = pat.sub(ato, s)
+    s = _HOSHO_NARABI.sub("", s)
     s = _shiharai(s)
     bun = re.split(r"(?<=[。！？\n])", s)
     nokosu = [b for b in bun if not _nai_hazusu(b)]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
         s = "".join(nokosu)
     return s
+
+
+# 表の「プロに頼む・フッ軽に頼む」の列に、「保証がある」が並びの1つとして入る（2026-10-14 の試し運転・学習机の記事。
+# 10/13 の「品質保証」と同じ出どころ）。フッ軽は保証を約束していない（書いてよいのは「損保ジャパンの保険に加入しています」まで）。
+# **その列の、並びの中の言葉だけ外す。**ほかの頼み先の列（メーカー・ホームセンター・専門業者…）と、表の外の文は触らない
+# （商品やお店の保証の話は、正しい説明）。セルが丸ごと「保証がある」のときも触らない（空のセルを作らない。本番照合の⑧が鳴る）
+_HOSHO_RETSU = re.compile(r"プロ|フッ軽|当社|便利屋")
+_HOSHO_RETSU_HOKA = re.compile(r"専門業者|メーカー|ホームセンター|家具店|量販店|販売店|購入店|シルバー|植木屋|造園|引越し業者|引っ越し業者")
+_HOSHO_HYOU = re.compile(r"[・、]\s*(?:品質|作業|施工|仕上がりの?|安心の)?保証(?:付き|つき|がある|があります|あり)?(?=$|[、・。（(）)\s])")
+
+
+def hosho_hyou_naosu(blocks: list) -> tuple[list, int]:
+    n = 0
+    for b in blocks:
+        if not (isinstance(b, dict) and b.get("type") == "table"):
+            continue
+        for i, h in enumerate(b.get("headers") or []):
+            if not (isinstance(h, str) and _HOSHO_RETSU.search(h) and not _HOSHO_RETSU_HOKA.search(h)):
+                continue
+            for r in b.get("rows") or []:
+                if isinstance(r, list) and i < len(r) and isinstance(r[i], str):
+                    c = _HOSHO_HYOU.sub("", r[i])
+                    if c != r[i] and c.strip():
+                        r[i] = c
+                        n += 1
+    return blocks, n
 
 
 def nai_naosu(art: dict, blocks: list) -> tuple[list, int]:
@@ -2097,7 +2162,7 @@ def nai_naosu(art: dict, blocks: list) -> tuple[list, int]:
 #   ・並べた言葉の中の1つなら、その言葉だけ外す（「壁への固定、既存の家具の移動…」→「既存の家具の移動…」）
 #   ・それでも残る文は、文ごと外す。段落・箇条書きの1つ・質問と答えの1組が丸ごとその話なら、それごと外す
 #   ・「受けていません」と書いた文と、お客様がご自身でする話は、外さない
-#   ・**物置の話には当てない**（物置の転倒防止は別の仕事。受けているかは聞いていないので、触らない）
+#   ・**物置の話には当てない**（物置のアンカーでの固定は、受けている仕事＝2026-10-12 中元さん。家具を壁に固定する作業とは別なので、触らない）
 # **探し方は狭くしてある**（別の目が、はじめの探し方の効きすぎを見つけた。2026-10-09 夜）。
 # はじめは「壁＋6文字以内＋固定」「固定…壁」「壁に取り付け」を家具の言葉なしで拾っていて、関係のない文を丸ごと外した：
 #   「外壁の高圧洗浄は固定料金ではなく…」「防草シートは、壁際を固定ピンで押さえます」「側面の壁板を固定してから、屋根を載せます」
@@ -2525,6 +2590,7 @@ def seikei(art: dict) -> int:
     naoshita += n
     for b in atarashii:
         naoshita += kajo_naosu(b)
+        naoshita += wakaru_naosu(b)
     atarashii, n = hoshi_naosu(atarashii)
     naoshita += n
     atarashii, n = kyoka_naosu(art, atarashii)
@@ -2533,6 +2599,8 @@ def seikei(art: dict) -> int:
     atarashii, n = shobun_kotae_naosu(art, atarashii)
     naoshita += n
     atarashii, n = nai_naosu(art, atarashii)
+    naoshita += n
+    atarashii, n = hosho_hyou_naosu(atarashii)
     naoshita += n
     # 受けていない作業（家具を壁に固定する）を外す（2026-10-09 夜）
     atarashii, n = kabe_naosu(art, atarashii)
