@@ -1453,9 +1453,14 @@ _UNPAN_SHIKICHI = re.compile(r"玄関|敷地|部屋の外|家の外|軒先|お�
 _UNPAN_GOMI_SAKI = re.compile(r"(?:自治体|クリーンセンター|処分場|処理施設|受付施設|回収施設|集積所|収集場所)"
                               r"(?:への|へ|までの|まで)(?:お運び(?:し|いたし|でき)|運搬(?:いたし|しま)|お持ち(?:し|す|いたし)|"
                               r"運んでお(?:届け|き)|運搬のお手伝い|運搬をサポート|運搬を承|お運びのお手伝い)")
-# 市の出し方の説明・お客様や業者が運ぶ話（約束ではない）
-_UNPAN_TANOMI = re.compile(r"業者が|ご自身で(?:運|お運|持ち運)|ご自分で(?:運|持ち運)|ください|"
-                           r"(?:運んで|運搬して|お持ち|持ち込んで)いただ|必要|予約")
+# 市の出し方の説明・お客様や業者が運ぶ話（約束ではない）。**運ぶ言葉より前**と、**運ぶ言葉のすぐ後ろ（4字）**だけで見る
+# （文の終わりの「お気軽にご相談ください」で、約束を見逃さないため。別の目 10/16・3回目）
+_UNPAN_TANOMI_MAE = re.compile(r"業者が|ご自身で(?:運|お運|持ち運)|ご自分で(?:運|持ち運)|(?:運んで|運搬して|お持ち|持ち込んで)いただ")
+_UNPAN_TANOMI_ATO = re.compile(r"ください|いただ|必要|予約")
+
+
+def _unpan_tanomi(b: str, m) -> bool:
+    return bool(_UNPAN_TANOMI_MAE.search(b[:m.start()]) or _UNPAN_TANOMI_ATO.search(b[m.end():m.end() + 4]))
 _UNPAN_KAWARI = ("ごみとして出すものは、ご自身で出していただくか、一般廃棄物の許可を持つ回収業者と一緒に片付けます。"
                  "迷ったらLINEでご相談ください。")
 # 同じかたまりに「回収業者と一緒に」がもうあるときは、短いほう（同じ文を2回並べない）
@@ -1469,11 +1474,13 @@ def unpan_yakusoku(b: str) -> bool:
     if _UNPAN_SHISETSU.search(b) and not _UNPAN_JIBUN.search(b):
         return True
     # 2026-10-16：ご自身で出す話でも、フッ軽が運ぶ約束が付いていれば約束（10/7 の形をやめた）
-    if not _UNPAN_SETSUMEI.search(b) and not _UNPAN_TANOMI.search(b):
-        if _UNPAN_GOMI_SAKI.search(b) and not re.search(r"お客様が|場合は|際は", b):
+    if not _UNPAN_SETSUMEI.search(b):
+        mg = _UNPAN_GOMI_SAKI.search(b)
+        if mg and not re.search(r"お客様が|場合は|際は", b) and not _unpan_tanomi(b, mg):
             return True
-        if (_UNPAN_JIBUN_DASU.search(b) or (_UNPAN_JIBUN.search(b) and _UNPAN_GOMI.search(b))) \
-                and _UNPAN_JIBUN_HAKOBU.search(b) and not _UNPAN_SHIKICHI.search(b):
+        mj = _UNPAN_JIBUN_HAKOBU.search(b)
+        if mj and (_UNPAN_JIBUN_DASU.search(b) or (_UNPAN_JIBUN.search(b) and _UNPAN_GOMI.search(b))) \
+                and not _UNPAN_SHIKICHI.search(b) and not _unpan_tanomi(b, mj):
             return True
     return bool(_UNPAN_DAIKO.search(b) and not _UNPAN_SETSUMEI.search(b))
 
