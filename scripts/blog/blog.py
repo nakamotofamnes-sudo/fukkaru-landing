@@ -1436,11 +1436,25 @@ _UNPAN_SETSUMEI = re.compile(r"名目|許可が要|許可が必要|許可を持�
                              r"注意|見分け|確かめ|できません|できない|お受けしていません|お受けできません|ではありません")
 # ご自身で出す話でも、フッ軽が施設・指定の場所まで運ぶと約束する文（10/7 の形。2026-10-16 にやめた）。
 # 動詞のすぐ後ろで見る（「クリーンセンターまでの運搬は、お客様ご自身でお願いします」は約束ではない）
+_UNPAN_HAKOBU_GO = r"(?:(?:お運び|運搬|お持ち|運び)(?:し|す|ます|いたし|でき|も|や|で|の(?:お手伝い|サポート)|を(?:お手伝い|サポート|承))|運んで)"
 _UNPAN_JIBUN_HAKOBU = re.compile(
-    r"(?:ご指定の場所|指定の場所|" + _UNPAN_SAKI[3:-1] + r"|施設)(?:まで|へ)の?"
-    r"(?:お運び|運搬|お持ち|運び)(?:し|す|ます|いたし|でき|も|や|の(?:お手伝い|サポート)|を(?:お手伝い|サポート|承))")
+    r"(?:ご指定の場所|指定の場所|" + _UNPAN_SAKI[3:-1] + r"|施設)(?:まで|へ)の?" + _UNPAN_HAKOBU_GO
+    + r"|運搬のお手伝い|お運びのお手伝い")
+# **見るのは「ご自身で出す」の形か、同じ文にごみの言葉があるときだけ**（別の目 10/16：
+#   「お客様が新居に持ち込む家具を、ご指定の場所までお運びします」のような家具の文まで拾っていた）
+_UNPAN_JIBUN_DASU = re.compile(r"(?:ご自身|ご自分)で[^。]{0,24}(?:(?<!運び)(?<!搬)出(?:され|す)|お出し)|"
+                               r"お客様が[^。]{0,30}(?<!運び)(?<!搬)出(?:され|す場合)")
+_UNPAN_GOMI = re.compile(r"ごみ|ゴミ|自治体|粗大|処分|廃棄|不用品|廃材|クリーンセンター|処分場|処理施設|集積所|"
+                         r"収集場所|受付施設|回収|市の施設|市に(?:出|持)|市へ")
+# 敷地の中の運び出し（玄関先・お車まで）は約束ではない（RULES 2-3 の形）
+_UNPAN_SHIKICHI = re.compile(r"玄関|敷地|部屋の外|家の外|軒先|お車|車まで|車へ|駐車場")
+# ごみの行き先（自治体・クリーンセンター…）へ運ぶ約束は、ご自身で出す話でも約束（「施設」「指定の場所」だけでは決めない＝家具の搬入先にもなる）
+_UNPAN_GOMI_SAKI = re.compile(r"(?:自治体|クリーンセンター|処分場|処理施設|受付施設|回収施設|集積所|収集場所)"
+                              r"(?:への|へ|までの|まで)" + _UNPAN_HAKOBU_GO)
 _UNPAN_KAWARI = ("ごみとして出すものは、ご自身で出していただくか、一般廃棄物の許可を持つ回収業者と一緒に片付けます。"
                  "迷ったらLINEでご相談ください。")
+# 同じかたまりに「回収業者と一緒に」がもうあるときは、短いほう（同じ文を2回並べない）
+_UNPAN_KAWARI_MIJIKAI = "ご自身で出される場合は、出し方をご案内します。迷ったらLINEでご相談ください。"
 
 
 def unpan_yakusoku(b: str) -> bool:
@@ -1450,9 +1464,16 @@ def unpan_yakusoku(b: str) -> bool:
     if _UNPAN_SHISETSU.search(b) and not _UNPAN_JIBUN.search(b):
         return True
     # 2026-10-16：ご自身で出す話でも、フッ軽が運ぶ約束が付いていれば約束（10/7 の形をやめた）
-    if _UNPAN_JIBUN.search(b) and _UNPAN_JIBUN_HAKOBU.search(b) and not _UNPAN_SETSUMEI.search(b):
-        return True
+    if not _UNPAN_SETSUMEI.search(b):
+        if _UNPAN_GOMI_SAKI.search(b):
+            return True
+        if (_UNPAN_JIBUN_DASU.search(b) or (_UNPAN_JIBUN.search(b) and _UNPAN_GOMI.search(b))) \
+                and _UNPAN_JIBUN_HAKOBU.search(b) and not _UNPAN_SHIKICHI.search(b):
+            return True
     return bool(_UNPAN_DAIKO.search(b) and not _UNPAN_SETSUMEI.search(b))
+
+
+_HAI_DAKE = re.compile(r"\s*はい[、,]?\s*(?:[^。]{0,10}(?:可能です|承ります|お手伝いできます|対応できます|対応可能です|できます))?。?\s*")
 
 
 def unpan_naosu(s: str) -> str:
@@ -1466,8 +1487,11 @@ def unpan_naosu(s: str) -> str:
     out, ireta = [], False
     for b in bun:
         if unpan_yakusoku(b):
+            # 直前の「はい、可能です。」は外す（質問「運んでもらえますか」と食い違うので。別の目 10/16）
+            if out and _HAI_DAKE.fullmatch(out[-1]):
+                out.pop()
             if not ireta:
-                out.append(_UNPAN_KAWARI)
+                out.append(_UNPAN_KAWARI_MIJIKAI if "回収業者と一緒に" in s else _UNPAN_KAWARI)
                 ireta = True
         else:
             out.append(b)
