@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import News from '../components/News';
+import KoukokuDouga from '../components/KoukokuDouga';
 import Problems from '../components/Problems';
 import Features from '../components/Features';
 import KusakariCalc from '../components/KusakariCalc';
@@ -260,6 +261,7 @@ const App: React.FC = () => {
       <Hero />
       <CouponSlider />
       <News />
+      <KoukokuDouga />
       <Problems />
       <Features />
       <Services />
