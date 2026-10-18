@@ -1,7 +1,16 @@
 {
-  "torikomi": "2026-10-09T20:37:23+09:00",
+  "torikomi": "2026-10-18T20:33:20+09:00",
   "username": "fukkaru.fuji.benriya",
   "toukou": [
+    {
+      "id": "18493048588129443",
+      "hi": "2026-10-17",
+      "kata": "VIDEO",
+      "ga": "/insta/18493048588129443.jpg",
+      "haba": 640,
+      "takasa": 360,
+      "url": "https://www.instagram.com/reel/DemStdRFLVL/"
+    },
     {
       "id": "18109199453228929",
       "hi": "2026-10-09",
@@ -154,15 +163,6 @@
       "haba": 404,
       "takasa": 720,
       "url": "https://www.instagram.com/reel/DaZ8NVbRnWN/"
-    },
-    {
-      "id": "17894708586509697",
-      "hi": "2026-07-01",
-      "kata": "CAROUSEL_ALBUM",
-      "ga": "/insta/17894708586509697.jpg",
-      "haba": 720,
-      "takasa": 720,
-      "url": "https://www.instagram.com/p/DaRPMhUAQgS/"
     }
   ]
 }
