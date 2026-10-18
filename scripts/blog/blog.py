@@ -21,6 +21,9 @@
     FUKKARU_BLOG_MODE=dry python3 ~/.fukkaru/blog.py   # 保存だけ。gitには触らない
     FUKKARU_BLOG_MODE=shindan python3 scripts/blog/blog.py   # 公開済みの記事を測るだけ（鍵もgitも使わない）
     FUKKARU_BLOG_MODE=naosu   python3 scripts/blog/blog.py   # 公開済みの記事に自動の直しを当てる（ファイルを書き換える）
+    FUKKARU_BLOG_MODE=kakinaoshi     python3 scripts/blog/blog.py   # 公開済みの記事を1本、AIで書き直してPRを作る（毎日13時）
+    FUKKARU_BLOG_MODE=kakinaoshi-dry python3 scripts/blog/blog.py   # 書き直しの試し。gitには触らないが、記事と記録のファイルは書き換える
+                                                                   # （Mac の ~/fukkaru-landing では走らせない。rsync した写しで）
 """
 from __future__ import annotations
 
@@ -30,9 +33,11 @@ import re
 import unicodedata
 import subprocess
 import sys
+import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HOME = Path.home()
@@ -2764,8 +2769,14 @@ def nise_namae(whole: str) -> list[str]:
             if not any(m.group(1).startswith(ok) for ok in _NANORI_DENAI)]
 
 
-def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[str]:
-    """出せる形になっているか調べる。戻り値は問題点の一覧（空なら合格）。"""
+def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1,
+          kakinaoshi: bool = False) -> list[str]:
+    """出せる形になっているか調べる。戻り値は問題点の一覧（空なら合格）。
+
+    kakinaoshi … 公開済みの記事の書き直し（2026-10-18）。住所と題名は元のままなので、
+    「同じ名前のファイルがある」「題名の型が既存とかぶる」だけは見ない（done には自分を入れずに渡す）。
+    ほかの弁は、新しい記事と同じに全部かける。
+    """
     ng = []
     for k in ("slug", "title", "metaDescription", "keywords", "category", "blocks"):
         if not art.get(k):
@@ -2775,7 +2786,7 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
         ng.append("slug に使えない文字があります：%s" % slug)
     if slug in {a.get("slug") for a in done}:
         ng.append("slug が既存記事と同じです：%s" % slug)
-    if (ARTICLES / f"{slug}.json").exists():
+    if not kakinaoshi and (ARTICLES / f"{slug}.json").exists():
         ng.append("同じ名前のファイルが既にあります：%s.json" % slug)
 
     # ── 段落の設計を弾く（2026-09-12）──
@@ -2851,7 +2862,8 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     body = "".join((b.get("text") or "") for b in blocks if isinstance(b, dict))
     # 最後の1回だけ、下限を1,000字まで下げる（同じ理由。数字・許認可・名前の弁は下げない）
     saitei = MIN_BODY if attempt < last else 1000
-    if len(body) < saitei:
+    # 書き直しの字数の下限は kakinaoshi_ng が決める（元の記事の長さに合わせる。2026-10-18）
+    if len(body) < saitei and not kakinaoshi:
         ng.append("本文が短すぎます（%d字／最低%d字）" % (len(body), saitei))
 
     whole = json.dumps(art, ensure_ascii=False)
@@ -2906,7 +2918,7 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1) -> list[
     # **最後の1回だけは見送ります。**ここで粘ると、その日の記事がゼロになります
     # （2026-09-02、別の弁で実際に1本飛びました）。見た目の重複より、記事が出るほうが大事です。
     if attempt < last:
-        clash = title_clash(str(art.get("title", "")), done)
+        clash = None if kakinaoshi else title_clash(str(art.get("title", "")), done)
         if clash:
             ng.append("タイトルの型が既存記事とかぶっています（地名だけ変えたように見えます）："
                       "%s ←ここと似すぎ" % clash[1])
@@ -2981,31 +2993,928 @@ def gh_api(path: str, data: dict | None = None, method: str = "GET") -> dict:
 AUTOMERGE = (os.environ.get("FUKKARU_BLOG_AUTOMERGE") or "1").strip() != "0"
 
 
-def open_pr(branch: str, art: dict) -> tuple[str, bool, int]:
+def open_pr(branch: str, art: dict, title: str | None = None,
+            body: str | None = None) -> tuple[str, bool, int]:
     """そのブランチのPRが既にあれば使い回す。無ければ作る。番号も返す"""
     found = gh_api("/pulls?state=open&head=%s:%s" % (GH_OWNER, branch))
     if isinstance(found, list) and found:
         return found[0]["html_url"], False, int(found[0]["number"])
     made = gh_api("/pulls", {
-        "title": "ブログ記事（%s ぶん）" % branch.split("-")[-1],
+        "title": title or "ブログ記事（%s ぶん）" % branch.split("-")[-1],
         "head": branch, "base": "main",
-        "body": ("Macが自動で書いた記事です。**自動でマージして公開します。**\n\n"
-                 "- 中元さんが待つ必要はありません。あとから見返すための記録として残しています\n"
-                 "- 直したいところがあれば、公開後にこのPRの中身を見て、別のPRで直せます\n"
-                 "- 実績の数字は自動生成では書かない約束です\n"),
+        "body": body or ("Macが自動で書いた記事です。**自動でマージして公開します。**\n\n"
+                         "- 中元さんが待つ必要はありません。あとから見返すための記録として残しています\n"
+                         "- 直したいところがあれば、公開後にこのPRの中身を見て、別のPRで直せます\n"
+                         "- 実績の数字は自動生成では書かない約束です\n"),
     }, method="POST")
     return made["html_url"], True, int(made["number"])
 
 
-def merge_pr(num: int) -> None:
+def merge_pr(num: int, commit_title: str = "ブログ記事を追加（自動）") -> None:
     """記事のPRをそのまま取り込む。失敗しても記事は残るので、次の日も試せる"""
     gh_api("/pulls/%d/merge" % num,
            {"merge_method": "squash",
-            "commit_title": "ブログ記事を追加（自動）"},
+            "commit_title": commit_title},
            method="PUT")
 
 
+# ── 公開済みの記事を、AIで書き直す（FUKKARU_BLOG_MODE=kakinaoshi・2026-10-18）──
+#
+# 中元さん（2026-10-13）「２本残して書き直しを足すにしてください」。
+# 新しい記事は1日2本（10時・16時）のまま。そこへ、公開済みの記事の書き直しを1日1本（13時）足す。
+# 決めた形（指示書 2番）：
+#   ・住所（slug）は変えない。**題名も変えない**（「検索で順位が付いている題名は変えない」を、いちばん固く守る形。
+#     題名はトップ画像に焼き込んであるので、変えると絵とずれる）。分類・公開日・画像もそのまま。更新日だけ今日にする
+#   ・新しい記事と同じ決まり（FACTS・RULES・VOICE・料金表・やり直しの指示）を渡し、同じ直し（seikei）と弁（check）を通す
+#   ・**はじめの1週間は自動で公開しない。PRで止める**（毎日の記事読みで読んでから、人がマージする）。
+#     自動にするときは blog.yml で FUKKARU_KAKINAOSHI_AUTOMERGE を '1' に
+#   ・選ぶ順：①9/23 より前のごみの書き方が残っている記事 ②検索に表示があるのに10位より下 ③古い順。
+#     同じ記事を続けて選ばない（書き直した記録を、1本ごとに kakinaoshi/ に残す）
+#
+# **記録を1本1ファイルにしている理由：**PRを止めているあいだに次の日の書き直しが出ると、
+# 同じファイル（記録の一覧・_ログ.txt）に両方が書き足して、あとからマージするほうが CONFLICTING になる（CLAUDE.md 15）。
+# 1本ごとに別のファイルなら、ぶつからない。**だから _ログ.txt も、書き直しのPRには入れない**（Actions の記録で読む）。
+KAKINAOSHI_DIR = REPO / "scripts" / "blog" / "kakinaoshi"
+KAKINAOSHI_AUTOMERGE = (os.environ.get("FUKKARU_KAKINAOSHI_AUTOMERGE") or "0").strip() == "1"
+KAKINAOSHI_EDA = "blog/kakinaoshi-"
+_KAKINAOSHI_EDA_SLUG = re.compile(r"^blog/kakinaoshi-\d{8}-\d{4}-([a-z0-9-]+)$")
+_KAKINAOSHI_EDA_HI = re.compile(r"^blog/kakinaoshi-(\d{8})-\d{4}-([a-z0-9-]+)$")      # 作った日と住所
+KAKINAOSHI_KOUHO = 2      # 1本目が4回とも通らなければ、同じ回に次の候補を試す（毎日同じ記事で詰まらないように）
+KAKINAOSHI_AIDA = 60      # 書き直してから、この日数は選ばない（検索の数字が書き直しを映すまで待つ）
+KAKINAOSHI_WAKAI = 14     # 公開からこの日数たっていない記事は選ばない（毎日の記事読みで読んだばかり）
+KAKINAOSHI_NOBI = 0.8     # 書き直した本文が元の何割より短ければ、やり直す（事実を落としていないかの目安）
+KAKINAOSHI_JUNI = 10.0    # ②：平均の順位がこれより下（数が大きい）
+KAKINAOSHI_HYOJI = 5      # ②：直近28日の表示がこの回数以上（1〜2回は、たまたま出ただけのことが多い）
+SITE = "https://fukkaru.creo-sumai.jp/"
+
+# 中元さんのお返事を待っている記事（指示書「返事待ち」の3）。**お返事が出るまで書き直さない。**
+# 梱包材をどう書くか・富士市以外でも「回収業者と一緒に」と書けるか、が決まったら、ここから外す
+KAKINAOSHI_MATSU = {
+    "fuji-fuyohin-unpan-benriya": "「できること・できないこと」の表（9/14 の形）",
+    "fuji-kagu-kumitate-benriya-sudeni-tateta": "梱包材「ごみとしてのお預かりは、お受けしていません」",
+    "fuji-kagu-kumitate-nagare-omotenashi": "梱包材の書き方",
+    "fuji-kaitai-mono-dashikata-benriya": "9/23 より前の形",
+    "fujinomiya-nimototsume-nidotoki-benriya-shippai": "富士宮市でも「回収業者と一緒に」と書けるか",
+}
+# 書かないと決めた話題（kirikuchi.py の HIKOUKAI と同じ。うんていは 10/15 中元さん「今後うんていの記事は無しに」）
+_KAKINAOSHI_SHINAI = re.compile(r"ウッドデッキ|うんてい|雲梯")
+# 大きく出したくない仕事（10/14 中元さん「剪定は8000円〜かな、あまり大々的にはやりたくないのよね」→ 狙いから剪定・伐採を外した）。
+# ②（順位を上げる）・③（読みやすくする）では選ばない。①（ごみの線の安全）だけは、この話題でも書き直す
+_KAKINAOSHI_HIKAE = re.compile(r"剪定|伐採")
+# 人が入れたブロック（実物の写真・料金の計算・前後の写真）。AIに書き直させると、置き場所がずれたり消えたりするので、
+# この記事は選ばない
+_KAKINAOSHI_TE = {"photo", "calc", "ba"}
+
+# ①：9/23 より前の書き方。許可が無いという断りから入って、処分・回収を「行っていない」「お受けしていない」と言い切る形。
+# 9/23 からは「まだ使えるものは引き取る／それ以外は、許可を持つ回収業者と一緒に片付ける」（RULES 2-2）
+# 10/18 の試し運転で「処分・回収は直接行えません」が残ったのに、目印が拾わなかった → 言い切りの言葉を並べ直した
+_FURUI_KOTOWARI = re.compile(
+    r"(?:処分|回収|廃棄)[^。」]{0,14}(?:お受け|行|承|受け付け|対応|いたし|し|でき)[^。」]{0,6}(?:ません(?!か)|かねます)|"
+    r"(?:ごみ|ゴミ)としてのお預かりは、?(?:お受けしていません|お受けしておりません|できません)")
+# 同じ文にあれば①にしない（もう新しい形・市やお客様や他社の話）
+_FURUI_OK = re.compile(r"回収業者と|許可を持つ[^。、]{0,6}業者と|許可業者と|単独|だけで|自治体|市では|市の|市が|集積所|"
+                       r"ご自身|ご自分|自分で|自力で|お客様が|業者に|業者は|無許可|許可のない|許可を持たない")
+
+
+def furui_katachi(art: dict) -> list[str]:
+    """9/23 より前のごみの書き方が残っている文（①）。検索の言葉の一覧は見ない"""
+    bunsho = json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)
+    return [s.strip()[:80] for s in re.split(r'[。！？"]', bunsho)
+            if _FURUI_KOTOWARI.search(s) and not _FURUI_OK.search(s)]
+
+
+# 書き直しで、液体・汚物などを「回収業者と一緒に片付ける」側に入れた文（10/18 の試し運転で出た）。
+# 決まりは「液体・汚泥・汚物・医療にかかわるものは、お受けできません」（RULES 2-2）。
+# 「医療」だけでは探さない（介護用・医療用のベッドは家具）
+_UKENAI_MONO = re.compile(r"液体|汚泥|汚物|排泄物|血液|医療廃棄物|医療にかかわる|医療系|注射")
+_UKENAI_KATAZUKE = re.compile(r"回収業者と|許可を持つ[^。、]{0,8}業者と|一緒に片付け")
+_UKENAI_OK = re.compile(r"お受けできません|お受けしていません|お受けしておりません|お引き受けできません|受けられません|"
+                        r"(?:液体|汚泥|汚物|排泄物|血液|医療|注射)[^。、]{0,24}(?:以外|を除|は除)")
+
+
+def ukenai_katazuke(art: dict) -> list[str]:
+    """お受けできないもの（液体・汚物など）を、回収業者と一緒に片付けると書いた文"""
+    bunsho = json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)
+    return [s.strip()[:80] for s in re.split(r'[。！？"]', bunsho)
+            if _UKENAI_MONO.search(s) and _UKENAI_KATAZUKE.search(s) and not _UKENAI_OK.search(s)]
+
+
+# ── 書き直しだけの弁（kakinaoshi_ng）。**新しい記事には、かけていない** ──
+# 書き直しは、出なくても元の記事が本番に残る（同じ回に次の候補へ進む）。新しい記事は、弁を増やすと出ない日ができる。
+# 10/18、本物のAIの試し運転を2つの別の目（消えた文言・出す前の見張り）に通して、見つかった形を1つずつ足した。
+# 足すときは tameshi/naoshi.py に「止める文」と「止めない文」を先に並べる。
+
+def _bun(art: dict) -> list[str]:
+    """文に分ける（表のマス・箇条書き・質問と答えも見る。検索の言葉の一覧は見ない）"""
+    return [x for x in re.split(r'[。！？"]', json.dumps({k: v for k, v in art.items() if k != "keywords"},
+                                                       ensure_ascii=False)) if x.strip()]
+
+
+def _katamari(art: dict) -> list[str]:
+    """ひとかたまりの文字（段落・箇条書きの1つ・表のマス・質問と答えのそれぞれ）"""
+    return list(_mojiretsu({k: v for k, v in art.items() if k != "keywords"}))
+
+
+# 1. フッ軽が自分で処分・回収すると読める文（10/18：表のマスに「便利屋（フッ軽など）…不用品処分など…まとめて依頼できる」、
+#    草の話に「フッ軽が引き取って処分する場合は…」「フッ軽合同会社が事業として回収し」）。前からある弁は、表のマスを見ていない。
+#    作業で出た草・枝も「持ち込む」と書く（CLAUDE.md 3）。打ち消し・市の説明・他社への注意は見ない
+_JISHA_SHOBUN = re.compile(
+    r"(?:フッ軽|当社|弊社|私たち|便利屋)[^。」\"]{0,25}(?:処分する|処分します|処分いたします|処分を(?:承|お受け|代行|お任せ)|"
+    r"引き取って処分|処分まで|処分も(?:承|お任せ|対応|可能)|回収し(?:ます|、|て)|回収する|回収いたします)|"
+    r"不用品(?:の)?処分(?:など|も|まで)[^。\"]{0,30}(?:依頼|お任せ|承|頼め|対応)")
+_JISHA_SHOBUN_OK = re.compile(r"ません|できない|しない|かねます|ではなく|ご自身|ご自分|自分で|自治体|お客様が|"
+                              r"許可が(?:必要|要)|無許可|許可のない|許可を持たない|宣伝|うたう|業者も|中には")
+# 2. 主語の無い「処分・ごみ ＋ お任せ／対応」（10/18：「不要になった家具の処分もお任せください」「廃棄物についても…対応いたします」）。
+#    同じかたまりに今の形（回収業者と一緒に）があれば止めない（道具 shobun_kotae_naosu が足した文も、ここに入る）
+_SHUGO_NASHI = re.compile(r"(?:処分|廃棄物|ごみ|ゴミ|不用品の片付け)[^。]{0,12}(?:もお任せ|をお任せ|お任せください|も対応|"
+                          r"対応いたします|対応可能|対応が可能|承ります|お引き受け)")
+_SHUGO_NASHI_OK = re.compile(r"回収業者と|許可を持つ[^。、]{0,6}業者と|ご自身|ご自分|自治体|市の|市が|まだ使える|ません|"
+                             r"刈った|刈り取|草|枝|作業で出|解体した|持ち込|[？?]")     # 質問（お客様が聞く文）は見ない
+# 3. 現地の見積り・出張見積りを無料と書いた文。無料と書いてよいのは、LINEの写真見積りと出張費（4市）だけ（FACTS）。
+#    語順は問わない（10/18：「現地での正式なお見積もりも無料」「無料で現地に伺い、お見積りします」「出張見積もりも無料です」）
+_GENCHI_BASHO = re.compile(r"現地|出張|伺|訪問|ご自宅")
+_GENCHI_MITSU = re.compile(r"見積|調査|下見")
+_GENCHI_OK = re.compile(r"LINE|写真|出張費|キャンセル|ません|ではなく|有料")
+# 4. 元の記事にも、AIに渡す文（事実の欄・決まり・声・料金表）にも無い数字（10/18：「～30坪程度」「草丈が1メートル」
+#    「代表1名で対応」。作り話の境目・人数・年数）。cm・点は表記ゆれで拾いすぎるので見ない
+_KAZU_TANI = re.compile(r"\d[\d,.]*\s*(?:坪|平米|㎡|メートル|名|年|日|時間|週間|か月|ヶ月|カ月|割|人)")
+# 5. ごみのお預かり（10/18：「収集日まで一時的にお預かりすることも可能です」。そういう仕事は無い）
+_AZUKARI = re.compile(r"(?:お預かり|預か)[^。]{0,10}(?:可能|できます|いたします|します|承)")
+_AZUKARI_WADAI = re.compile(r"ごみ|ゴミ|梱包|段ボール|不用品|収集日|廃材|処分")
+# 6. 市の手数料を、お客様の「別途」の料金にする文（10/18：「処理手数料がかかるため、別途料金が発生します」。
+#    10kgあたり150円は、フッ軽が市に払う額。お客様の料金は 軽トラック1車 8,000円〜）
+_TESU_BETTO = re.compile(r"手数料[^。]{0,30}(?:別途|追加|実費|上乗せ)|(?:別途|追加|実費)[^。]{0,30}手数料")
+_TESU_BETTO_OK = re.compile(r"かかりません|不要|無料|ありません|ご自身|ご自分|ご家庭")
+# 7. 「追加料金がかかる」文が、元の記事より増えた（10/18：4本で0→1〜4。HPの約束は
+#    「お客様からの追加のご要望がないかぎり、お見積り以上の金額を請求することはありません」）
+_TSUIKA = re.compile(r"(?:追加料金|追加費用|追加の(?:費用|料金)|別途料金|別途費用)[^。]{0,24}(?:発生|かか|加算|いただ|頂|上が)")
+_TSUIKA_NAI = re.compile(r"ません|ない|なし|一切")
+# 8. 何が無料か書いていない「無料」（10/18：「地域を問わず無料で対応しております」）。元の記事にある文は見ない
+_MURYO = re.compile(r"無料")
+_MURYO_OK = re.compile(r"見積|LINE|写真|出張費|相談|ご家庭|家庭系|家庭ごみ|ご自身|ご自分|自分で|手数料|道具|市の|自治体|割引|"
+                       r"ではありません|ではなく|うたう|業者")
+# 9. お客様の声・件数のような言い切り（10/18：「『女性一人で組み立てるのは不安』といったご相談を多くいただきます」）
+_KOE = re.compile(r"(?:ご相談|お問い合わせ|ご依頼|お声|ご要望)(?:を|は|が)(?:多く|たくさん|数多く)|(?:多くの|たくさんの)お客様(?:に|から)")
+# 11. 「別途料金」（10/18：「刈った草の処分についても…対応が可能です（別途料金）」。金額は料金表の額とお見積りで書く）。元の記事にある文は見ない
+_BETTO = re.compile(r"別途(?:料金|費用)")
+# 12. お客様のごみを、フッ軽が代わりに施設へ運ぶと読める文（10/18 に別の目が当てた：「お客様に代わって、クリーンセンターへ持ち込みます」
+#     「私たちが運び出して処分場へお持ちします」。前からある弁も通していた）。作業で出た草・枝・解体した物置は持ち込める
+_DAIKO_HAKOBU = re.compile(r"(?:お客様に代わって|代わりに|代行)[^。]{0,24}(?:持ち込|運び|運搬|搬入|お持ち)")
+_SHISETSU_HAKOBU = re.compile(r"(?:処分場|クリーンセンター|処理施設|処理場|施設)(?:へ|に|まで)[^。]{0,6}(?:お持ち|持ち込|運び|搬入|運搬)")
+# 草刈り・伐採・物置の記事の「フッ軽が…クリーンセンターへ持ち込みます」は、作業で出たものの話（10/18：表のマスの2文目で効きすぎた）
+_SAGYO_KIJI = re.compile(r"草|伐採|剪定|物置|解体")
+_DAIKO_HAKOBU_OK = re.compile(r"ご自身|ご自分|自分で|お客様が|刈った|刈り取|草|枝|作業で出|解体した|解体で出|事業者|ません|できない|"
+                              r"市の|市が|市では|市町村|ご確認|確かめ|許可を得た|業者が|業者や|業者に|ますか|ですか")
+# 施設へ運ぶ文は、フッ軽が主語のときだけ見る（主語の無い市の説明「…ときは、新環境クリーンセンターへ持ち込みます」で効きすぎた）
+_HAKOBU_JISHA = re.compile(r"フッ軽|当社|弊社|私たち|代表")
+# 13. お受けできないもの（液体・汚物など）を「ご相談・処理・処分」で受けると読める文（10/18：「液体や汚物の処理もご相談ください」）
+_UKENAI_UKERU = re.compile(r"(?:処理|処分|片付け|引き取り|回収)[^。]{0,8}(?:ご相談|お任せ|対応|承|可能)")
+# 14. 回収業者と一緒に片付けるぶんに付けた金額（RULES 2-2「金額を付けない」。10/18：「…片付けるぶんは、1点3,000円〜です」）
+_KAISHU_KINGAKU = re.compile(r"(?:回収業者と|許可を持つ[^。、]{0,6}業者と)[^。]{0,40}\d[\d,]*\s*円")
+# 15. ご家庭で剪定した枝・刈った草を、フッ軽の料金（軽トラック1車 8,000円〜）で受けると読める文。
+#     8,000円〜は、フッ軽が作業で出したものの額（10/18：「ご家庭で剪定した枝も、…8,000円〜の料金内で対応可能」）
+_KATEI_EDA = re.compile(r"(?:ご家庭で|ご自身で|ご自分で|お客様が)[^。]{0,12}(?:剪定|切った|刈った|刈り取)[^。]{0,40}(?:8,000円|料金内|その料金)")
+# 17. 引き取りに 8,000円〜 を付けた文のうち、物置でないもの（8,000円〜 の引き取りは「まだ使える物置」だけ。
+#     10/18：「まだ使える状態の二段ベッドであれば…買い取りまたは引き取りをいたします（サイズにより8,000円〜）」）
+_HIKITORI_8000 = re.compile(r"(?:引き取|引取)[^。]{0,40}8,000円|8,000円[^。]{0,20}(?:引き取|引取)")
+# 18. 2回目の試し運転で出た形（10/18。消えた文言の係が見つけた）。どれも元の記事にある文は見ない
+#   ・ほかの仕事のよくある質問（「まだ箱を開けていない家具の組み立ては…」が草刈りの記事に。VOICE の例文の写し）
+_HOKA_SHIGOTO_Q = re.compile(r"箱を開けていない|まだ箱|未開封")
+_KUMITATE_DAIMEI = re.compile(r"組立|組み立て|家具|ベッド|物置|うんてい|机|デスク|棚")   # 題名で見る（_KUMITATE_KIJI とは別もの）
+#   ・受けていない作業（除草剤の散布）
+_JOSOZAI = re.compile(r"除草剤[^。]{0,30}(?:提案|承|対応|散布(?:し|いた)|いたします|お任せ)")
+#   ・事実の欄に無い言い切り（経験豊富・人員・困りごと全般・仕上がりの約束・誰の報告か分からない話）
+_IIKIRI = re.compile(r"経験豊富|人員|スタッフ|困りごと全般|お困りごと全般|住まいに関する様々|中間業者を挟まない|報告されています|"
+                     r"(?:確実な|完璧な|きれいな)仕上がりを(?:お約束|保証)|仕上がりをお約束")
+#   ・その記事の仕事と関係のない草の持ち込み（高圧洗浄の記事に「作業で発生した刈った草や木の枝などは…持ち込みます」）
+_KUSA_HANASHI = re.compile(r"刈った草|刈り取った草|剪定した枝|木の枝")
+_KUSA_KIJI = re.compile(r"草|庭|伐採|剪定|木|空き家")
+#   ・ご自身の持ち込みに「処分費」（ご家庭の持ち込みは無料）
+_JIBUN_SHOBUNHI = re.compile(r"処分費[^。]{0,12}(?:ご自身|ご自分)|(?:ご自身|ご自分)[^。]{0,20}処分費")
+#   ・元の記事に無い「現地調査」の流れ（「見積もりは無料」と並ぶと、現地見積りの無料に読める）
+_GENCHI_CHOSA = re.compile(r"現地調査|現地での確認|現地確認|下見に伺")
+# 16. フッ軽が許可を持っていると読める文（10/18：「フッ軽は一般廃棄物の許可を持つ回収業者として…」。前からある弁も通していた）
+_JISHA_KYOKA = re.compile(r"(?:フッ軽|当社|弊社)(?:合同会社)?(?:は|が|では)[^。]{0,12}(?:一般廃棄物|産業廃棄物|収集運搬)[^。]{0,16}"
+                          r"(?:許可を(?:持|取得|得)|許可業者|業者として)")
+# 10. 梱包材・段ボールの話（書き方は中元さんのお返事待ち。その話がある記事は選ばないので、書き直しに出たらAIが足したもの。
+#     10/18：草刈りの記事に「作業で出た梱包材などの廃棄物についても…対応いたします」、段ボールを「燃えるごみ」と書いた）
+# 元の記事にあった「お受けできない」もの（液体・汚物など）の一文。書き直しで消さない（10/18 の試し運転で消えた）
+_UKENAI_KOTOWARI = re.compile(r"お受け(?:できません|していません|しておりません|いたしかねます)|お引き取りできない|"
+                              r"お引き取りしていません|引き取れない|対象外")
+
+
+def jisha_shobun(art: dict) -> list[str]:
+    """フッ軽が自分で処分・回収すると読める文（表のマス・箇条書きも見る）"""
+    return [s.strip()[:80] for s in _bun(art) if _JISHA_SHOBUN.search(s) and not _JISHA_SHOBUN_OK.search(s)]
+
+
+def ukenai_kieta(art: dict, mae: dict) -> bool:
+    """元の記事には「液体・汚物などはお受けできない」の文があったのに、書き直しで消えたか"""
+    aru = lambda a: any(_UKENAI_MONO.search(x) and _UKENAI_KOTOWARI.search(x) for x in _bun(a))
+    return aru(mae) and not aru(art)
+
+
+def _kazu(t: str) -> set[str]:
+    return {re.sub(r"[\s,]", "", x) for x in _KAZU_TANI.findall(t)}
+
+
+def atarashii_kazu(art: dict, mae: dict) -> list[str]:
+    """元の記事にも、AIに渡す文にも無い数字（坪・メートル・人数・年数・日数など）"""
+    kijun = _kazu(FACTS + RULES + VOICE + price_table()) | _kazu(json.dumps(mae, ensure_ascii=False))
+    return sorted(_kazu(json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)) - kijun)
+
+
+def kakinaoshi_saitei(mae: dict) -> int:
+    """書き直しの本文の下限。新しい記事の1,500字を、元が短い記事（表が主・400〜600字）に当てると、
+    3倍に膨らませるために作り話を足し続けた（10/18 の試し運転17本・別の目2つ）。元の2倍まで（1,000〜1,500字の間）にする"""
+    return min(MIN_BODY, max(1000, _honbun(mae) * 2))
+
+
+def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
+    """書き直しにだけかける弁（check() のあとに）。**新しい記事には、かけていない**"""
+    ng = []
+    moto = set(_bun(mae))
+    if _honbun(art) < _honbun(mae) * KAKINAOSHI_NOBI:
+        ng.append("本文が元の記事より短くなりました（%d字／元は%d字）。元の記事の事実を消さずに書き直してください"
+                  % (_honbun(art), _honbun(mae)))
+    elif _honbun(art) < kakinaoshi_saitei(mae):
+        ng.append("本文が短すぎます（%d字／最低%d字）。元の記事の中身をくわしく言い直して足してください（作り話で水増ししない）"
+                  % (_honbun(art), kakinaoshi_saitei(mae)))
+    f = furui_katachi(art)
+    if f:
+        ng.append("9/23 より前のごみの書き方が残っています：%s。守ること 2-2 の形（まだ使えるものは引き取る／"
+                  "それ以外は、一般廃棄物の許可を持つ回収業者と一緒に片付ける）に書き直してください" % f[0][:50])
+    j = jisha_shobun(art)
+    if j:
+        ng.append("フッ軽が自分で処分・回収すると読める書き方です：%s。まだ使えるものは引き取る／それ以外は、許可を持つ回収業者と"
+                  "一緒に片付ける／作業で出た草・枝は「持ち込む」と書いてください（「処分」「回収」と書かない）" % j[0][:50])
+    s = [x for x in _katamari(art) if _SHUGO_NASHI.search(x) and not _SHUGO_NASHI_OK.search(x)]
+    if s:
+        ng.append("ごみの処分を引き受けると読める書き方です：%s。まだ使えるものは引き取る／それ以外は、一般廃棄物の許可を持つ"
+                  "回収業者と一緒に片付ける、の形で書いてください" % s[0].strip()[:50])
+    g = [x for x in _bun(art) if "無料" in x and _GENCHI_MITSU.search(x) and _GENCHI_BASHO.search(x) and not _GENCHI_OK.search(x)]
+    if g:
+        ng.append("現地での見積り・調査を無料と書いています：%s。無料と書いてよいのは、LINEで写真を送るお見積りと、"
+                  "出張費（富士市・富士宮市・静岡市・沼津市）だけです" % g[0].strip()[:50])
+    k = atarashii_kazu(art, mae)
+    if k:
+        ng.append("元の記事にも事実の欄にも無い数字を書いています：%s。広さ・高さ・人数・年数・日数の数字を作らないでください"
+                  % "・".join(k[:5]))
+    a = [x for x in _bun(art) if _AZUKARI.search(x) and _AZUKARI_WADAI.search(x) and not re.search(r"ません|できない", x)]
+    if a:
+        ng.append("ごみのお預かりができると書いています：%s。ごみのお預かりはしていません。書かないでください" % a[0].strip()[:50])
+    t = [x for x in _bun(art) if _TESU_BETTO.search(x) and not _TESU_BETTO_OK.search(x)]
+    if t:
+        ng.append("市の手数料を、お客様の別途の料金として書いています：%s。市の手数料はフッ軽が市に払う額です。"
+                  "お客様の料金は料金表の額（軽トラック1車 8,000円〜 など）だけを書いてください" % t[0].strip()[:50])
+    tsuika = lambda b: sum(1 for x in b if _TSUIKA.search(x) and not _TSUIKA_NAI.search(x))
+    if tsuika(_bun(art)) > tsuika(moto):
+        ng.append("元の記事に無い「追加料金がかかる」文を足しています（%d か所）。金額が変わる理由は、"
+                  "「広さ・量・場所の条件で変わります。写真を見てお伝えします」の形で書いてください" % (tsuika(_bun(art)) - tsuika(moto)))
+    # よくある質問の答え「はい、無料です」は、質問（「見積もりは無料ですか？」）と組で見る（10/18 に効きすぎた）
+    faq_ok = {y for b in art.get("blocks") or [] if isinstance(b, dict) and b.get("type") == "faq"
+              for qa in (b.get("items") if isinstance(b.get("items"), list) else []) if isinstance(qa, dict)
+              and _MURYO_OK.search(str(qa.get("q", ""))) for y in _bun({"a": str(qa.get("a", ""))})}
+    mu = [x for x in _bun(art) if x not in moto and x not in faq_ok and _MURYO.search(x) and not _MURYO_OK.search(x)]
+    if mu:
+        ng.append("何が無料か分からない書き方です：%s。無料と書いてよいのは、LINEで写真を送るお見積りと、"
+                  "出張費（富士市・富士宮市・静岡市・沼津市）だけです" % mu[0].strip()[:50])
+    ko = [x for x in _bun(art) if x not in moto and _KOE.search(x)]
+    if ko:
+        ng.append("お客様の声や件数のような言い切りです：%s。確かめられないので書かないでください" % ko[0].strip()[:50])
+    if not _KONPO.search(json.dumps(mae, ensure_ascii=False)) and _KONPO.search(
+            json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)):
+        ng.append("元の記事に無い梱包材・段ボールの話を足しています。書き方を決めている途中なので、梱包材・段ボールの話は書かないでください")
+    be = [x for x in _bun(art) if x not in moto and _BETTO.search(x) and not re.search(r"ません|ない", x)]
+    if be:
+        ng.append("「別途料金」と書いています：%s。金額は料金表の額と「写真を見てお見積り」で書いてください" % be[0].strip()[:50])
+    sagyo = bool(_SAGYO_KIJI.search(str(mae.get("title", ""))))
+    dh = [x for x in _bun(art) if not _DAIKO_HAKOBU_OK.search(x)
+          and (_DAIKO_HAKOBU.search(x) or (_SHISETSU_HAKOBU.search(x) and _HAKOBU_JISHA.search(x) and not sagyo))]
+    if dh:
+        ng.append("お客様のごみを、フッ軽が代わりに施設へ運ぶと読める書き方です：%s。ごみとして出すものは、ご自身で出して"
+                  "いただくか、一般廃棄物の許可を持つ回収業者と一緒に片付けます" % dh[0].strip()[:50])
+    uu = [x for x in _bun(art) if _UKENAI_MONO.search(x) and _UKENAI_UKERU.search(x) and not _UKENAI_OK.search(x)]
+    if uu:
+        ng.append("お受けできないもの（液体・汚泥・汚物・医療にかかわるもの）を受けると読める書き方です：%s。"
+                  "「お受けできません」と書いてください" % uu[0].strip()[:50])
+    kk = [x for x in _bun(art) if _KAISHU_KINGAKU.search(x)]
+    if kk:
+        ng.append("回収業者と一緒に片付けるぶんに金額を付けています：%s。金額は付けず「写真を見てお見積りします」と書いてください"
+                  % kk[0].strip()[:50])
+    ke = [x for x in _bun(art) if _KATEI_EDA.search(x)]
+    if ke:
+        ng.append("ご家庭で剪定した枝・刈った草に、フッ軽の料金を付けています：%s。軽トラック1車 8,000円〜は、"
+                  "フッ軽が作業で出した草・枝を持ち込む額です" % ke[0].strip()[:50])
+    jk = [x for x in _bun(art) if _JISHA_KYOKA.search(x) and not re.search(r"ません|ない|業者と(?!して)", x)]
+    if jk:
+        ng.append("フッ軽が廃棄物の許可を持っていると読める書き方です：%s。許可を持っているのは回収業者です"
+                  "（「一般廃棄物の許可を持つ回収業者と、フッ軽が一緒に」の順で書く）" % jk[0].strip()[:50])
+    shin = [x for x in _bun(art) if x not in moto]
+    mt = str(mae.get("title", ""))
+    hq = [x for x in shin if mt and _HOKA_SHIGOTO_Q.search(x) and not _KUMITATE_DAIMEI.search(mt)]
+    if hq:
+        ng.append("この記事の仕事と関係のない、ほかの仕事のよくある質問です：%s。この記事の仕事の質問だけにしてください" % hq[0].strip()[:50])
+    jz = [x for x in shin if _JOSOZAI.search(x) and not re.search(r"ご自身|ご自分|自分で|ません", x)]
+    if jz:
+        ng.append("受けていない作業（除草剤の散布）を書いています：%s。料金表と会社の前提にある作業だけを書いてください" % jz[0].strip()[:50])
+    ik = [x for x in shin if _IIKIRI.search(x) and not re.search(r"ません|ない", x)]
+    if ik:
+        ng.append("会社の前提に無い言い切りです：%s。「経験豊富」「人員」「困りごと全般」「仕上がりのお約束」は書かず、"
+                  "「代表が最初から最後まで担当します」の形で書いてください" % ik[0].strip()[:50])
+    kh = [x for x in shin if mt and _KUSA_HANASHI.search(x) and not _KUSA_KIJI.search(mt)]
+    if kh:
+        ng.append("この記事の仕事と関係のない、草・枝の話です：%s。書かないでください" % kh[0].strip()[:50])
+    js = [x for x in shin if _JIBUN_SHOBUNHI.search(x)]
+    if js:
+        ng.append("ご自身で持ち込む場合に「処分費」と書いています：%s。ご家庭のごみをご自身で持ち込むときは、手数料はかかりません" % js[0].strip()[:50])
+    if not _GENCHI_CHOSA.search(json.dumps(mae, ensure_ascii=False)):
+        gc = [x for x in shin if _GENCHI_CHOSA.search(x) and not re.search(r"ません|有料|ではなく", x)]
+        if gc:
+            ng.append("元の記事に無い現地調査の流れを書いています：%s。お見積りは、LINEで写真を送っていただく形で書いてください" % gc[0].strip()[:50])
+    h8 = [x for x in _bun(art) if _HIKITORI_8000.search(x) and "物置" not in x]
+    if h8:
+        ng.append("引き取りに 8,000円〜 を付けています：%s。8,000円〜 の引き取りは、まだ使える物置だけです"
+                  "（ほかの物の引き取りに金額を付けない）" % h8[0].strip()[:50])
+    if ukenai_kieta(art, mae):
+        ng.append("元の記事にあった「液体・汚泥・汚物・医療にかかわるものは、お受けできません」の一文が消えています。残してください")
+    u = ukenai_katazuke(art)
+    if u:
+        ng.append("お受けできないもの（液体・汚泥・汚物・医療にかかわるもの）を、回収業者と一緒に片付けると書いています："
+                  "%s。これらは「お受けできません」と書き、回収業者と一緒に片付けるものの例に入れないでください" % u[0][:50])
+    return ng
+
+
+def fuji_shi_kiji(art: dict) -> bool:
+    """富士市の記事か（題名と説明文で見る。ほかの市の名前が並んでいたら、富士市の記事とは見ない）"""
+    t = str(art.get("title", "")) + str(art.get("metaDescription", ""))
+    return "富士市" in t and not re.search(r"富士宮|沼津|静岡市|三島|御殿場|裾野|清水町", t)
+
+
+def _hi(s) -> date | None:
+    try:
+        return date.fromisoformat(str(s)[:10])
+    except ValueError:
+        return None
+
+
+def _honbun(art: dict) -> int:
+    """本文の字数（check() の「本文が短すぎます」と同じ数え方）"""
+    return len("".join((b.get("text") or "") for b in art.get("blocks") or [] if isinstance(b, dict)))
+
+
+# ── ②のための検索の数字（サーチコンソール・読むだけの鍵）──
+# 鍵は、Mac では ~/.fukkaru/analytics-sa.json（数字あつめと同じもの）。GitHub では金庫の GSC_SA_JSON。
+# **鍵が無い・取れないときは②を飛ばして③へ進む**（書き直しそのものは止めない）。
+def _gsc_kagi() -> dict | None:
+    raw = (os.environ.get("GSC_SA_JSON") or "").strip()
+    if raw:
+        return json.loads(raw)
+    p = Path(os.environ.get("FUKKARU_GSC_KEY") or (HOME / ".fukkaru" / "analytics-sa.json"))
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+def _gsc_token(d: dict) -> str:
+    """機械用の利用者として、Googleの通行証をもらう（analytics.py の sa_token と同じ手順）。
+    署名は cryptography があればそれで、無ければ openssl で（Mac の /usr/bin/python3 にも、Actions にも入れずに済む）"""
+    import base64
+    import time
+    b64 = lambda x: base64.urlsafe_b64encode(x).rstrip(b"=")
+    now = int(time.time())
+    claim = {"iss": d["client_email"], "scope": "https://www.googleapis.com/auth/webmasters.readonly",
+             "aud": "https://oauth2.googleapis.com/token", "iat": now, "exp": now + 3600}
+    head = (b64(json.dumps({"alg": "RS256", "typ": "JWT"}).encode()) + b"."
+            + b64(json.dumps(claim).encode()))
+    try:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+        key = serialization.load_pem_private_key(d["private_key"].encode(), password=None)
+        sig = key.sign(head, padding.PKCS1v15(), hashes.SHA256())
+    except ImportError:
+        # 鍵はファイルに置かず、標準入力で渡す（署名する中身は秘密ではないので、一時ファイルでよい）。
+        # 10/18、Mac で同時に何本も走らせたら140回に2回失敗した（理由は再現できず）。2回まで試す
+        for _ in range(2):
+            with tempfile.NamedTemporaryFile() as f:
+                f.write(head)
+                f.flush()
+                r = subprocess.run(["openssl", "dgst", "-sha256", "-sign", "/dev/stdin", f.name],
+                                   input=d["private_key"].encode(), capture_output=True)
+            if r.returncode == 0 and r.stdout:
+                break
+        else:
+            raise RuntimeError("openssl で署名できませんでした（%s）" % r.stderr.decode("utf-8", "replace").strip()[:120])
+        sig = r.stdout
+    jwt = head + b"." + b64(sig)
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                     "assertion": jwt.decode()}).encode())
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))["access_token"]
+
+
+def _gsc_query(tok: str, body: dict) -> list:
+    url = ("https://searchconsole.googleapis.com/webmasters/v3/sites/%s/searchAnalytics/query"
+           % urllib.parse.quote(SITE, safe=""))
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={"Authorization": "Bearer " + tok,
+                                          "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read().decode("utf-8")).get("rows", [])
+
+
+def kensaku_juni() -> dict | None:
+    """直近28日の検索の数字を、記事の住所（/blog/<slug>/）ごとに取る。取れなければ None"""
+    try:
+        d = _gsc_kagi()
+    except Exception as e:
+        log("  ・検索の数字の鍵が読めません（%s）。②を飛ばします" % str(e)[:80])
+        return None
+    if not d:
+        log("  ・検索の数字の鍵がありません。②（検索で10位より下）を飛ばします")
+        return None
+    try:
+        tok = _gsc_token(d)
+        end = date.today() - timedelta(days=3)       # 数字は2〜3日遅れて入る
+        start = end - timedelta(days=27)
+        rows = _gsc_query(tok, {"startDate": start.isoformat(), "endDate": end.isoformat(),
+                                "dimensions": ["page"], "rowLimit": 1000})
+    except Exception as e:
+        log("  ・検索の数字が取れませんでした（%s）。②を飛ばします" % str(e)[:120])
+        return None
+    page = {}
+    for r in rows:
+        path = urllib.parse.urlparse(r["keys"][0]).path
+        page[path] = {"hyoji": int(r.get("impressions", 0)), "click": int(r.get("clicks", 0)),
+                      "juni": round(float(r.get("position", 0)), 1)}
+    return {"tok": tok, "start": start.isoformat(), "end": end.isoformat(), "page": page}
+
+
+_KAISHA_MEI = re.compile(r"フッ?カル|ふっかる|ﾌｯｶﾙ|フッ軽|fukkaru|合同会社", re.I)
+
+
+def kensaku_kotoba(juni: dict, slug: str) -> list[dict]:
+    """その記事が表示された検索の言葉（表示の多い順に8つまで）。取れなければ空"""
+    try:
+        rows = _gsc_query(juni["tok"], {
+            "startDate": juni["start"], "endDate": juni["end"], "dimensions": ["query"], "rowLimit": 8,
+            "dimensionFilterGroups": [{"filters": [{"dimension": "page", "operator": "equals",
+                                                    "expression": SITE + "blog/%s/" % slug}]}]})
+    except Exception as e:
+        log("  ・検索の言葉が取れませんでした（%s）" % str(e)[:80])
+        return []
+    # 会社の名前を調べた言葉は外す（記事で答える疑問ではない。kirikuchi.py の BRAND と同じ）。
+    # 表示の少ない言葉は、Google が伏せて返さないので、空のことが多い（10/18 に測ると、上位の記事でも空だった）
+    out = [{"kotoba": r["keys"][0], "hyoji": int(r.get("impressions", 0)),
+            "juni": round(float(r.get("position", 0)), 1)} for r in rows
+           if not _KAISHA_MEI.search(r["keys"][0])]
+    return sorted(out, key=lambda x: -x["hyoji"])
+
+
+# ── どの記事を書き直すか ──
+def kakinaoshi_kiroku() -> dict[str, str]:
+    """書き直した記録（slug → いちばん新しい日付）"""
+    out: dict[str, str] = {}
+    for f in sorted(KAKINAOSHI_DIR.glob("*.json")):
+        try:
+            k = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        s, d = str(k.get("slug", "")), str(k.get("date", ""))
+        if s and d > out.get(s, ""):
+            out[s] = d
+    return out
+
+
+def kakinaoshi_pr_kiji() -> set[str]:
+    """書き直しのPRを作った記事（枝の名前から住所を取る）。**開いているPRと、この60日に閉じた・マージしたPRの両方。**
+    開いているあいだは記録が main に無いので、見ないと同じ記事を次の日も選ぶ。
+    人がマージせずに閉じたPRも、記録が残らないので、見ないと毎日選び直す（10/18 に別の目が見つけた）。
+    **取れなかったら例外を出す**（判断の前に、リモートの状態を取ってくる。CLAUDE.md 8）"""
+    out = set()
+    kijun = (date.today() - timedelta(days=KAKINAOSHI_AIDA)).strftime("%Y%m%d")
+    for page in (1, 2, 3, 4):
+        prs = gh_api("/pulls?state=all&sort=created&direction=desc&per_page=100&page=%d" % page)
+        if not prs:
+            break
+        for pr in prs:
+            m = _KAKINAOSHI_EDA_HI.match(str((pr.get("head") or {}).get("ref", "")))
+            if m and m.group(1) >= kijun:
+                out.add(m.group(2))
+        # 新しい順に並んでいるので、60日より前の記事のPRまで来たら打ち切る（新しい記事のPRも混ざるので、作った日で見る）
+        if str(prs[-1].get("created_at", ""))[:10].replace("-", "") < kijun:
+            break
+    return out
+
+
+# 梱包材・段ボールの書き方は、中元さんのお返事待ち（返事待ちの3）。この話がある記事は、①②③のどれでも選ばない
+# （10/18 の試し運転で、梱包材のある家具の記事は2回とも、梱包材で作り話が出た。102本のうち27本が当たる）
+_KONPO = re.compile(r"梱包|段ボール|ダンボール")
+
+
+def kakinaoshi_kouho(done: list[dict], kiroku: dict[str, str], pr_kiji: set[str],
+                     juni: dict | None) -> list[dict]:
+    """書き直す候補を、選ぶ順に並べて返す。①9/23 より前の書き方 ②検索で10位より下 ③古い順。
+    1回目が4回とも通らなければ、同じ回に次の候補へ進む（毎日同じ記事で詰まらないように）"""
+    kyou = date.today()
+    kouho, konpo = [], 0
+    for a in done:
+        s, t = str(a.get("slug", "")), str(a.get("title", ""))
+        if not s or s in KAKINAOSHI_MATSU or s in pr_kiji or _KAKINAOSHI_SHINAI.search(t):
+            continue
+        if {b.get("type") for b in a.get("blocks") or [] if isinstance(b, dict)} & _KAKINAOSHI_TE:
+            continue
+        k, p = _hi(kiroku.get(s)), _hi(a.get("publishDate"))
+        if k and (kyou - k).days < KAKINAOSHI_AIDA:
+            continue
+        if p and (kyou - p).days < KAKINAOSHI_WAKAI:
+            continue
+        # 題名は変えないので、題名そのものに直す所がある記事は選ばない（人が直す）
+        if any(w in t for w in KYOKA_KINSHI) or kaishu_yakusoku(t):
+            log("  ・題名に直す所があるので、書き直しに選びません：%s" % s)
+            continue
+        if _KONPO.search(json.dumps({k: v for k, v in a.items() if k != "keywords"}, ensure_ascii=False)):
+            konpo += 1
+            continue
+        kouho.append(a)
+    if konpo:
+        log("  ・梱包材・段ボールの話がある %d 本は、お返事待ちなので選びません" % konpo)
+    furui_jun = lambda a: (str(a.get("updatedDate") or a.get("publishDate") or ""),
+                           str(a.get("publishDate") or ""), str(a.get("slug", "")))
+    out = []
+
+    # ① 9/23 より前の書き方。**富士市の記事だけ。**ほかの市で「回収業者と一緒に」と書けるかは、
+    # 中元さんのお返事待ち（返事待ちの3）なので、ほかの市の①は、お返事が出るまで書き直さない
+    # （③にも回さない。回すと、書き直しの弁が古い書き方を止めて、AIが勝手に新しい形にしてしまう）
+    ichi, matsu = [], []
+    for a in kouho:
+        f = furui_katachi(a)
+        if f:
+            (ichi if fuji_shi_kiji(a) else matsu).append((a, f))
+    for a, f in matsu:
+        log("  ・9/23 より前の書き方があるが、富士市以外なのでお返事待ち：%s" % a.get("slug"))
+    for a, f in sorted(ichi, key=lambda x: furui_jun(x[0])):
+        out.append({"art": a, "kubun": "①", "furui": f,
+                    "midashi": "9/23 より前のごみの書き方が残っている（%d か所）" % len(f),
+                    "riyuu": ("この記事には、2026年9月23日より前のごみの書き方が残っています。"
+                              "守ること 2-2 の形に書き直してください。残っている文：\n"
+                              + "\n".join("  ・%s" % x for x in f[:6]))})
+    nokori = [a for a in kouho if a not in [x[0] for x in ichi + matsu]
+              and not _KAKINAOSHI_HIKAE.search(str(a.get("title", "")))]
+
+    # ② 検索に表示があるのに、10位より下（表示の多い順）
+    if juni:
+        ni = []
+        for a in nokori:
+            n = juni["page"].get("/blog/%s/" % a.get("slug"))
+            if n and n["hyoji"] >= KAKINAOSHI_HYOJI and n["juni"] > KAKINAOSHI_JUNI:
+                ni.append((a, n))
+        for i, (a, n) in enumerate(sorted(ni, key=lambda x: (-x[1]["hyoji"], x[1]["juni"]))):
+            # 検索の言葉は、実際に書き直す見込みのある先頭の数本だけ取りに行く
+            kotoba = kensaku_kotoba(juni, a["slug"]) if i < KAKINAOSHI_KOUHO else []
+            riyuu = ("この記事は、検索で表示されているのに、平均の順位が %.1f 位です（10位より下。直近28日・表示 %d 回）。"
+                     % (n["juni"], n["hyoji"]))
+            if kotoba:
+                riyuu += ("この記事が表示された検索の言葉：\n"
+                          + "\n".join("  ・「%s」（表示 %d 回・平均 %.1f 位）" % (x["kotoba"], x["hyoji"], x["juni"])
+                                      for x in kotoba)
+                          + "\n**いちばん表示の多い言葉で検索した人が知りたいことに、記事の最初の3ブロックで答えてください。**"
+                          "言葉そのものを詰め込まないこと。")
+            else:
+                riyuu += ("\n**題名の言葉で検索した人が知りたいこと（いくら・どこに頼む・自分でできるか・何を用意するか）に、"
+                          "記事の最初の3ブロックで、はっきり答えてください。**")
+            out.append({"art": a, "kubun": "②", "riyuu": riyuu,
+                        "midashi": "検索に出ているのに10位より下（直近28日・表示 %d 回・平均 %.1f 位）" % (n["hyoji"], n["juni"]),
+                        "kensaku": dict(n, kikan="%s〜%s" % (juni["start"], juni["end"]), kotoba=kotoba)})
+
+    # ③ 古い順（更新日の古いもの。書き直すと更新日が今日になるので、自然に後ろへ回る）
+    mita = {x["art"]["slug"] for x in out}
+    for a in sorted(nokori, key=furui_jun):
+        if a["slug"] in mita:
+            continue
+        out.append({"art": a, "kubun": "③",
+                    "midashi": "古い順（公開 %s／更新 %s）" % (a.get("publishDate", "?"), a.get("updatedDate", "?")),
+                    "riyuu": ("この記事は、公開から日がたっています（公開 %s／更新 %s）。"
+                              "いまの会社の前提（料金・ごみの書き方・受けている仕事）に合わせて、"
+                              "検索した人が知りたい順に、読みやすく書き直してください。"
+                              % (a.get("publishDate", "?"), a.get("updatedDate", "?")))})
+    return out
+
+
+def kakinaoshi_erabu(done: list[dict], kiroku: dict[str, str], pr_kiji: set[str],
+                     juni: dict | None) -> dict | None:
+    """いちばん先頭の候補（試しと、記事を1本指定したとき用）"""
+    k = kakinaoshi_kouho(done, kiroku, pr_kiji, juni)
+    return k[0] if k else None
+
+
+# 元の記事の「ほぼ0円」（自分でやる場合の道具代）。数字の弁に当たるが、元の記事を渡すとAIはそのまま写す（10/18 の試し運転で3回）。
+# 渡す前と、書いたあとに、言葉に置き換える（書き直しのときだけ。新しい記事には「0円」が出ても、弁が止める今までどおり）
+_HOBO_ZERO = re.compile(r"(?:ほぼ|ほとんど)\s*0\s*円")
+
+
+def _hobo_zero(v):
+    if isinstance(v, str):
+        return _HOBO_ZERO.sub("ほとんどかからない", v)
+    if isinstance(v, list):
+        return [_hobo_zero(x) for x in v]
+    if isinstance(v, dict):
+        return {k: (x if k in ("slug", "id", "ogImage", "heroImage") else _hobo_zero(x)) for k, x in v.items()}
+    return v
+
+
+def kakinaoshi_prompt(mae: dict, sentaku: dict, ng: list[str] | None = None) -> str:
+    """書き直しの指示。決まり（FACTS・RULES・VOICE・料金表）とやり直しの指示は、新しい記事と同じものを渡す"""
+    moto = json.dumps(_hobo_zero({k: mae[k] for k in ("slug", "title", "metaDescription", "keywords", "category", "blocks")
+                                  if k in mae}), ensure_ascii=False, indent=1)
+    return f"""あなたは静岡県富士市の便利屋「フッ軽合同会社」のホームページの記事を書く人です。
+**公開済みの記事を1本、書き直してください。**新しい記事を書くのではありません。
+検索から来た人が読んで役に立ち、そのまま相談したくなる記事にします。
+
+**なぜ書き直すか：**
+{sentaku["riyuu"]}
+
+**書き直しで守ること（ここがいちばん大事です）**
+・**元の記事の事実を消さない。**料金・市の決まり・手順・注意・よくある質問の中身は、残すか、もっと分かりやすく書き直す。
+  ただし、下の「守ること」2-2 に合わない書き方（ごみの処分・回収をフッ軽だけで請け負う書き方、
+  許可が無いという断りから書き始める書き方）は、2-2 の形に直す。下の「会社の前提」と食い違う文も、前提のほうに合わせる
+・**HPに無いサービスを足さない。**元の記事にも「会社の前提」の「扱う仕事」にも無い作業を、新しく書かない
+・**金額は、下の「サイトに載っている料金」にあるものだけ。**元の記事にあっても、料金表に無い金額は書かない。
+  その仕事の行の金額だけを、その仕事に付ける（ほかの仕事の金額を付けない）
+・**題名（title）・slug・category は、元のまま変えない。**同じ文字をそのまま返す
+・説明文（metaDescription）・検索の言葉（keywords）・見出し・本文・表・よくある質問は、書き直してよい。
+  話の順番は、検索した人が知りたい順（結論 → 料金の目安 → 手順 → 注意 → よくある質問）に並べ替えてよい
+・**本文（lead・p・見出し・注記の文字。表と箇条書きは数えません）は、{kakinaoshi_saitei(mae) + 200}〜{max(2400, _honbun(mae) + 600)}字にする。**
+  元の記事は {_honbun(mae)}字です。足りないぶんは、**次のものだけで**足す：
+  元の記事の中身を、くわしく分かりやすく言い直す／会社の前提にあること（その仕事の料金表の額・LINEで写真を送るお見積りは無料・
+  出張費が無料の4市・支払い方法の1文・損保ジャパンの1文・代表が最初から最後まで担当・LINE割引）／
+  料金が変わる理由は「広さ・量・場所の条件で変わります。写真を見てお伝えします」の形で／頼む流れ（連絡 → 写真 → 日程 → 作業 → 一緒に確かめてお支払い）
+・**作らないもの**（元の記事にも会社の前提にも無いもの）：新しい数字（坪・メートル・時間・日数・人数・年数）／
+  「追加料金がかかる」場面／上の2つ以外の「無料」／料金に含まれる作業（元の記事にあるものだけ）／現地調査・現地での見積りの流れ／
+  「経験豊富」「確実な仕上がりをお約束」「人員」「困りごと全般」のような言い切り／その記事の仕事と関係のない話（草刈りでない記事の草の持ち込みなど）／
+  ごみのお預かり／梱包材・段ボールの話／市の決まり／お客様の声・「多くいただきます」／ほかの仕事のよくある質問／
+  「別途料金」「回収業者と一緒に片付けるぶんの金額」
+・同じことを繰り返して水増ししない
+・「0円」とは書かない（料金表に無い数字です。お金がかからないことは、言葉で書く）
+・**市の決まりは、事実の欄にあるものだけ書く。**無い決まり（一度に持ち込める量・申し込みのしかた・手数料など）を作らない
+・フッ軽が作業で出した草・枝は「フッ軽が持ち込む」と書く。「フッ軽が処分する」「引き取って処分」とは書かない（表のマスの中も同じ）
+・h2 の id は、元の記事の id をできるだけそのまま使う
+
+会社の前提：
+{FACTS}
+{RULES}
+{VOICE}
+サイトに載っている料金（**この額だけ、そのまま書けます**）：
+{price_table()}
+
+元の記事（JSON）：
+{moto}
+
+返す形：**元の記事と同じ形のJSONだけ**を返してください（slug・title・metaDescription・keywords・category・blocks）。
+前置きも説明も要りません。blocks の type は lead／h2／h3／p／ul／ol／table／note／faq／cta だけ。
+h2 には英数字の id を付ける／p は1段落1〜2文・45〜100字くらい（最大140字）／
+table は "headers" と "rows"／faq は "items" に {{"q": …, "a": …}}／cta は "heading" と "sub"。
+表・箇条書き（ul か ol）・注記（note）・よくある質問（faq）を最低1つずつ入れ、最後に cta を1つ置く。""" + retry_note(ng)
+
+
+def _kotei(ato: dict, mae: dict) -> None:
+    """書き直しで変えないもの（住所・題名・分類・公開日・画像）を、元に戻す"""
+    for k in ("slug", "title", "category", "publishDate", "ogImage", "heroImage"):
+        if k in mae:
+            ato[k] = mae[k]
+        else:
+            ato.pop(k, None)
+
+
+def kakinaoshi_chigai(mae: dict, ato: dict) -> dict:
+    """直す前と後で、何が変わったか（PRの説明と記録に使う）"""
+    h2 = lambda a: [str(b.get("text", "")) for b in a.get("blocks") or [] if isinstance(b, dict) and b.get("type") == "h2"]
+    kingaku = lambda a: {m.group(0).replace(" ", "")
+                         for m in NUM.finditer(json.dumps(a, ensure_ascii=False)) if "円" in m.group(0)}
+    faq = lambda a: sum(len(b["items"]) for b in a.get("blocks") or []
+                        if isinstance(b, dict) and b.get("type") == "faq" and isinstance(b.get("items"), list))
+    km, ka = kingaku(mae), kingaku(ato)
+    return {"honbun": [_honbun(mae), _honbun(ato)],
+            "blocks": [len(mae.get("blocks") or []), len(ato.get("blocks") or [])],
+            "faq": [faq(mae), faq(ato)],
+            "setsumei": [mae.get("metaDescription", ""), ato.get("metaDescription", "")],
+            "midashi": [h2(mae), h2(ato)],
+            "kingaku_kieta": sorted(km - ka), "kingaku_fueta": sorted(ka - km),
+            "furui": [len(furui_katachi(mae)), len(furui_katachi(ato))],
+            "atarashii": kakinaoshi_atarashii(mae, ato), "kieta": kakinaoshi_kieta(mae, ato)}
+
+
+# PRの説明に出す「元の記事に無かった文」のうち、人が読む所（お金・許認可・市・数字・約束）。
+# 10/18：機械の弁を全部通っても、作り話（30坪・追加料金・お預かり…）は残った。読む所を絞って出す（別の目の案）
+# 2回目の別の目で、取りこぼしが分かった言葉（お約束・確実・経験豊富・安心・人員・現地・ご納得・困りごと・除草剤…）を足した
+_YOMU_BUN = re.compile(r"円|無料|処分|回収|引き取|引取|預か|許可|業者|市|クリーンセンター|施設|予約|身分|保険|補償|保証|実績|"
+                       r"多く|必ず|追加|含ま|別途|お任せ|承|対応可能|一切|約束|確実|経験|安心|人員|現地|納得|困りごと|全般|様々|"
+                       r"除草|報告|当日|養生|決ま|できません|お受け|ご案内")
+
+
+def kakinaoshi_atarashii(mae: dict, ato: dict) -> list[str]:
+    """書き直しで足された文のうち、人が読む所（全部。PRの説明では先頭40に絞って「ほかに◯件」）"""
+    moto = set(_bun(mae))
+    return [x.strip()[:120] for x in _bun(ato) if x not in moto and len(x.strip()) > 4
+            and (_YOMU_BUN.search(x) or _KAZU_TANI.search(x))]
+
+
+def kakinaoshi_kieta(mae: dict, ato: dict) -> list[str]:
+    """元の記事にあって、書き直しで見当たらない文のうち、人が読む所（言い換えで消えただけのことも多い）。
+    10/18 の2回目：消えた事実（当日の知らせ・養生・できないものの細目・よくある質問の無料と8,000円〜）は、足された文の一覧には出ない"""
+    ima = set(_bun(ato))
+    return [x.strip()[:120] for x in _bun(mae) if x not in ima and len(x.strip()) > 4
+            and (_YOMU_BUN.search(x) or _KAZU_TANI.search(x))]
+
+
+def kakinaoshi_setsumei(mae: dict, sentaku: dict, c: dict, naoshita: int, kaisu: int) -> str:
+    """PRの説明（中元さんが読む）"""
+    li = lambda xs: "\n".join("  - %s" % x for x in xs) or "  - （なし）"
+    s = ["公開済みの記事を、AIで書き直しました（毎日13時の自動・`FUKKARU_BLOG_MODE=kakinaoshi`）。",
+         "**はじめの1週間は、自動では公開しません。読んでからマージしてください**（マージすると、数分で本番に出ます）。",
+         "",
+         "- いまの本番：%sblog/%s/" % (SITE, mae.get("slug")),
+         "- 選んだ理由：%s %s" % (sentaku.get("kubun", ""), sentaku.get("midashi", "")),
+         "- 題名・住所・分類・公開日・画像：**元のまま**／更新日：%s" % date.today().isoformat(),
+         "- 書いた回数：%d 回目で通りました／書いたあとの機械の直し：%d か所" % (kaisu, naoshita),
+         "",
+         "## 変わったところ",
+         "- 本文の字数：%d → %d%s" % (c["honbun"][0], c["honbun"][1],
+                                   "　**★元の2.5倍以上。足した文に作り話が混ざりやすいので、下の一覧を全部読む**"
+                                   if c["honbun"][0] and c["honbun"][1] >= c["honbun"][0] * 2.5 else ""),
+         "- ブロックの数：%d → %d／よくある質問：%d → %d" % (tuple(c["blocks"]) + tuple(c["faq"])),
+         "- 9/23 より前のごみの書き方：%d か所 → %d か所" % tuple(c["furui"]),
+         "- 消えた金額：%s" % ("、".join(c["kingaku_kieta"]) or "なし"),
+         "- 増えた金額：%s" % ("、".join(c["kingaku_fueta"]) or "なし"),
+         "", "### 説明文（検索結果に出る2〜3行）", "- 前：%s" % c["setsumei"][0], "- 後：%s" % c["setsumei"][1],
+         "", "### 見出し（h2）", "- 前：", li(c["midashi"][0]), "- 後：", li(c["midashi"][1])]
+    for midashi, setsu, xs in (
+            ("元の記事に無かった文のうち、お金・許認可・市・数字・約束の文",
+             "ここを、直す前の記事と事実の欄に照らして読む（機械の弁を通っても、作り話が残ることがある）", c.get("atarashii") or []),
+            ("元の記事にあって、書き直しで見当たらない文（お金・許認可・市・数字・約束）",
+             "言い換えで形が変わっただけのことも多い。**中身（条件・約束・できる/できない・金額）が、書き直しのどこかに残っているか**を見る",
+             c.get("kieta") or [])):
+        s += ["", "### %s（%d）" % (midashi, len(xs)), setsu, li(xs[:40])]
+        if len(xs) > 40:
+            s.append("  - **ほかに %d 件**（記録のファイル scripts/blog/kakinaoshi/ に全部あります）" % (len(xs) - 40))
+    if sentaku.get("furui"):
+        s += ["", "### 残っていた古い書き方（①）", li(sentaku["furui"][:6])]
+    if sentaku.get("kensaku"):
+        k = sentaku["kensaku"]
+        s += ["", "### 検索の数字（②・%s）" % k["kikan"],
+              "- 表示 %d 回・クリック %d 回・平均 %.1f 位" % (k["hyoji"], k["click"], k["juni"]),
+              li("「%s」表示 %d 回・%.1f 位" % (x["kotoba"], x["hyoji"], x["juni"]) for x in k["kotoba"])]
+    s += ["", "毎日の記事読みで、消えた事実が無いか・線を越えていないかを読んでから、マージします。"]
+    return "\n".join(s) + "\n"
+
+
+def kakinaoshi() -> int:
+    """公開済みの記事を1本、AIで書き直して、PRを作る（はじめは自動でマージしない）"""
+    dry = MODE == "kakinaoshi-dry"
+    if not KEY:
+        log("✗ GEMINI_API_KEY がありません")
+        return 1
+    if not dry and not GH_PAT:
+        log("✗ GH_PAT がありません（PRを作れません）")
+        return 1
+    if not dry:
+        try:
+            git("checkout", "main")
+            git("pull", "--ff-only", "origin", "main")
+        except Exception as e:
+            log("✗ 最新の記事を取ってこられませんでした：%s" % e)
+            return 1
+    done = existing()
+    try:
+        pr_kiji = kakinaoshi_pr_kiji() if GH_PAT else set()
+    except Exception as e:
+        log("✗ 書き直しのPRを数えられませんでした（%s）。同じ記事を二度選ばないよう、今回は止めます" % e)
+        return 1
+    want = (os.environ.get("FUKKARU_KAKINAOSHI_SLUG") or "").strip()   # 試しのとき、記事を1本だけ指定する
+    juni = kensaku_juni()
+    if want:
+        mae = next((a for a in done if a.get("slug") == want), None)
+        if not mae:
+            log("✗ その記事がありません：%s" % want)
+            return 1
+        # 選ぶ順の理由は、その1本だけを並べて、ふだんと同じ道で決める（お返事待ち・公開したばかりなどで外れたら、ふつうの理由）
+        kouho = [kakinaoshi_erabu([mae], {}, set(), juni) or {
+            "art": mae, "kubun": "指定", "midashi": "記事を指定して書き直し",
+            "riyuu": ("いまの会社の前提（料金・ごみの書き方・受けている仕事）に合わせて、"
+                      "検索した人が知りたい順に、読みやすく書き直してください。")}]
+    else:
+        kouho = kakinaoshi_kouho(done, kakinaoshi_kiroku(), pr_kiji, juni)[:KAKINAOSHI_KOUHO]
+    if not kouho:
+        log("・書き直せる記事がありませんでした")
+        return 0
+    for sentaku in kouho:
+        got = kakinaoshi_kaku(sentaku, done)
+        if got:
+            break
+        log("  ・この記事は今回あきらめて、次の候補へ進みます")
+    else:
+        log("✗ 候補 %d 本とも、出せる形になりませんでした（元の記事は本番のまま）" % len(kouho))
+        return 1
+    art, mae, naoshita, kaisu = got          # sentaku は、通った候補のまま
+    return kakinaoshi_dasu(art, mae, sentaku, naoshita, kaisu, dry)
+
+
+def kakinaoshi_kaku(sentaku: dict, done: list[dict]) -> tuple | None:
+    """1本をAIで書き直す（4回まで）。通れば (記事, 元の記事, 直した数, 回数)、通らなければ None"""
+    mae = sentaku["art"]
+    slug = mae["slug"]
+    rest = [a for a in done if a.get("slug") != slug]
+    log("▶ 記事を1本書き直します（%s）：%s（%s）" % (sentaku["kubun"], mae.get("title", ""), slug))
+    log("  ・理由：%s" % sentaku["midashi"])
+    art, last_ng, naoshita, kaisu = None, None, 0, 0
+    for attempt in range(1, ATTEMPTS + 1):
+        kaisu = attempt
+        try:
+            art = extract_json(gen_text(kakinaoshi_prompt(mae, sentaku, last_ng)))
+        except Exception as e:
+            log("  ・%d回目：作れませんでした（%s）" % (attempt, e))
+            last_ng = ["JSONの形が壊れていました。指定した形のJSONだけを返すこと（説明文や```は付けない）"]
+            art = None
+            continue
+        art = _hobo_zero(art)
+        _kotei(art, mae)
+        naoshita = seikei(art)
+        if kaishu_naosu(art):
+            log("  ・「不用品回収」をフッ軽の約束にしていた所を「不用品の片付け」に言い換えました")
+        _kotei(art, mae)                  # 直しが住所や題名に触っても、元に戻す
+        # 最後の回は、新しい記事と同じく h3・ul・字数（1,000字まで）をゆるめる。元の本文が短い記事（表が主・400〜600字）は、
+        # 書き直しても1,500字に届かないことが多かった（10/18 の試し運転で6回中4回）。
+        # **ゆるめないもの**：元の8割より短い・古い書き方・液体の書き方・処分の書き方（kakinaoshi_ng）と、数字・許認可・名前の弁
+        ng = check(art, rest, attempt, ATTEMPTS, kakinaoshi=True) + kakinaoshi_ng(art, mae)
+        if not ng:
+            break
+        log("  ・%d回目：やり直します → %s" % (attempt, " / ".join(ng[:3])))
+        last_ng = ng
+        art = None
+    if art is None:
+        log("  ・%d回試しましたが、出せる形になりませんでした（%s）" % (ATTEMPTS, slug))
+        return None
+    return art, mae, naoshita, kaisu
+
+
+def kakinaoshi_dasu(art: dict, mae: dict, sentaku: dict, naoshita: int, kaisu: int, dry: bool) -> int:
+    """書き直した記事を書き出して、記録とPRを作る"""
+    slug = mae["slug"]
+    kyou = date.today().isoformat()
+    art["updatedDate"] = kyou
+    n = drop_stray_license_note(art)
+    if n:
+        log("  ・この仕事に関係のない、ごみの許可の断り書きを%d個外しました" % n)
+    # 項目の並びを元の記事にそろえる（差分を読みやすくする）
+    jun = list(mae.keys()) + [k for k in art if k not in mae]
+    art = {k: art[k] for k in jun if k in art}
+    c = kakinaoshi_chigai(mae, art)
+    dest = ARTICLES / ("%s.json" % slug)
+    dest.write_text(json.dumps(art, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    KAKINAOSHI_DIR.mkdir(parents=True, exist_ok=True)
+    kiroku_f = KAKINAOSHI_DIR / ("%s-%s.json" % (kyou, slug))
+    kiroku = {"date": kyou, "slug": slug, "title": mae.get("title", ""), "kubun": sentaku["kubun"],
+              "riyuu": sentaku["midashi"], "kaisu": kaisu, "naoshita": naoshita, "chigai": c}
+    if sentaku.get("kensaku"):
+        kiroku["kensaku"] = sentaku["kensaku"]
+    kiroku_f.write_text(json.dumps(kiroku, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    setsumei = kakinaoshi_setsumei(mae, sentaku, c, naoshita, kaisu)
+    log("  ・書き直しました：%s（本文 %d字 → %d字）" % (dest.name, c["honbun"][0], c["honbun"][1]))
+    if dry:
+        moto = STATE_BASE / "kakinaoshi-mae" / ("%s.json" % slug)
+        moto.parent.mkdir(parents=True, exist_ok=True)
+        moto.write_text(json.dumps(mae, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        (STATE_BASE / "kakinaoshi-mae" / ("%s.md" % slug)).write_text(setsumei, encoding="utf-8")
+        log("✓ 試しなので、gitには触りません（直す前の記事：%s）" % moto)
+        return 0
+
+    branch = "%s%s-%s" % (KAKINAOSHI_EDA, datetime.now().strftime("%Y%m%d-%H%M"), slug)
+    try:
+        git("checkout", "-b", branch)
+        git("add", str(dest.relative_to(REPO)), str(kiroku_f.relative_to(REPO)))
+        git("commit", "-m", "記事の書き直し：%s" % mae.get("title", ""))
+        git("push", "-u", "origin", branch)
+        url, created, num = open_pr(branch, art, title="記事の書き直し：%s" % mae.get("title", ""),
+                                    body=setsumei)
+        git("checkout", "main")
+        log("✓ 書き直しのPRを作りました：%s" % url)
+        if KAKINAOSHI_AUTOMERGE:
+            try:
+                merge_pr(num, "記事を書き直し（自動）")
+                log("  ・取り込みました。数分でホームページに出ます：%sblog/%s/" % (SITE, slug))
+            except Exception as e:
+                log("  ・取り込めませんでした：%s（PRに残っています）" % e)
+        else:
+            log("  （はじめの1週間は自動でマージしません。読んでからマージしてください）")
+    except Exception as e:
+        log("✗ gitのところで失敗しました：%s" % e)
+        return 1
+    return 0
+
+
 def main() -> int:
+    if MODE in ("kakinaoshi", "kakinaoshi-dry"):
+        return kakinaoshi()
     # 記事を書かずに、公開済みの記事を測る／直すとき（2026-09-14）。鍵も git も使わない
     if MODE == "shindan":
         return shindan_all()
