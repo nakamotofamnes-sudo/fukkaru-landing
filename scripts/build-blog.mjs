@@ -536,12 +536,25 @@ footer.site a:hover{color:#fff}
 @media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
 `;
 
+// Google アナリティクス（GA4）。トップ（index.html）と同じ測定ID・同じ書き方（2026-10-19）。
+// 記事のページに入っていなかったので、記事ごとの読まれ方が GA4 に1つも出ていなかった（pagePath は「/」だけ）
+const GA4_TAG = `<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z092NPG2MW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Z092NPG2MW');
+</script>`;
+
 function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml, ogImage }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${GA4_TAG}
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
