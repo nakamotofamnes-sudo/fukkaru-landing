@@ -38,6 +38,12 @@ on:
         type: string
         default: ''
 
+# 同じ時に2つ動かさない（2026-10-18）。手で動かした回と定時が重なると、同じ記事を2本の書き直しPRにしたり、
+# 同じ狙いを2本書いたりする。あとから来た回は、前の回が終わるまで待つ
+concurrency:
+  group: blog
+  cancel-in-progress: false
+
 jobs:
   write:
     runs-on: ubuntu-latest
