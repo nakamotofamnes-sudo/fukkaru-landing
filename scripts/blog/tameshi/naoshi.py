@@ -980,6 +980,11 @@ kazoeru('書き直しの弁（2回目）：元の記事にある数字は止め�
                         {'blocks': [{'type': 'p', 'text': _pad + '物置の周りに50cm、30坪の庭。'}]}))
 onaji('書き直し：PRの枝から作った日と住所を取る', m._KAKINAOSHI_EDA_HI.match('blog/kakinaoshi-20261018-1300-fuji-a').groups(),
       ('20261018', 'fuji-a'))
+_faq = lambda q, a: m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _pad}, {'type': 'faq', 'items': [{'q': q, 'a': a}]}]},
+                                     {'blocks': [{'type': 'p', 'text': _pad}]})
+kazoeru('書き直しの弁（2回目）：「見積もりは無料ですか？」への「はい、無料です。」は止めない', _faq('見積もりは無料ですか？', 'はい、無料です。'))
+kazoeru('書き直しの弁（2回目）：「現地まで来てもらえますか？」への「はい、無料です。」は止める',
+        [] if _faq('現地まで無料で来てもらえますか？', 'はい、無料です。') else ['止まらなかった'])
 _k3 = [_kiji('fuji-konpo', '【富士市】家具', '2026-06-01', text='組み立てで出た段ボールは運び出します。'),
        _kiji('fuji-furui-2', '【富士市】古い書き方2', '2026-09-01', text=_FURUI),
        _kiji('fuji-san-1', '【富士市】H', '2026-06-10'), _kiji('fuji-san-2', '【富士市】I', '2026-06-20')]

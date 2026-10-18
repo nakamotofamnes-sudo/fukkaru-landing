@@ -3245,7 +3245,11 @@ def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
     if tsuika(_bun(art)) > tsuika(moto):
         ng.append("元の記事に無い「追加料金がかかる」文を足しています（%d か所）。金額は見積りの前に決まる話として、"
                   "「広さ・量・場所の条件で変わります。写真を見てお伝えします」と書いてください" % (tsuika(_bun(art)) - tsuika(moto)))
-    mu = [x for x in _bun(art) if x not in moto and _MURYO.search(x) and not _MURYO_OK.search(x)]
+    # よくある質問の答え「はい、無料です」は、質問（「見積もりは無料ですか？」）と組で見る（10/18 に効きすぎた）
+    faq_ok = {y for b in art.get("blocks") or [] if isinstance(b, dict) and b.get("type") == "faq"
+              for qa in (b.get("items") if isinstance(b.get("items"), list) else []) if isinstance(qa, dict)
+              and _MURYO_OK.search(str(qa.get("q", ""))) for y in _bun({"a": str(qa.get("a", ""))})}
+    mu = [x for x in _bun(art) if x not in moto and x not in faq_ok and _MURYO.search(x) and not _MURYO_OK.search(x)]
     if mu:
         ng.append("何が無料か分からない書き方です：%s。無料と書いてよいのは、LINEで写真を送るお見積りと、"
                   "出張費（富士市・富士宮市・静岡市・沼津市）だけです" % mu[0].strip()[:50])
