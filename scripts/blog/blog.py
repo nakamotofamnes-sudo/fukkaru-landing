@@ -3043,7 +3043,7 @@ KAKINAOSHI_KOUHO = 2      # 1本目が4回とも通らなければ、同じ回�
 KAKINAOSHI_AIDA = 60      # 書き直してから、この日数は選ばない（検索の数字が書き直しを映すまで待つ）
 KAKINAOSHI_WAKAI = 14     # 公開からこの日数たっていない記事は選ばない（毎日の記事読みで読んだばかり）
 KAKINAOSHI_NOBI = 0.8     # 書き直した本文が元の何割より短ければ、やり直す（事実を落としていないかの目安）
-KAKINAOSHI_JUNI = 10.0    # ②：平均の順位がこれより下（数が大きい）
+KAKINAOSHI_MIKOMI = 10.0  # ②：「上がる見込み」（agaru_mikomi）がこれ以上の記事だけ選ぶ
 KAKINAOSHI_HYOJI = 5      # ②：直近28日の表示がこの回数以上（1〜2回は、たまたま出ただけのことが多い）
 SITE = "https://fukkaru.creo-sumai.jp/"
 
@@ -3449,7 +3449,54 @@ def kensaku_juni() -> dict | None:
         path = urllib.parse.urlparse(r["keys"][0]).path
         page[path] = {"hyoji": int(r.get("impressions", 0)), "click": int(r.get("clicks", 0)),
                       "juni": round(float(r.get("position", 0)), 1)}
+    # 記事×言葉（10/19）。「上がる見込み」は言葉ごとの順位で数える（記事の平均の順位は、1位の言葉と50位の言葉が混ざる）。
+    # 取れなくても止めない（言葉の無い記事と同じ扱いで、記事の平均の順位で数える）
+    try:
+        pq = _gsc_query(tok, {"startDate": start.isoformat(), "endDate": end.isoformat(),
+                              "dimensions": ["page", "query"], "rowLimit": 5000})
+    except Exception as e:
+        log("  ・検索の言葉が取れませんでした（%s）。記事の平均の順位で数えます" % str(e)[:80])
+        pq = []
+    for r in pq:
+        n = page.get(urllib.parse.urlparse(r["keys"][0]).path)
+        if n is None:
+            continue
+        x = {"kotoba": r["keys"][1], "hyoji": int(r.get("impressions", 0)),
+             "juni": round(float(r.get("position", 0)), 1)}
+        if _KAISHA_MEI.search(x["kotoba"]):
+            n["kaisha"] = n.get("kaisha", 0) + x["hyoji"]
+        else:
+            n.setdefault("kotoba", []).append(x)
+    for n in page.values():
+        n.setdefault("kaisha", 0)
+        n["kotoba"] = sorted(n.get("kotoba", []), key=lambda x: -x["hyoji"])
     return {"tok": tok, "start": start.isoformat(), "end": end.isoformat(), "page": page}
+
+
+def _mikomi_omomi(juni: float) -> float:
+    """順位ごとの「上がる見込み」の重み。11〜20位（2ページ目）がいちばん重い：書き直しで1ページ目に入れば、初めて押される。
+    4〜10位は1ページ目の下のほう（上がればクリックが増える）。1〜3位はもう上にいる。31位より下は、書き直し1回では届きにくい"""
+    if juni <= 3:
+        return 0.1
+    if juni <= 10:
+        return 0.7
+    if juni <= 20:
+        return 1.0
+    if juni <= 30:
+        return 0.4
+    return 0.1
+
+
+def agaru_mikomi(n: dict | None) -> float:
+    """記事の「上がる見込み」＝ 言葉ごとの表示 × 順位の重み の合計。
+    Google が伏せた言葉の表示（表示の少ない言葉）は、記事の平均の順位の重みで半分だけ数える。社名で調べた表示は数えない
+    （「フッ軽」で探した人は、もう会社を知っている。書き直しで増える数ではない）"""
+    if not n:
+        return 0.0
+    kotoba = n.get("kotoba") or []
+    s = sum(x["hyoji"] * _mikomi_omomi(x["juni"]) for x in kotoba)
+    fuse = max(0, n.get("hyoji", 0) - sum(x["hyoji"] for x in kotoba) - n.get("kaisha", 0))
+    return round(s + fuse * _mikomi_omomi(n.get("juni", 99)) * 0.5, 1)
 
 
 _KAISHA_MEI = re.compile(r"フッ?カル|ふっかる|ﾌｯｶﾙ|フッ軽|fukkaru|合同会社", re.I)
@@ -3457,6 +3504,9 @@ _KAISHA_MEI = re.compile(r"フッ?カル|ふっかる|ﾌｯｶﾙ|フッ軽|fuk
 
 def kensaku_kotoba(juni: dict, slug: str) -> list[dict]:
     """その記事が表示された検索の言葉（表示の多い順に8つまで）。取れなければ空"""
+    n = (juni.get("page") or {}).get("/blog/%s/" % slug) or {}
+    if "kotoba" in n:                 # kensaku_juni が記事×言葉を取れていれば、取りに行かない
+        return n["kotoba"][:8]
     try:
         rows = _gsc_query(juni["tok"], {
             "startDate": juni["start"], "endDate": juni["end"], "dimensions": ["query"], "rowLimit": 8,
@@ -3564,18 +3614,24 @@ def kakinaoshi_kouho(done: list[dict], kiroku: dict[str, str], pr_kiji: set[str]
     nokori = [a for a in kouho if a not in [x[0] for x in ichi + matsu]
               and not _KAKINAOSHI_HIKAE.search(str(a.get("title", "")))]
 
-    # ② 検索に表示があるのに、10位より下（表示の多い順）
+    # ② 検索で「上がる見込み」の大きい順（10/19 中元さん「ランキングを上げる可能性がある、ことを加味した上で」）。
+    # 見込み＝言葉ごとの表示×順位の重み（agaru_mikomi）。前は「平均10位より下・表示の多い順」で、
+    # 9位で表示203回・クリック0の物置の移動（いちばん上がる余地がある）を選べなかった。
+    # 社名の記事（「フッ軽」とは）は選ばない（表示のほとんどが社名で、書き直しで増える数ではない）
     if juni:
         ni = []
         for a in nokori:
             n = juni["page"].get("/blog/%s/" % a.get("slug"))
-            if n and n["hyoji"] >= KAKINAOSHI_HYOJI and n["juni"] > KAKINAOSHI_JUNI:
+            if (n and n["hyoji"] >= KAKINAOSHI_HYOJI and not _KAISHA_MEI.search(str(a.get("title", "")))
+                    and agaru_mikomi(n) >= KAKINAOSHI_MIKOMI):
                 ni.append((a, n))
-        for i, (a, n) in enumerate(sorted(ni, key=lambda x: (-x[1]["hyoji"], x[1]["juni"]))):
+        for i, (a, n) in enumerate(sorted(ni, key=lambda x: (-agaru_mikomi(x[1]), -x[1]["hyoji"]))):
             # 検索の言葉は、実際に書き直す見込みのある先頭の数本だけ取りに行く
             kotoba = kensaku_kotoba(juni, a["slug"]) if i < KAKINAOSHI_KOUHO else []
-            riyuu = ("この記事は、検索で表示されているのに、平均の順位が %.1f 位です（10位より下。直近28日・表示 %d 回）。"
-                     % (n["juni"], n["hyoji"]))
+            if not kotoba and i < KAKINAOSHI_KOUHO:
+                kotoba = [x for x in n.get("kotoba") or []][:8]
+            riyuu = ("この記事は、検索で表示されていて、上に上がる見込みがあります（直近28日・表示 %d 回・クリック %d 回・平均 %.1f 位）。"
+                     % (n["hyoji"], n["click"], n["juni"]))
             if kotoba:
                 riyuu += ("この記事が表示された検索の言葉：\n"
                           + "\n".join("  ・「%s」（表示 %d 回・平均 %.1f 位）" % (x["kotoba"], x["hyoji"], x["juni"])
@@ -3586,8 +3642,10 @@ def kakinaoshi_kouho(done: list[dict], kiroku: dict[str, str], pr_kiji: set[str]
                 riyuu += ("\n**題名の言葉で検索した人が知りたいこと（いくら・どこに頼む・自分でできるか・何を用意するか）に、"
                           "記事の最初の3ブロックで、はっきり答えてください。**")
             out.append({"art": a, "kubun": "②", "riyuu": riyuu,
-                        "midashi": "検索に出ているのに10位より下（直近28日・表示 %d 回・平均 %.1f 位）" % (n["hyoji"], n["juni"]),
-                        "kensaku": dict(n, kikan="%s〜%s" % (juni["start"], juni["end"]), kotoba=kotoba)})
+                        "midashi": "検索で上がる見込みが大きい（見込み %.1f・直近28日・表示 %d 回・クリック %d 回・平均 %.1f 位）"
+                                   % (agaru_mikomi(n), n["hyoji"], n["click"], n["juni"]),
+                        "kensaku": dict(n, kikan="%s〜%s" % (juni["start"], juni["end"]), kotoba=kotoba,
+                                        mikomi=agaru_mikomi(n))})
 
     # ③ 古い順（更新日の古いもの。書き直すと更新日が今日になるので、自然に後ろへ回る）
     mita = {x["art"]["slug"] for x in out}
@@ -3625,6 +3683,98 @@ def _hobo_zero(v):
     return v
 
 
+# ── 競合の調べ（10/19 中元さん「競合などを調査してリライトして行く」）──
+# 書き直す前に、狙う言葉で Google の上位の記事が何に答えているかを、Gemini の検索つきの呼び出しで調べる。
+# **AIに渡すのは「答えている疑問」と「記事の作り」だけ。**上位の記事の金額・数字・市の決まりは渡さない（作り話の元になる）。
+# 「上位に足りないこと」は、受けていない作業（基礎工事・荷物の保管など）が混ざるので、PRの説明にだけ出して人が読む
+# 「不用品回収」「回収業者」の疑問は、上位にいる回収業者の売り文句。渡すとAIがフッ軽の約束として書きやすい（10/19 の試し運転）
+_KYOGO_OTOSU = re.compile(r"[0-9０-９]|円|万|梱包|段ボール|ダンボール|不用品回収|回収業者")
+
+
+def kyogo_seiri(d: dict) -> dict:
+    """調べた答えを、渡してよい形にそろえる（疑問と作りは、数字・梱包材の話を落とす。足りないことは人が読む用にそのまま）"""
+    hoshii = lambda k, otosu: [str(x).strip() for x in (d.get(k) or []) if isinstance(x, (str, int, float))
+                               and str(x).strip() and not (otosu and _KYOGO_OTOSU.search(str(x)))][:10]
+    return {"gimon": hoshii("gimon", True), "tsukuri": hoshii("tsukuri", True), "ana": hoshii("ana", False)}
+
+
+def gen_kensaku(prompt: str) -> str:
+    """Google の検索つきで Gemini に聞く（競合の調べ用）。使えるモデルを順に試す"""
+    last = ""
+    for model in ("gemini-2.5-flash", "gemini-2.5-flash-lite"):
+        req = urllib.request.Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
+            data=json.dumps({"contents": [{"parts": [{"text": prompt}]}], "tools": [{"google_search": {}}],
+                             "generationConfig": {"temperature": 0.3}}).encode("utf-8"),
+            headers={"x-goog-api-key": KEY, "Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                payload = json.loads(r.read().decode("utf-8"))
+            text = "".join(p.get("text", "") for p in payload["candidates"][0]["content"]["parts"]).strip()
+            if text:
+                return text
+            last = "%s -> 応答にテキストなし" % model
+        except urllib.error.HTTPError as e:
+            last = "%s -> %s: %s" % (model, e.code, e.read().decode("utf-8", "replace")[:120])
+        except Exception as e:
+            last = "%s -> %s" % (model, e)
+    raise RuntimeError(last or "調べられませんでした")
+
+
+def kyogo_kotoba(sentaku: dict) -> str:
+    """競合を調べる言葉：その記事がいちばん表示された言葉 → 記事の検索の言葉の1つ目 → 題名"""
+    kotoba = ((sentaku.get("kensaku") or {}).get("kotoba")) or []
+    if kotoba:
+        return str(kotoba[0]["kotoba"])
+    kw = sentaku["art"].get("keywords") or []
+    if isinstance(kw, list) and kw and str(kw[0]).strip():
+        return str(kw[0]).strip()
+    return re.sub(r"【[^】]*】|｜.*$", "", str(sentaku["art"].get("title", ""))).strip()
+
+
+def kyogo_shirabe(kotoba: str) -> dict | None:
+    """「kotoba」で検索した上位の記事が、何に答えているか。取れなければ None（書き直しは止めない）"""
+    if not kotoba or not KEY:
+        return None
+    if (os.environ.get("FUKKARU_KAKINAOSHI_KYOGO") or "1").strip() == "0":    # 止める口（試しの比べ・困ったとき）
+        log("  ・競合の調べは止めてあります（FUKKARU_KAKINAOSHI_KYOGO=0）")
+        return None
+    prompt = (f"Googleで「{kotoba}」と検索したときの上位の記事（上から5〜8本）を調べてください。\n"
+              "次の形のJSONだけを返してください（前置きも```も要りません）：\n"
+              '{"gimon": ["上位の記事が答えている、検索した人の疑問（よく出るものから。1つ30字くらい）", …],\n'
+              ' "tsukuri": ["上位の記事の作り（料金の表・手順・自分でやる場合との比べ・よくある質問・写真 など）", …],\n'
+              ' "ana": ["検索した人が知りたいのに、上位の記事がどこもはっきり書いていないこと", …]}\n'
+              "それぞれ3〜8個。**金額・数字・市の決まりは書かない。**記事の名前・会社名・URLも書かない。")
+    try:
+        d = kyogo_seiri(extract_json(gen_kensaku(prompt)))
+    except Exception as e:
+        log("  ・競合を調べられませんでした（%s）。調べずに書き直します" % str(e)[:120])
+        return None
+    if not d["gimon"] and not d["tsukuri"]:
+        log("  ・競合の調べに、使える中身がありませんでした。調べずに書き直します")
+        return None
+    log("  ・競合を調べました（「%s」：疑問 %d・作り %d・足りないこと %d）"
+        % (kotoba, len(d["gimon"]), len(d["tsukuri"]), len(d["ana"])))
+    return dict(d, kotoba=kotoba)
+
+
+def _kyogo_shiji(sentaku: dict) -> str:
+    """書き直しの指示に入れる、競合の節（調べていなければ空）"""
+    k = sentaku.get("kyogo")
+    if not k or not (k.get("gimon") or k.get("tsukuri")):
+        return ""
+    li = lambda xs: "\n".join("  ・%s" % x for x in xs) or "  ・（なし）"
+    return (f"""
+**検索の上位の記事の調べ（「{k["kotoba"]}」で検索した上位の記事）**
+答えている疑問：
+{li(k.get("gimon") or [])}
+記事の作り：
+{li(k.get("tsukuri") or [])}
+この中で、**元の記事と会社の前提で答えられる疑問**には、この記事の中ではっきり答えてください（答えの中身は、元の記事と会社の前提にあることだけ）。
+会社の前提に無い作業・料金表に無い金額・市の決まりが要る疑問は、書きません。
+""")
+
+
 def kakinaoshi_prompt(mae: dict, sentaku: dict, ng: list[str] | None = None) -> str:
     """書き直しの指示。決まり（FACTS・RULES・VOICE・料金表）とやり直しの指示は、新しい記事と同じものを渡す"""
     moto = json.dumps(_hobo_zero({k: mae[k] for k in ("slug", "title", "metaDescription", "keywords", "category", "blocks")
@@ -3635,7 +3785,7 @@ def kakinaoshi_prompt(mae: dict, sentaku: dict, ng: list[str] | None = None) -> 
 
 **なぜ書き直すか：**
 {sentaku["riyuu"]}
-
+{_kyogo_shiji(sentaku)}
 **書き直しで守ること（ここがいちばん大事です）**
 ・**元の記事の事実を消さない。**料金・市の決まり・手順・注意・よくある質問の中身は、残すか、もっと分かりやすく書き直す。
   ただし、下の「守ること」2-2 に合わない書き方（ごみの処分・回収をフッ軽だけで請け負う書き方、
@@ -3766,6 +3916,15 @@ def kakinaoshi_setsumei(mae: dict, sentaku: dict, c: dict, naoshita: int, kaisu:
         s += ["", "### 検索の数字（②・%s）" % k["kikan"],
               "- 表示 %d 回・クリック %d 回・平均 %.1f 位" % (k["hyoji"], k["click"], k["juni"]),
               li("「%s」表示 %d 回・%.1f 位" % (x["kotoba"], x["hyoji"], x["juni"]) for x in k["kotoba"])]
+        if k.get("mikomi") is not None:
+            s.append("- 上がる見込み：%.1f（言葉ごとの表示×順位の重み。11〜20位がいちばん重い）" % k["mikomi"])
+    if sentaku.get("kyogo"):
+        k = sentaku["kyogo"]
+        s += ["", "### 競合の調べ（「%s」で検索した上位の記事・Gemini の検索つきで調べた）" % k["kotoba"],
+              "答えている疑問（AIに渡した）：", li(k.get("gimon") or []),
+              "記事の作り（AIに渡した）：", li(k.get("tsukuri") or []),
+              "上位に足りないこと（**AIには渡していない**。受けていない作業も混ざる。次の記事や書き直しの手がかりに）：",
+              li(k.get("ana") or [])]
     s += ["", "毎日の記事読みで、消えた事実が無いか・線を越えていないかを読んでから、マージします。"]
     return "\n".join(s) + "\n"
 
@@ -3828,6 +3987,8 @@ def kakinaoshi_kaku(sentaku: dict, done: list[dict]) -> tuple | None:
     rest = [a for a in done if a.get("slug") != slug]
     log("▶ 記事を1本書き直します（%s）：%s（%s）" % (sentaku["kubun"], mae.get("title", ""), slug))
     log("  ・理由：%s" % sentaku["midashi"])
+    if "kyogo" not in sentaku:            # やり直しのたびには調べない（1本につき1回）
+        sentaku["kyogo"] = kyogo_shirabe(kyogo_kotoba(sentaku))
     art, last_ng, naoshita, kaisu = None, None, 0, 0
     for attempt in range(1, ATTEMPTS + 1):
         kaisu = attempt

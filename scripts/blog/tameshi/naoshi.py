@@ -870,11 +870,49 @@ _k2 = [_kiji('fuji-ni-sukunai', '【富士市】A', '2026-08-05'), _kiji('fuji-n
        _kiji('fuji-untei', '【富士市】うんていの組み立て', '2026-06-01'),
        _kiji('fuji-shashin', '【富士市】G', '2026-06-02', extra=[{'type': 'photo', 'src': 'x.jpg'}])]
 _s = m.kakinaoshi_erabu(_k2, {}, set(), _juni)
-onaji('書き直し②：表示があって10位より下のうち、表示の多いもの（剪定は選ばない）', (_s['kubun'], _s['art']['slug']), ('②', 'fuji-ni-ooi'))
+onaji('書き直し②：言葉が取れないときは、記事の表示×順位の重みの半分（剪定は選ばない）', (_s['kubun'], _s['art']['slug']), ('②', 'fuji-ue'))
 _s = m.kakinaoshi_erabu(_k2, {}, set(), None)
 onaji('書き直し③：検索の数字が無ければ古い順（うんてい・人が写真を入れた記事・剪定・公開したばかりは選ばない）',
       (_s['kubun'], _s['art']['slug']), ('③', 'fuji-furui-mono'))
 m.kensaku_kotoba = _kotoba_mae
+
+# ②「上がる見込み」（10/19 中元さんの方針）：言葉ごとの表示×順位の重み。11〜20位がいちばん重く、1〜3位はほぼ0。
+# 言葉が伏せられた表示は、記事の平均の順位で半分だけ数える。社名で調べた表示は数えない。社名の記事（フッ軽とは）は選ばない
+_q = lambda k, h, j: {'kotoba': k, 'hyoji': h, 'juni': j}
+_juni3 = {'tok': '', 'start': '2026-09-18', 'end': '2026-10-15', 'page': {
+    '/blog/fuji-ue/': {'hyoji': 90, 'click': 0, 'juni': 6.0, 'kaisha': 0, 'kotoba': [_q('物置 移動 費用', 60, 6.0)]},
+    '/blog/fuji-ni-ooi/': {'hyoji': 40, 'click': 0, 'juni': 11.0, 'kaisha': 0, 'kotoba': [_q('草刈り 料金', 40, 11.0)]},
+    '/blog/fuji-top/': {'hyoji': 200, 'click': 30, 'juni': 2.0, 'kaisha': 0, 'kotoba': [_q('粗大ごみ', 200, 2.0)]},
+    '/blog/fuji-ni-sukunai/': {'hyoji': 9, 'click': 0, 'juni': 12.0, 'kaisha': 0, 'kotoba': []},
+    '/blog/fuji-kaisha/': {'hyoji': 500, 'click': 0, 'juni': 8.0, 'kaisha': 10, 'kotoba': [_q('便利屋', 5, 9.0)]},
+    '/blog/fuji-shamei-ooi/': {'hyoji': 100, 'click': 0, 'juni': 15.0, 'kaisha': 90, 'kotoba': [_q('家具 組み立て', 10, 15.0)]},
+}}
+onaji('見込み：言葉の表示×重み＋伏せられた表示の半分（60×0.7＋30×0.7×0.5）',
+      m.agaru_mikomi(_juni3['page']['/blog/fuji-ue/']), 52.5)
+onaji('見込み：1〜3位の記事は、表示が多くても軽い', m.agaru_mikomi(_juni3['page']['/blog/fuji-top/']), 20.0)
+onaji('見込み：社名で調べた表示は数えない（10×1.0 だけ）', m.agaru_mikomi(_juni3['page']['/blog/fuji-shamei-ooi/']), 10.0)
+onaji('見込み：数字が無いときは0', m.agaru_mikomi(None), 0.0)
+_k4 = [_kiji('fuji-ue', '【富士市】物置の移動', '2026-08-01'), _kiji('fuji-ni-ooi', '【富士市】草刈り', '2026-08-02'),
+       _kiji('fuji-top', '【富士市】粗大ごみ', '2026-08-03'), _kiji('fuji-ni-sukunai', '【富士市】A', '2026-07-01'),
+       _kiji('fuji-kaisha', 'フッ軽合同会社とは', '2026-08-04'), _kiji('fuji-shamei-ooi', '【富士市】家具', '2026-08-05')]
+m.kensaku_kotoba = lambda juni, slug: []
+_ks4 = m.kakinaoshi_kouho(_k4, {}, set(), _juni3)
+m.kensaku_kotoba = _kotoba_mae
+onaji('書き直し②：見込みの大きい順（社名の記事は②で選ばず③の古い順へ・見込み10未満は③へ）',
+      [(x['kubun'], x['art']['slug']) for x in _ks4],
+      [('②', 'fuji-ue'), ('②', 'fuji-ni-ooi'), ('②', 'fuji-top'), ('②', 'fuji-shamei-ooi'), ('③', 'fuji-ni-sukunai'), ('③', 'fuji-kaisha')])
+onaji('書き直し②：理由に、いちばん表示の多い言葉が入る', '物置 移動 費用' in _ks4[0]['riyuu'], True)
+
+# 競合の調べ：AIに渡すのは「疑問」と「作り」だけ。数字・梱包材の話は落とす。「足りないこと」はPRの説明だけ（人が読む）
+_ky = m.kyogo_seiri({'gimon': ['物置の移動にいくらかかるか', '中の荷物の梱包はどうするか', '費用相場は3万円か', '不用品回収の料金体系を知りたい', '回収業者に頼むメリットは'],
+                     'tsukuri': ['料金の表がある', 'よくある質問がある'], 'ana': ['距離で費用がどう変わるか']})
+onaji('競合の調べ：数字・梱包の話は渡さない', _ky['gimon'], ['物置の移動にいくらかかるか'])
+onaji('競合の調べ：足りないことは残す（PRの説明用）', _ky['ana'], ['距離で費用がどう変わるか'])
+_p3 = m.kakinaoshi_prompt(m.existing()[0], {'riyuu': '試し', 'kubun': '②', 'kyogo': dict(_ky, kotoba='物置 移動 費用')})
+kazoeru('書き直しの指示：競合の疑問は渡し、足りないことは渡さない',
+        [w for w in ('物置の移動にいくらかかるか', '料金の表がある') if w not in _p3] + (['距離で費用'] if '距離で費用' in _p3 else []))
+kazoeru('書き直しの指示：競合が無いときは、競合の節を出さない',
+        ['競合の節が出ている'] if '上位の記事' in m.kakinaoshi_prompt(m.existing()[0], {'riyuu': '試し', 'kubun': '③'}) else [])
 
 # 弁：書き直しは、自分と同じ住所・題名でも止めない。新しい記事のときは、今までどおり止める
 _moto = m.existing()[0]
