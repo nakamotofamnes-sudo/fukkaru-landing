@@ -3176,6 +3176,22 @@ _KATEI_EDA = re.compile(r"(?:ご家庭で|ご自身で|ご自分で|お客様が
 # 17. 引き取りに 8,000円〜 を付けた文のうち、物置でないもの（8,000円〜 の引き取りは「まだ使える物置」だけ。
 #     10/18：「まだ使える状態の二段ベッドであれば…買い取りまたは引き取りをいたします（サイズにより8,000円〜）」）
 _HIKITORI_8000 = re.compile(r"(?:引き取|引取)[^。]{0,40}8,000円|8,000円[^。]{0,20}(?:引き取|引取)")
+# 18. 2回目の試し運転で出た形（10/18。消えた文言の係が見つけた）。どれも元の記事にある文は見ない
+#   ・ほかの仕事のよくある質問（「まだ箱を開けていない家具の組み立ては…」が草刈りの記事に。VOICE の例文の写し）
+_HOKA_SHIGOTO_Q = re.compile(r"箱を開けていない|まだ箱|未開封")
+_KUMITATE_DAIMEI = re.compile(r"組立|組み立て|家具|ベッド|物置|うんてい|机|デスク|棚")   # 題名で見る（_KUMITATE_KIJI とは別もの）
+#   ・受けていない作業（除草剤の散布）
+_JOSOZAI = re.compile(r"除草剤[^。]{0,30}(?:提案|承|対応|散布(?:し|いた)|いたします|お任せ)")
+#   ・事実の欄に無い言い切り（経験豊富・人員・困りごと全般・仕上がりの約束・誰の報告か分からない話）
+_IIKIRI = re.compile(r"経験豊富|人員|スタッフ|困りごと全般|お困りごと全般|住まいに関する様々|中間業者を挟まない|報告されています|"
+                     r"(?:確実な|完璧な|きれいな)仕上がりを(?:お約束|保証)|仕上がりをお約束")
+#   ・その記事の仕事と関係のない草の持ち込み（高圧洗浄の記事に「作業で発生した刈った草や木の枝などは…持ち込みます」）
+_KUSA_HANASHI = re.compile(r"刈った草|刈り取った草|剪定した枝|木の枝")
+_KUSA_KIJI = re.compile(r"草|庭|伐採|剪定|木|空き家")
+#   ・ご自身の持ち込みに「処分費」（ご家庭の持ち込みは無料）
+_JIBUN_SHOBUNHI = re.compile(r"処分費[^。]{0,12}(?:ご自身|ご自分)|(?:ご自身|ご自分)[^。]{0,20}処分費")
+#   ・元の記事に無い「現地調査」の流れ（「見積もりは無料」と並ぶと、現地見積りの無料に読める）
+_GENCHI_CHOSA = re.compile(r"現地調査|現地での確認|現地確認|下見に伺")
 # 16. フッ軽が許可を持っていると読める文（10/18：「フッ軽は一般廃棄物の許可を持つ回収業者として…」。前からある弁も通していた）
 _JISHA_KYOKA = re.compile(r"(?:フッ軽|当社|弊社)(?:合同会社)?(?:は|が|では)[^。]{0,12}(?:一般廃棄物|産業廃棄物|収集運搬)[^。]{0,16}"
                           r"(?:許可を(?:持|取得|得)|許可業者|業者として)")
@@ -3243,8 +3259,8 @@ def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
                   "お客様の料金は料金表の額（軽トラック1車 8,000円〜 など）だけを書いてください" % t[0].strip()[:50])
     tsuika = lambda b: sum(1 for x in b if _TSUIKA.search(x) and not _TSUIKA_NAI.search(x))
     if tsuika(_bun(art)) > tsuika(moto):
-        ng.append("元の記事に無い「追加料金がかかる」文を足しています（%d か所）。金額は見積りの前に決まる話として、"
-                  "「広さ・量・場所の条件で変わります。写真を見てお伝えします」と書いてください" % (tsuika(_bun(art)) - tsuika(moto)))
+        ng.append("元の記事に無い「追加料金がかかる」文を足しています（%d か所）。金額が変わる理由は、"
+                  "「広さ・量・場所の条件で変わります。写真を見てお伝えします」の形で書いてください" % (tsuika(_bun(art)) - tsuika(moto)))
     # よくある質問の答え「はい、無料です」は、質問（「見積もりは無料ですか？」）と組で見る（10/18 に効きすぎた）
     faq_ok = {y for b in art.get("blocks") or [] if isinstance(b, dict) and b.get("type") == "faq"
               for qa in (b.get("items") if isinstance(b.get("items"), list) else []) if isinstance(qa, dict)
@@ -3284,6 +3300,28 @@ def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
     if jk:
         ng.append("フッ軽が廃棄物の許可を持っていると読める書き方です：%s。許可を持っているのは回収業者です"
                   "（「一般廃棄物の許可を持つ回収業者と、フッ軽が一緒に」の順で書く）" % jk[0].strip()[:50])
+    shin = [x for x in _bun(art) if x not in moto]
+    mt = str(mae.get("title", ""))
+    hq = [x for x in shin if mt and _HOKA_SHIGOTO_Q.search(x) and not _KUMITATE_DAIMEI.search(mt)]
+    if hq:
+        ng.append("この記事の仕事と関係のない、ほかの仕事のよくある質問です：%s。この記事の仕事の質問だけにしてください" % hq[0].strip()[:50])
+    jz = [x for x in shin if _JOSOZAI.search(x) and not re.search(r"ご自身|ご自分|自分で|ません", x)]
+    if jz:
+        ng.append("受けていない作業（除草剤の散布）を書いています：%s。料金表と会社の前提にある作業だけを書いてください" % jz[0].strip()[:50])
+    ik = [x for x in shin if _IIKIRI.search(x) and not re.search(r"ません|ない", x)]
+    if ik:
+        ng.append("会社の前提に無い言い切りです：%s。「経験豊富」「人員」「困りごと全般」「仕上がりのお約束」は書かず、"
+                  "「代表が最初から最後まで担当します」の形で書いてください" % ik[0].strip()[:50])
+    kh = [x for x in shin if mt and _KUSA_HANASHI.search(x) and not _KUSA_KIJI.search(mt)]
+    if kh:
+        ng.append("この記事の仕事と関係のない、草・枝の話です：%s。書かないでください" % kh[0].strip()[:50])
+    js = [x for x in shin if _JIBUN_SHOBUNHI.search(x)]
+    if js:
+        ng.append("ご自身で持ち込む場合に「処分費」と書いています：%s。ご家庭のごみをご自身で持ち込むときは、手数料はかかりません" % js[0].strip()[:50])
+    if not _GENCHI_CHOSA.search(json.dumps(mae, ensure_ascii=False)):
+        gc = [x for x in shin if _GENCHI_CHOSA.search(x) and not re.search(r"ません|有料|ではなく", x)]
+        if gc:
+            ng.append("元の記事に無い現地調査の流れを書いています：%s。お見積りは、LINEで写真を送っていただく形で書いてください" % gc[0].strip()[:50])
     h8 = [x for x in _bun(art) if _HIKITORI_8000.search(x) and "物置" not in x]
     if h8:
         ng.append("引き取りに 8,000円〜 を付けています：%s。8,000円〜 の引き取りは、まだ使える物置だけです"
@@ -3602,7 +3640,8 @@ def kakinaoshi_prompt(mae: dict, sentaku: dict, ng: list[str] | None = None) -> 
   出張費が無料の4市・支払い方法の1文・損保ジャパンの1文・代表が最初から最後まで担当・LINE割引）／
   料金が変わる理由は「広さ・量・場所の条件で変わります。写真を見てお伝えします」の形で／頼む流れ（連絡 → 写真 → 日程 → 作業 → 一緒に確かめてお支払い）
 ・**作らないもの**（元の記事にも会社の前提にも無いもの）：新しい数字（坪・メートル・時間・日数・人数・年数）／
-  「追加料金がかかる」場面（金額は見積りの前に決まる話として書く）／上の2つ以外の「無料」／料金に含まれる作業／
+  「追加料金がかかる」場面／上の2つ以外の「無料」／料金に含まれる作業（元の記事にあるものだけ）／現地調査・現地での見積りの流れ／
+  「経験豊富」「確実な仕上がりをお約束」「人員」「困りごと全般」のような言い切り／その記事の仕事と関係のない話（草刈りでない記事の草の持ち込みなど）／
   ごみのお預かり／梱包材・段ボールの話／市の決まり／お客様の声・「多くいただきます」／ほかの仕事のよくある質問／
   「別途料金」「回収業者と一緒に片付けるぶんの金額」
 ・同じことを繰り返して水増ししない
@@ -3652,19 +3691,30 @@ def kakinaoshi_chigai(mae: dict, ato: dict) -> dict:
             "midashi": [h2(mae), h2(ato)],
             "kingaku_kieta": sorted(km - ka), "kingaku_fueta": sorted(ka - km),
             "furui": [len(furui_katachi(mae)), len(furui_katachi(ato))],
-            "atarashii": kakinaoshi_atarashii(mae, ato)}
+            "atarashii": kakinaoshi_atarashii(mae, ato), "kieta": kakinaoshi_kieta(mae, ato)}
 
 
 # PRの説明に出す「元の記事に無かった文」のうち、人が読む所（お金・許認可・市・数字・約束）。
 # 10/18：機械の弁を全部通っても、作り話（30坪・追加料金・お預かり…）は残った。読む所を絞って出す（別の目の案）
+# 2回目の別の目で、取りこぼしが分かった言葉（お約束・確実・経験豊富・安心・人員・現地・ご納得・困りごと・除草剤…）を足した
 _YOMU_BUN = re.compile(r"円|無料|処分|回収|引き取|引取|預か|許可|業者|市|クリーンセンター|施設|予約|身分|保険|補償|保証|実績|"
-                       r"多く|必ず|追加|含ま|別途|お任せ|承|対応可能|一切")
+                       r"多く|必ず|追加|含ま|別途|お任せ|承|対応可能|一切|約束|確実|経験|安心|人員|現地|納得|困りごと|全般|様々|"
+                       r"除草|報告|当日|養生|決ま|できません|お受け|ご案内")
 
 
 def kakinaoshi_atarashii(mae: dict, ato: dict) -> list[str]:
+    """書き直しで足された文のうち、人が読む所（全部。PRの説明では先頭40に絞って「ほかに◯件」）"""
     moto = set(_bun(mae))
     return [x.strip()[:120] for x in _bun(ato) if x not in moto and len(x.strip()) > 4
-            and (_YOMU_BUN.search(x) or _KAZU_TANI.search(x))][:40]
+            and (_YOMU_BUN.search(x) or _KAZU_TANI.search(x))]
+
+
+def kakinaoshi_kieta(mae: dict, ato: dict) -> list[str]:
+    """元の記事にあって、書き直しで見当たらない文のうち、人が読む所（言い換えで消えただけのことも多い）。
+    10/18 の2回目：消えた事実（当日の知らせ・養生・できないものの細目・よくある質問の無料と8,000円〜）は、足された文の一覧には出ない"""
+    ima = set(_bun(ato))
+    return [x.strip()[:120] for x in _bun(mae) if x not in ima and len(x.strip()) > 4
+            and (_YOMU_BUN.search(x) or _KAZU_TANI.search(x))]
 
 
 def kakinaoshi_setsumei(mae: dict, sentaku: dict, c: dict, naoshita: int, kaisu: int) -> str:
@@ -3688,9 +3738,15 @@ def kakinaoshi_setsumei(mae: dict, sentaku: dict, c: dict, naoshita: int, kaisu:
          "- 増えた金額：%s" % ("、".join(c["kingaku_fueta"]) or "なし"),
          "", "### 説明文（検索結果に出る2〜3行）", "- 前：%s" % c["setsumei"][0], "- 後：%s" % c["setsumei"][1],
          "", "### 見出し（h2）", "- 前：", li(c["midashi"][0]), "- 後：", li(c["midashi"][1])]
-    s += ["", "### 元の記事に無かった文のうち、お金・許認可・市・数字・約束の文（%d）" % len(c.get("atarashii") or []),
-          "ここを、直す前の記事と事実の欄に照らして読む（機械の弁を通っても、作り話が残ることがある）",
-          li(c.get("atarashii") or [])]
+    for midashi, setsu, xs in (
+            ("元の記事に無かった文のうち、お金・許認可・市・数字・約束の文",
+             "ここを、直す前の記事と事実の欄に照らして読む（機械の弁を通っても、作り話が残ることがある）", c.get("atarashii") or []),
+            ("元の記事にあって、書き直しで見当たらない文（お金・許認可・市・数字・約束）",
+             "言い換えで形が変わっただけのことも多い。**中身（条件・約束・できる/できない・金額）が、書き直しのどこかに残っているか**を見る",
+             c.get("kieta") or [])):
+        s += ["", "### %s（%d）" % (midashi, len(xs)), setsu, li(xs[:40])]
+        if len(xs) > 40:
+            s.append("  - **ほかに %d 件**（記録のファイル scripts/blog/kakinaoshi/ に全部あります）" % (len(xs) - 40))
     if sentaku.get("furui"):
         s += ["", "### 残っていた古い書き方（①）", li(sentaku["furui"][:6])]
     if sentaku.get("kensaku"):
