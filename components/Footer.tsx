@@ -249,7 +249,17 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             お客さまがご本人の個人情報の照会・修正・削除などをご希望される場合には、ご本人であることを確認の上、対応させていただきます。
           </p>
 
-          <h4 className="font-semibold text-ink-900">5. お問い合わせ窓口</h4>
+          <h4 className="font-semibold text-ink-900">5. アクセス解析ツールについて</h4>
+          <p className="mb-4">
+            当サイトでは、サイトがどのように見られているかを知り、内容を良くするために、Google が提供するアクセス解析ツール「Google アナリティクス」を利用しています。
+            Google アナリティクスは、Cookie（クッキー）を使って、見られたページ・滞在した時間・どこから来られたかなどの情報を集めます。この情報に、お名前・ご住所・お電話番号などは含まれません。
+          </p>
+          <p className="mb-4">
+            Cookie は、お使いのブラウザの設定で無効にできます。また、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Google アナリティクス オプトアウト アドオン</a>を使うと、Google アナリティクスによる情報の収集を止められます。
+            Google による情報の扱いは、<a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a>をご覧ください。
+          </p>
+
+          <h4 className="font-semibold text-ink-900">6. お問い合わせ窓口</h4>
           <p>
             本ポリシーに関するお問い合わせは、公式LINE・お電話（0545-78-3704）・メールにてお願いいたします。
           </p>

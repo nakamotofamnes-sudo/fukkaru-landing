@@ -536,12 +536,25 @@ footer.site a:hover{color:#fff}
 @media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
 `;
 
+// Google アナリティクス（GA4）。トップ（index.html）と同じ測定ID・同じ書き方（2026-10-19）。
+// 記事のページに入っていなかったので、記事ごとの読まれ方が GA4 に1つも出ていなかった（pagePath は「/」だけ）
+const GA4_TAG = `<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z092NPG2MW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Z092NPG2MW');
+</script>`;
+
 function pageShell({ title, description, canonical, ogType, extraHead, bodyHtml, ogImage }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${GA4_TAG}
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
@@ -576,7 +589,7 @@ ${bodyHtml}
     <p>フッ軽合同会社（フッ軽／ふっかる）— 静岡県富士市の地域密着住まいレスキュー</p>
     <p>対応エリア：静岡県全域／山梨県全域／神奈川県海老名市以西</p>
     <p>新築・建て替え・リフォーム・外壁や屋根の塗装のご相談も承ります。お話を伺い、信頼できる会社におつなぎします。</p>
-    <p><a href="/">トップページ</a> ｜ <a href="/blog/">ブログ一覧</a> ｜ <a href="${LINE_URL}" target="_blank" rel="noopener">公式LINE</a></p>
+    <p><a href="/">トップページ</a> ｜ <a href="/blog/">ブログ一覧</a> ｜ <a href="${LINE_URL}" target="_blank" rel="noopener">公式LINE</a> ｜ <a href="/privacy/">プライバシーポリシー</a></p>
   </div>
 </footer>
 </div>
