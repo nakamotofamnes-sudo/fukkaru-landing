@@ -704,5 +704,190 @@ kazoeru('持ち込みの書き方：AIに渡す文に、10/7 の形が残って�
 kazoeru('持ち込みの書き方：AIに渡す文に、新しい形が入っている',
         [n for n, t in (('FACTS', m.FACTS), ('RULES', m.RULES)) if '迷ったらLINEでご相談' not in t])
 
+# ━━ 書き直し（kakinaoshi・2026-10-18）：どの記事を選ぶか・何を元に戻すか ━━
+# ①の目印（9/23 より前のごみの書き方）。効く文
+FURUI_NARU = [
+    'フッ軽合同会社では、一般廃棄物収集運搬業の許可を持っていないため、ご家庭から出る不用品の処分・回収は行っておりません。',
+    'ただし、一般廃棄物収集運搬業の許可はございませんので、ご家庭のゴミとしてお預かりして処分することは、お受けしていません。',
+    '土・ブロック・石などは、当社でお引き取り・処分することは、お受けしていません。',
+    '当社では、不用品の回収はできません。',
+    'フッ軽では、廃棄物の処分はいたしかねます。',
+    # 10/18 の試し運転で、書き直したあとに残ったのに、目印が拾わなかった文
+    'フッ軽合同会社では、一般廃棄物収集運搬業の許可を持っておりません。そのため、ご家庭から出る不用品の処分・回収は直接行えません。',
+    '当社では、ご家庭のごみの処分は承っておりません。',
+    '不用品の回収は受け付けておりません。',
+    'フッ軽合同会社では、ご家庭から出る一般廃棄物の収集運搬業の許可は取得しておりませんが、組立作業で出た梱包材などの運び出しはいたします。',
+]
+# 効きすぎない文（もう 9/23 の形・市やお客様や他社の話・お受けできないと決まっているもの）
+FURUI_NARANAI = [
+    '一方で、一般廃棄物となるお品物につきましては、フッ軽単独での回収・処分はいたしておりません。',
+    'ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。',
+    'ゴミとしてのお預かりは、一般廃棄物の許可を持つ回収業者と連携して対応しておりますので、お見積もり時にお伝えください。',
+    '液体・汚泥・汚物・医療にかかわるものは、お受けできません。',
+    '富士市では、事業所のごみの回収はしておりません。',
+    '集積所に出すと、粗大ごみの回収はできません。',
+    '家電4品目は、自治体では回収できません。',
+    'ご自身で処分できないときは、LINEでご相談ください。',
+    '許可を持たない業者に、処分を頼むことはできません。',
+    'まだ使える家具は、買い取りや引き取りができます。',
+    '「処分します」とは言えません、という業者もいます。',
+    # 梱包材の書き方は、中元さんのお返事待ち（返事待ちの3）。道具の RULES 2-3 も、まだこの形を例に出しているので、①にしない
+    '（※ごみとしてのお預かりは、お受けしていませんので、自治体での出し方をご案内します。）',
+    # 目印を広げたときに、当たらないか確かめた文（10/18）
+    '処分費用はかかりません。',
+    '処分に困ることはありません。',
+    'お客様が処分の手間を感じることはありません。',
+    '「処分します」とは言えません。',
+    '富士市では、粗大ごみの戸別回収は行っておりません。',
+    '伐採した木は、自分で処分しないといけませんか？',       # 質問（10/18 に目印を広げたら当たった）
+    '処分を頼めませんか、というご相談をいただきます。',
+]
+kazoeru('書き直し①：古い書き方を見つける', [s for s in FURUI_NARU if not m.furui_katachi({'blocks': [{'type': 'p', 'text': s}]})])
+kazoeru('書き直し①：古い書き方でない文は見つけない', [s for s in FURUI_NARANAI if m.furui_katachi({'blocks': [{'type': 'p', 'text': s}]})])
+kazoeru('書き直し①：検索の言葉の一覧は見ない', ['keywords'] if m.furui_katachi({'keywords': ['処分はできません'], 'blocks': []}) else [])
+
+# 書き直しだけの弁：お受けできないもの（液体・汚物など）を、回収業者と一緒に片付ける側に入れた文
+UKENAI_NARU = [
+    'それ以外で、自治体で出せないもの（例：家電4品目、液体類、汚物など）については、一般廃棄物の許可を持つ回収業者と一緒に片付ける形となります。',
+    '塗料などの液体も、許可を持つ回収業者と一緒に片付けます。',
+    '注射器などの医療系のごみも、回収業者と一緒に片付けます。',
+]
+UKENAI_NARANAI = [
+    '液体・汚泥・汚物・医療にかかわるもの以外は、一般廃棄物の許可を持つ回収業者と一緒に片付けます。',
+    '液体・汚泥・汚物・医療にかかわるものはお受けできませんが、それ以外は回収業者と一緒に片付けます。',
+    '液体や汚物を除き、許可を持つ回収業者と一緒に片付けます。',
+    'ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。液体・汚泥・汚物・医療にかかわるものは、お受けできません。',
+    '介護用・医療用のベッドの解体で出た部材は、許可を持つ回収業者と一緒に片付けます。',
+    '液体洗剤や塗料は、中身を使い切ってから自治体の決まりで出してください。',
+]
+kazoeru('書き直しの弁：液体・汚物を回収業者と片付けると書いた文で止める', [s for s in UKENAI_NARU if not m.ukenai_katazuke({'blocks': [{'type': 'p', 'text': s}]})])
+kazoeru('書き直しの弁：正しい書き方では止めない', [s for s in UKENAI_NARANAI if m.ukenai_katazuke({'blocks': [{'type': 'p', 'text': s}]})])
+JISHA_NARU = [
+    '草刈りだけでなく、物置の組み立て、家具の移動、不用品処分など、庭まわり以外の困りごともまとめて依頼できる。',
+    '刈った草・木の持ち込み（フッ軽が富士市で処分する場合）',
+    'フッ軽が引き取って処分する場合は、軽トラック1車あたり8,000円〜の料金となります。',
+    '当社では、古い家具の処分も承ります。',
+    '草刈り作業で出た草は、フッ軽合同会社が事業として回収し、富士市新環境クリーンセンターへ持ち込みます。',   # 10/18 試し運転
+    'フッ軽が不用品を回収いたします。',
+]
+JISHA_NARANAI = [
+    '当社でお引き取り・処分することは、お受けしていません。',
+    'フッ軽が持ち込む場合は、軽トラック1車 8,000円〜です。',
+    'ご自身で処分する場合は、自治体の決まりに沿って出してください。',
+    'フッ軽は、処分ではなく、許可を持つ回収業者と一緒に片付けます。',
+    '不用品処分の方法は、自治体によって違います。',
+    '当社では、ご自身で処分する場合の出し方もご案内します。',
+    'フッ軽では、お客様が処分するときの出し方を、自治体の決まりに沿ってご案内します。',
+    'フッ軽は、不用品を回収しません。許可を持つ回収業者と一緒に片付けます。',
+    '回収業者の中には、許可を持たない業者もいます。',
+]
+kazoeru('書き直しの弁：フッ軽が処分すると読める文で止める', [s for s in JISHA_NARU if not m.jisha_shobun({'blocks': [{'type': 'table', 'headers': ['a'], 'rows': [[s]]}]})])
+kazoeru('書き直しの弁：打ち消し・持ち込む・説明の文では止めない', [s for s in JISHA_NARANAI if m.jisha_shobun({'blocks': [{'type': 'p', 'text': s}]})])
+_ukenai_mae = {'blocks': [{'type': 'note', 'text': '液体・汚泥・汚物・医療にかかわるものは、お受けできません。'}]}
+onaji('書き直しの弁：「お受けできない」の一文が消えたら止める', m.ukenai_kieta({'blocks': [{'type': 'p', 'text': 'ほかの話。'}]}, _ukenai_mae), True)
+onaji('書き直しの弁：言い方を変えて残っていれば止めない', m.ukenai_kieta({'blocks': [{'type': 'p', 'text': '汚物や医療にかかわるものは、お受けしておりません。'}]}, _ukenai_mae), False)
+onaji('書き直しの弁：元が「お受けしていません」（9/23 より前の言い方）でも、消えたら止める',
+      m.ukenai_kieta({'blocks': [{'type': 'p', 'text': 'ほかの話。'}]}, {'blocks': [{'type': 'note', 'text': '汚物・液体・医療機器などは、当社でお引き取り・処分することは、お受けしていません。'}]}), True)
+onaji('書き直しの弁：元に無ければ求めない', m.ukenai_kieta({'blocks': []}, {'blocks': [{'type': 'p', 'text': '液体洗剤で洗います。'}]}), False)
+onaji('書き直し：「ほぼ0円」を言葉にする', m._hobo_zero({'slug': 'a-0', 'blocks': [{'type': 'table', 'rows': [['道具代だけ（持っていればほぼ0円）']]}]}),
+      {'slug': 'a-0', 'blocks': [{'type': 'table', 'rows': [['道具代だけ（持っていればほとんどかからない）']]}]})
+onaji('書き直し：ほかの金額には触らない', m._hobo_zero({'blocks': [{'type': 'p', 'text': '10,000円〜・軽トラック1車 8,000円〜'}]}),
+      {'blocks': [{'type': 'p', 'text': '10,000円〜・軽トラック1車 8,000円〜'}]})
+_mae2 = {'blocks': [{'type': 'p', 'text': 'あ' * 1000}]}
+_naga = 'あ' * 1000
+kazoeru('書き直しの弁：現地の見積りを無料と書いた文で止める', [w for w in (
+    'もちろん、現地での正式なお見積もりも無料で行っておりますので、ご都合の良い方法をお選びください。',
+    '現地調査・正式なお見積り（無料）を行います。', '無料で現地調査に伺います。')
+    if not m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _naga + w}]}, _mae2)])
+kazoeru('書き直しの弁：無料と書いてよいものでは止めない', [w for w in (
+    'LINEで写真を送っていただくお見積りは無料です。', '富士市・富士宮市・静岡市・沼津市は、出張費が無料です。',
+    '現地でのお見積りは、写真で足りないときだけ伺います。', '現地調査は無料ではありません。',
+    'お客様のご都合の良い日時で、現地見積もり（富士市・富士宮市・静岡市・沼津市は出張費無料）にお伺いすることも可能です。',
+    '富士宮市など、一部エリアでは出張費無料で現地見積もりも可能です。')
+    if m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _naga + w}]}, _mae2)])
+kazoeru('書き直しの弁：短くなった・古い書き方・液体の3つで止める', [w for w, a in (
+    ('短い', {'blocks': [{'type': 'p', 'text': 'あ' * 700}]}),
+    ('古い', {'blocks': [{'type': 'p', 'text': 'あ' * 1000 + '当社では不用品の回収はできません。'}]}),
+    ('液体', {'blocks': [{'type': 'p', 'text': 'あ' * 1000 + '液体も回収業者と一緒に片付けます。'}]})) if not m.kakinaoshi_ng(a, _mae2)])
+kazoeru('書き直しの弁：ふつうの書き直しは止めない', m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': 'あ' * 900}]}, _mae2))
+
+onaji('書き直し：富士市の記事', m.fuji_shi_kiji({'title': '【富士市】物置の組み立て', 'metaDescription': '富士市で'}), True)
+onaji('書き直し：富士宮市の記事は富士市と見ない', m.fuji_shi_kiji({'title': '【富士宮市】物置の組み立て', 'metaDescription': ''}), False)
+onaji('書き直し：ほかの市が並ぶ記事は富士市と見ない', m.fuji_shi_kiji({'title': '富士市・沼津市の草刈り', 'metaDescription': ''}), False)
+
+_mae = {'slug': 'fuji-a', 'title': '元の題名', 'category': '物置', 'publishDate': '2026-09-01', 'updatedDate': '2026-09-01',
+        'ogImage': '/blog/fuji-a.jpg', 'heroImage': '/blog/fuji-a-bg.jpg', 'metaDescription': '前', 'blocks': []}
+_ato = {'slug': 'fuji-b', 'title': '新しい題名', 'category': '庭まわり', 'publishDate': '2026-10-18', 'metaDescription': '後', 'blocks': []}
+m._kotei(_ato, _mae)
+onaji('書き直し：住所・題名・分類・公開日・画像を元に戻す',
+      {k: _ato.get(k) for k in ('slug', 'title', 'category', 'publishDate', 'ogImage', 'heroImage')},
+      {k: _mae[k] for k in ('slug', 'title', 'category', 'publishDate', 'ogImage', 'heroImage')})
+onaji('書き直し：説明文は書き直したまま', _ato['metaDescription'], '後')
+
+onaji('書き直し：PRの枝から住所を取る', (m._KAKINAOSHI_EDA_SLUG.match('blog/kakinaoshi-20261018-1300-fuji-monooki-a') or [None, None])[1], 'fuji-monooki-a')
+onaji('書き直し：新しい記事の枝は拾わない', m._KAKINAOSHI_EDA_SLUG.match('blog/auto-20261018-100000'), None)
+onaji('書き直し：枝の名前の作りと、取り方が合っている',
+      (m._KAKINAOSHI_EDA_SLUG.match('%s%s-%s' % (m.KAKINAOSHI_EDA, '20261018-1300', 'fuji-x')) or [None, None])[1], 'fuji-x')
+
+
+def _kiji(slug, title, pub, upd=None, text='ふつうの段落です。', extra=None, meta=''):
+    b = [{'type': 'p', 'text': text}] + (extra or [])
+    return {'slug': slug, 'title': title, 'metaDescription': meta, 'publishDate': pub, 'updatedDate': upd or pub, 'blocks': b}
+
+
+_FURUI = 'フッ軽合同会社では、一般廃棄物収集運搬業の許可を持っていないため、不用品の処分・回収は行っておりません。'
+_k = [
+    _kiji('fuji-furui-ato', '【富士市】あとの古い書き方', '2026-09-20', text=_FURUI),
+    _kiji('fuji-furui-saki', '【富士市】さきの古い書き方', '2026-09-10', text=_FURUI),
+    _kiji('fujinomiya-furui', '【富士宮市】古い書き方', '2026-08-01', text=_FURUI),
+    _kiji('fuji-kaitai-mono-dashikata-benriya', '【富士市】お返事待ち', '2026-08-01', text=_FURUI),
+    _kiji('fuji-sentei-furui', '【富士市】木の剪定の古い書き方', '2026-08-02', text=_FURUI),
+    _kiji('fuji-konpo-furui', '【富士市】梱包材の古い書き方', '2026-07-01',
+          text='フッ軽では、一般廃棄物の収集運搬業の許可は取得しておりませんが、組立作業で出た梱包材などの運び出しはいたします。'),
+]
+_s = m.kakinaoshi_erabu(_k, {}, set(), None)
+onaji('書き直し①：富士市の古い書き方のうち、更新の古いもの（剪定でも①は選ぶ）', (_s['kubun'], _s['art']['slug']), ('①', 'fuji-sentei-furui'))
+_s = m.kakinaoshi_erabu(_k, {'fuji-sentei-furui': '2026-10-10'}, {'fuji-furui-saki'}, None)
+onaji('書き直し①：書き直して60日たたない記事・PRで止めている記事は選ばない', (_s['kubun'], _s['art']['slug']), ('①', 'fuji-furui-ato'))
+_s = m.kakinaoshi_erabu(_k[2:4] + _k[5:], {}, set(), None)
+onaji('書き直し①：富士市以外・梱包材の話の古い書き方と、お返事待ちの記事は、③にも回さない', _s, None)
+
+_juni = {'tok': '', 'start': '2026-09-18', 'end': '2026-10-15', 'page': {
+    '/blog/fuji-ni-sukunai/': {'hyoji': 9, 'click': 0, 'juni': 12.0},
+    '/blog/fuji-ni-ooi/': {'hyoji': 40, 'click': 0, 'juni': 11.0},
+    '/blog/fuji-ue/': {'hyoji': 90, 'click': 3, 'juni': 6.0},
+    '/blog/fuji-hyoji-sukunai/': {'hyoji': 3, 'click': 0, 'juni': 30.0},
+    '/blog/fuji-sentei-ni/': {'hyoji': 99, 'click': 0, 'juni': 20.0},
+}}
+_kotoba_mae = m.kensaku_kotoba
+m.kensaku_kotoba = lambda juni, slug: []          # 試しでは、検索の言葉を取りに行かない
+_k2 = [_kiji('fuji-ni-sukunai', '【富士市】A', '2026-08-05'), _kiji('fuji-ni-ooi', '【富士市】B', '2026-09-01'),
+       _kiji('fuji-ue', '【富士市】C', '2026-08-01'), _kiji('fuji-hyoji-sukunai', '【富士市】D', '2026-08-02'),
+       _kiji('fuji-sentei-ni', '【富士市】木の剪定', '2026-07-01'),
+       _kiji('fuji-furui-mono', '【富士市】E', '2026-07-15'),
+       _kiji('fuji-wakai', '【富士市】F', (m.date.today() - m.timedelta(days=3)).isoformat()),
+       _kiji('fuji-untei', '【富士市】うんていの組み立て', '2026-06-01'),
+       _kiji('fuji-shashin', '【富士市】G', '2026-06-02', extra=[{'type': 'photo', 'src': 'x.jpg'}])]
+_s = m.kakinaoshi_erabu(_k2, {}, set(), _juni)
+onaji('書き直し②：表示があって10位より下のうち、表示の多いもの（剪定は選ばない）', (_s['kubun'], _s['art']['slug']), ('②', 'fuji-ni-ooi'))
+_s = m.kakinaoshi_erabu(_k2, {}, set(), None)
+onaji('書き直し③：検索の数字が無ければ古い順（うんてい・人が写真を入れた記事・剪定・公開したばかりは選ばない）',
+      (_s['kubun'], _s['art']['slug']), ('③', 'fuji-furui-mono'))
+m.kensaku_kotoba = _kotoba_mae
+
+# 弁：書き直しは、自分と同じ住所・題名でも止めない。新しい記事のときは、今までどおり止める
+_moto = m.existing()[0]
+_rest = [a for a in m.existing() if a['slug'] != _moto['slug']]
+_ng_k = m.check(dict(_moto), _rest, 1, m.ATTEMPTS, kakinaoshi=True)
+_ng_a = m.check(dict(_moto), _rest, 1, m.ATTEMPTS)
+kazoeru('書き直しの弁：同じ名前のファイル・題名のかぶりで止めない', [x for x in _ng_k if '同じ名前のファイル' in x or 'タイトルの型' in x])
+kazoeru('書き直しの弁：新しい記事のときは、同じ名前のファイルで今までどおり止める', [] if any('同じ名前のファイル' in x for x in _ng_a) else ['止まらなかった'])
+
+_p = m.kakinaoshi_prompt(_moto, {'riyuu': '試しの理由', 'kubun': '③'}, ['試しのやり直し'])
+kazoeru('書き直しの指示：新しい記事と同じ決まりと、書き直しの3つの約束が入っている',
+        [w for w in (m.FACTS, m.RULES, m.VOICE, m.price_table(), '元の記事の事実を消さない', 'HPに無いサービスを足さない',
+                     'サイトに載っている料金」にあるものだけ', '題名（title）・slug・category は、元のまま', '試しのやり直し', _moto['slug'])
+         if w not in _p])
+
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)

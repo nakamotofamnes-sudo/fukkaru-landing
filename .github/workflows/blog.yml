@@ -1,4 +1,4 @@
-name: ブログを書く（1日2本）
+name: ブログを書く（1日2本＋書き直し1本）
 
 # Mac が眠っていても記事が出るようにするための入口（2026-09-02）。
 #
@@ -16,16 +16,25 @@ on:
     #       やり直しの弁（短すぎ・裏付けのない数字）も1本ずつ働かせたい。
     - cron: '0 1 * * *'      # 毎日 10:00（日本時間。UTCで書く決まり）
     - cron: '0 7 * * *'      # 毎日 16:00（日本時間）
+    # **書き直し（2026-10-18〜）。**公開済みの記事を1本、AIで書き直してPRを作る。
+    # 中元さん 10/13「２本残して書き直しを足すにしてください」＝新しい記事の2本はそのまま、13時に足す（10時・16時と重ならない所）。
+    # **はじめの1週間は自動でマージしない**（下の FUKKARU_KAKINAOSHI_AUTOMERGE）。この1行を消せば、書き直しだけ止まる
+    - cron: '0 4 * * *'      # 毎日 13:00（日本時間）
   workflow_dispatch:
     inputs:
       mode:
         description: '試し運転（dry）なら公開しません。live で本当に出します'
         type: choice
         # ⚠ ここに on と書くと YAML が「真」と読んでしまい、選択肢として使えない
-        options: [dry, live]
+        # kakinaoshi-dry … 書き直しの試し（公開しない）／kakinaoshi … 書き直してPRを作る
+        options: [dry, live, kakinaoshi-dry, kakinaoshi]
         default: dry
       target:
         description: '狙いを1回だけ指定（例 物置組立:富士市）。空なら狙い.txt の順番どおり'
+        type: string
+        default: ''
+      kiji:
+        description: '書き直しで、記事を1本だけ指定（住所。例 fuji-monooki-kumitate-junbi-benriya）。空なら選ぶ順どおり'
         type: string
         default: ''
 
@@ -70,7 +79,15 @@ jobs:
           # index は言語の違い。0 が日本語。太字は別ファイルにある
           FUKKARU_FONT: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
           FUKKARU_FONT_BOLD: /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
-          FUKKARU_BLOG_MODE: ${{ inputs.mode == 'dry' && 'dry' || 'on' }}
+          # 13時の定時は書き直し。手で動かすときは mode の選択どおり。それ以外（10時・16時・live）は新しい記事
+          FUKKARU_BLOG_MODE: ${{ github.event.schedule == '0 4 * * *' && 'kakinaoshi' || (inputs.mode == 'dry' && 'dry') || (inputs.mode == 'kakinaoshi' && 'kakinaoshi') || (inputs.mode == 'kakinaoshi-dry' && 'kakinaoshi-dry') || 'on' }}
+          FUKKARU_KAKINAOSHI_SLUG: ${{ inputs.kiji }}
+          # **書き直しは、はじめの1週間は自動でマージしない**（毎日の記事読みで読んでから、人がマージする）。
+          # よければ '1' にすると、新しい記事と同じく自動で公開する
+          FUKKARU_KAKINAOSHI_AUTOMERGE: '0'
+          # 書き直しの選ぶ順②（検索で10位より下）に使う、サーチコンソールを読むだけの鍵。
+          # 金庫に入っていなければ空になり、②を飛ばして③（古い順）へ進む
+          GSC_SA_JSON: ${{ secrets.GSC_SA_JSON }}
           FUKKARU_BLOG_FORCE: '1'
           FUKKARU_BLOG_TARGET: ${{ inputs.target }}
         run: python3 scripts/blog/blog.py
