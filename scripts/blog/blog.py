@@ -2862,7 +2862,8 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1,
     body = "".join((b.get("text") or "") for b in blocks if isinstance(b, dict))
     # 最後の1回だけ、下限を1,000字まで下げる（同じ理由。数字・許認可・名前の弁は下げない）
     saitei = MIN_BODY if attempt < last else 1000
-    if len(body) < saitei:
+    # 書き直しの字数の下限は kakinaoshi_ng が決める（元の記事の長さに合わせる。2026-10-18）
+    if len(body) < saitei and not kakinaoshi:
         ng.append("本文が短すぎます（%d字／最低%d字）" % (len(body), saitei))
 
     whole = json.dumps(art, ensure_ascii=False)
@@ -3223,6 +3224,12 @@ def atarashii_kazu(art: dict, mae: dict) -> list[str]:
     return sorted(_kazu(json.dumps({k: v for k, v in art.items() if k != "keywords"}, ensure_ascii=False)) - kijun)
 
 
+def kakinaoshi_saitei(mae: dict) -> int:
+    """書き直しの本文の下限。新しい記事の1,500字を、元が短い記事（表が主・400〜600字）に当てると、
+    3倍に膨らませるために作り話を足し続けた（10/18 の試し運転17本・別の目2つ）。元の2倍まで（1,000〜1,500字の間）にする"""
+    return min(MIN_BODY, max(1000, _honbun(mae) * 2))
+
+
 def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
     """書き直しにだけかける弁（check() のあとに）。**新しい記事には、かけていない**"""
     ng = []
@@ -3230,6 +3237,9 @@ def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
     if _honbun(art) < _honbun(mae) * KAKINAOSHI_NOBI:
         ng.append("本文が元の記事より短くなりました（%d字／元は%d字）。元の記事の事実を消さずに書き直してください"
                   % (_honbun(art), _honbun(mae)))
+    elif _honbun(art) < kakinaoshi_saitei(mae):
+        ng.append("本文が短すぎます（%d字／最低%d字）。元の記事の中身をくわしく言い直して足してください（作り話で水増ししない）"
+                  % (_honbun(art), kakinaoshi_saitei(mae)))
     f = furui_katachi(art)
     if f:
         ng.append("9/23 より前のごみの書き方が残っています：%s。守ること 2-2 の形（まだ使えるものは引き取る／"
@@ -3634,7 +3644,7 @@ def kakinaoshi_prompt(mae: dict, sentaku: dict, ng: list[str] | None = None) -> 
 ・**題名（title）・slug・category は、元のまま変えない。**同じ文字をそのまま返す
 ・説明文（metaDescription）・検索の言葉（keywords）・見出し・本文・表・よくある質問は、書き直してよい。
   話の順番は、検索した人が知りたい順（結論 → 料金の目安 → 手順 → 注意 → よくある質問）に並べ替えてよい
-・**本文（lead・p・見出し・注記の文字。表と箇条書きは数えません）は、{max(1600, _honbun(mae))}〜{max(2600, _honbun(mae) + 600)}字にする。**
+・**本文（lead・p・見出し・注記の文字。表と箇条書きは数えません）は、{kakinaoshi_saitei(mae) + 200}〜{max(2400, _honbun(mae) + 600)}字にする。**
   元の記事は {_honbun(mae)}字です。足りないぶんは、**次のものだけで**足す：
   元の記事の中身を、くわしく分かりやすく言い直す／会社の前提にあること（その仕事の料金表の額・LINEで写真を送るお見積りは無料・
   出張費が無料の4市・支払い方法の1文・損保ジャパンの1文・代表が最初から最後まで担当・LINE割引）／

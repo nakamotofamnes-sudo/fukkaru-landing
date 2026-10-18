@@ -793,8 +793,9 @@ onaji('書き直し：「ほぼ0円」を言葉にする', m._hobo_zero({'slug':
       {'slug': 'a-0', 'blocks': [{'type': 'table', 'rows': [['道具代だけ（持っていればほとんどかからない）']]}]})
 onaji('書き直し：ほかの金額には触らない', m._hobo_zero({'blocks': [{'type': 'p', 'text': '10,000円〜・軽トラック1車 8,000円〜'}]}),
       {'blocks': [{'type': 'p', 'text': '10,000円〜・軽トラック1車 8,000円〜'}]})
-_mae2 = {'blocks': [{'type': 'p', 'text': 'あ' * 1000}]}
-_naga = 'あ' * 1000
+# 元は600字（書き直しの下限は1,200字）、書き直しは1,300字＋試す文（長さの弁に当たらない土台）
+_mae2 = {'blocks': [{'type': 'p', 'text': 'あ' * 600}]}
+_naga = 'あ' * 1300
 kazoeru('書き直しの弁：現地の見積りを無料と書いた文で止める', [w for w in (
     'もちろん、現地での正式なお見積もりも無料で行っておりますので、ご都合の良い方法をお選びください。',
     '現地調査・正式なお見積り（無料）を行います。', '無料で現地調査に伺います。')
@@ -807,9 +808,9 @@ kazoeru('書き直しの弁：無料と書いてよいものでは止めない',
     if m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _naga + w}]}, _mae2)])
 kazoeru('書き直しの弁：短くなった・古い書き方・液体の3つで止める', [w for w, a in (
     ('短い', {'blocks': [{'type': 'p', 'text': 'あ' * 700}]}),
-    ('古い', {'blocks': [{'type': 'p', 'text': 'あ' * 1000 + '当社では不用品の回収はできません。'}]}),
-    ('液体', {'blocks': [{'type': 'p', 'text': 'あ' * 1000 + '液体も回収業者と一緒に片付けます。'}]})) if not m.kakinaoshi_ng(a, _mae2)])
-kazoeru('書き直しの弁：ふつうの書き直しは止めない', m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': 'あ' * 900}]}, _mae2))
+    ('古い', {'blocks': [{'type': 'p', 'text': _naga + '当社では不用品の回収はできません。'}]}),
+    ('液体', {'blocks': [{'type': 'p', 'text': _naga + '液体も回収業者と一緒に片付けます。'}]})) if not m.kakinaoshi_ng(a, _mae2)])
+kazoeru('書き直しの弁：ふつうの書き直しは止めない', m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _naga}]}, _mae2))
 
 onaji('書き直し：富士市の記事', m.fuji_shi_kiji({'title': '【富士市】物置の組み立て', 'metaDescription': '富士市で'}), True)
 onaji('書き直し：富士宮市の記事は富士市と見ない', m.fuji_shi_kiji({'title': '【富士宮市】物置の組み立て', 'metaDescription': ''}), False)
@@ -890,13 +891,14 @@ kazoeru('書き直しの指示：新しい記事と同じ決まりと、書き�
          if w not in _p])
 
 # ━━ 書き直しだけの弁（10/18 の2回目：別の目2つが見つけた形）━━
-_pad = 'あ' * 1200
+_pad = 'あ' * 1600          # 書き直し（字数の弁に当たらない長さ）
+_pad_mae = 'あ' * 700       # 元の記事（書き直しの下限は1,400字）
 
 
 def _kn(bun, title=''):
     """元の記事（長さだけ）に1文足した書き直しに、書き直しだけの弁をかける"""
     return m.kakinaoshi_ng({'title': title, 'blocks': [{'type': 'p', 'text': _pad}, {'type': 'p', 'text': bun}]},
-                           {'title': title, 'blocks': [{'type': 'p', 'text': _pad}]})
+                           {'title': title, 'blocks': [{'type': 'p', 'text': _pad_mae}]})
 
 
 KN_TOMERU = [   # 試し運転で出た文と、別の目（出す前の見張り）が当てた悪い文
@@ -981,7 +983,7 @@ kazoeru('書き直しの弁（2回目）：元の記事にある数字は止め�
 onaji('書き直し：PRの枝から作った日と住所を取る', m._KAKINAOSHI_EDA_HI.match('blog/kakinaoshi-20261018-1300-fuji-a').groups(),
       ('20261018', 'fuji-a'))
 _faq = lambda q, a: m.kakinaoshi_ng({'blocks': [{'type': 'p', 'text': _pad}, {'type': 'faq', 'items': [{'q': q, 'a': a}]}]},
-                                     {'blocks': [{'type': 'p', 'text': _pad}]})
+                                     {'blocks': [{'type': 'p', 'text': _pad_mae}]})
 kazoeru('書き直しの弁（2回目）：「見積もりは無料ですか？」への「はい、無料です。」は止めない', _faq('見積もりは無料ですか？', 'はい、無料です。'))
 kazoeru('書き直しの弁（2回目）：「現地まで来てもらえますか？」への「はい、無料です。」は止める',
         [] if _faq('現地まで無料で来てもらえますか？', 'はい、無料です。') else ['止まらなかった'])
@@ -1012,6 +1014,11 @@ kazoeru('書き直しの指示：AIが写した「見積りの前に決まる」
 _ck = m.kakinaoshi_chigai({'blocks': [{'type': 'p', 'text': '当日に状況が大きく違ったときは、作業の前にお伝えします。周りを養生してから洗います。'}]},
                           {'blocks': [{'type': 'p', 'text': '丁寧に洗います。'}]})
 onaji('書き直し：PRの説明に、元にあって消えた文を出す', len(_ck['kieta']), 2)
+onaji('書き直しの字数の下限：元が短い記事は元の2倍（1,000〜1,500字の間）',
+      [m.kakinaoshi_saitei({'blocks': [{'type': 'p', 'text': 'あ' * n}]}) for n in (300, 500, 700, 2000)], [1000, 1000, 1400, 1500])
+kazoeru('書き直しの字数：新しい記事の弁（1,500字）は書き直しにはかけず、kakinaoshi_ng がかける',
+        [x for x in m.check({'slug': 'x', 'title': 't', 'metaDescription': 'm', 'keywords': ['k'], 'category': 'c',
+                             'blocks': [{'type': 'p', 'text': 'あ' * 1100}]}, [], 1, 4, kakinaoshi=True) if '本文が短すぎ' in x])
 _k3 = [_kiji('fuji-konpo', '【富士市】家具', '2026-06-01', text='組み立てで出た段ボールは運び出します。'),
        _kiji('fuji-furui-2', '【富士市】古い書き方2', '2026-09-01', text=_FURUI),
        _kiji('fuji-san-1', '【富士市】H', '2026-06-10'), _kiji('fuji-san-2', '【富士市】I', '2026-06-20')]
