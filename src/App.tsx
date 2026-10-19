@@ -14,6 +14,7 @@ import Footer from '../components/Footer';
 import StickyCallBar from '../components/StickyCallBar';
 import Reservation from '../components/Reservation';
 import Partners from '../components/Partners';
+import RegularCareIntro from '../components/RegularCareIntro';
 import CouponSlider from '../components/CouponSlider';
 import YouTubeVideos from '../components/YouTubeVideos';
 import BlogTeaser from '../components/BlogTeaser';
@@ -278,6 +279,7 @@ const App: React.FC = () => {
           この行のコメントを外せば元に戻ります。 */}
       {/* <Subscription /> */}
       <Partners />
+      <RegularCareIntro />
       <BlogTeaser />
       <Contact />
       <StickyCallBar />
