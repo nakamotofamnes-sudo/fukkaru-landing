@@ -2423,35 +2423,55 @@ def kabe_naosu(art: dict, blocks: list) -> tuple[list, int]:
 
 # ── 定期の見回り・巡回清掃の記事と、空き家の税の書き方（2026-10-20）──
 # 中元さん「空き家や管理、大家、などを狙ったキーワード戦略も増やしていってください」で、狙いに定期の見回り・巡回清掃の行を足した。
-# 事実の欄に「何倍とは書かない」「定期の中身は3つの説明だけ」と書いても、本物のAIの試し運転6本で、AIは次を書いた：
+# 事実の欄に「何倍とは書かない」「定期の中身は3つの説明だけ」と書いても、本物のAIの試し運転12本で、AIは次を書いた：
 #   ・「固定資産税が最大6倍になるケースも」「本来の税額の1/6（固定資産税）または1/3（都市計画税）に軽減」（富士市のページに倍の話は無い）
 #   ・「年2回の室内見回り（月額8,800円〜）も追加可能」「月2回以上の実施」（見回りは月1回だけ）
 #   ・「郵便物の受け取り、電球交換、簡単な修繕など…追加料金」「除草剤散布」（決めていない作業）
 #   ・「実家・空き家見守り」（人を見守るサービスと読める。受けているのは家の見回り）
+#   ・「清掃で出た草やゴミの処分も、フッ軽が責任を持って対応いたします」「回収業者と連携して、一般廃棄物として適正に処理します」
 #   ・定期の記事に、ふつうの作業の支払い方法の1文（定期の月額は、お見積りのあとにLINEで送るリンクから払う）
-# 言って聞かせるより、こちらで直す（CLAUDE.md の17）。弾かずに、文を外す・言葉を直す。
+# 言って聞かせるより、こちらで直す（CLAUDE.md の17）。弾かずに、文・表の行を外す／言葉を直す。
 #   税の倍の話は、どの記事でも外す（税・特例・軽減の言葉と同じ文に、倍・分の1 があるときだけ）。
-#   ほかは、定期の記事（題名・説明・言葉に 見回り・見守り・巡回清掃・共用部・月額 がある記事）だけ
+#   ほかは、定期の記事（題名・説明・言葉に 見回り・見守り・巡回清掃・共用部・月額 がある記事）だけ。
+#   はじめの形は、別の目に「必ず直す」を3つ返された（否定の「大幅に上がることはありません」を外して言い切りにした／
+#   「フッ軽が持ち帰ります」「処分費は月額に含まれています」が通った／表のマスは素通り）。そのとき並べてもらった文は tameshi/naoshi.py に
 # 定期の記事の目印は、定期にしかない言葉だけ（「空き家管理」は入れない。空き家の草刈りの記事＝1回ずつの仕事にも出る。
 #   全記事の比べで、富士宮・沼津の空き家の草刈りの記事の支払いの1文を、定期の1文に書き換えていた）
 _TEIKI_KIJI = re.compile(r"見回り|見守り|巡回清掃|共用部|月額")
-_TEIKI_ZEI = re.compile(r"固定資産税|都市計画税|税額|税金|課税|住宅用地|特例|軽減")      # 「税込」「税抜」は見ない（料金の文に多い）
-_TEIKI_BAI = re.compile(r"[0-9０-９]+(?:\.[0-9]+)?\s*倍|[1１]\s*[/／]\s*[0-9０-９]|[0-9０-９]\s*分の\s*[1１]")
-_TEIKI_OOHABA = re.compile(r"(税額?|税金|固定資産税|都市計画税)(が|は|も)(?:大幅に|大きく|一気に|跳ね)(上が|増え|高く|増税|アップ)")
-# 定期の記事では「見守り」を全部「見回り」に（はじめは「見守りサービス」など名前の形だけ直していて、試し運転の2回目で
-#   「実家の見守りを」「室内も見守りたい方へ」がすり抜けた。定期の記事に、人を見守る話は出てこない）
+_TEIKI_ZEI = re.compile(r"固定資産税|都市計画税|税額|税金|税負担|課税|住宅用地|特例|軽減")      # 「税込」「税抜」は見ない（料金の文に多い）
+_TEIKI_BAI = re.compile(r"[0-9０-９]+(?:\.[0-9]+)?\s*倍|数倍|何倍|倍に(?:な|跳|増|上)|[1１]\s*[/／]\s*[0-9０-９]|[0-9０-９]\s*分の\s*[1１]|"
+                        r"[0-9０-９]+\s*割(?:増|高|アップ|も上)")
+# 「大幅に」を外すのは、空き家の特例の話で、言い切りの文だけ（「物置で固定資産税が大幅に上がることはありません」を外すと、
+#   税が上がらないという言い切りになる。物置の税は市が判断する＝事実の欄）
+_TEIKI_OOHABA = re.compile(r"(税額?|税金|税負担|固定資産税|都市計画税)(が|は|も)(?:大幅に|大きく|一気に|跳ね)(上が|増え|高く|増税|アップ)")
+_TEIKI_OOHABA_WADAI = re.compile(r"特例|住宅用地|勧告|認定|管理不全|特定空")
+_TEIKI_UCHIKESHI = re.compile(r"ません|ない|少な|心配|のでは|わけではなく|とは限ら")
+# 見守り→見回り は、人の話が無い文だけ（「ご両親の見守り」「自治体の高齢者見守り事業」「見守りサービス（センサー・安否確認）とは別に」は触らない）
 _TEIKI_MIMAMORI = re.compile(r"見守り")
-# 定期の中身にしていない作業。約束の言葉と同じ文にあるときだけ外す（「修理は工務店などにご相談ください」は残す）
-_TEIKI_NAI = re.compile(r"郵便物|郵便受け|ポスト|電球|修繕|修理|補修|除草剤|鍵の(?:お)?預か|合鍵|通報|防犯カメラ|駆除|"
-                        r"ハウスクリーニング|雨戸の開け閉め|カビ取り|消毒")
-_TEIKI_YAKUSOKU = re.compile(r"対応|承|可能|お任せ|追加料金|別途|含ま|行います|いたします|させていただ|できます|ご利用|オプション|プラン|サービス")
-_TEIKI_KAISU = re.compile(r"年\s*[0-9０-９]+\s*回|月\s*[2-9２-９]\s*回|週\s*[0-9０-９]|毎週|隔週")
-# 清掃で集めたごみ・落ち葉を、フッ軽が処分・処理すると読める文（試し運転の2回目：「清掃で出た草やゴミの処分も、
-#   富士市内であればフッ軽が責任を持って対応いたします」「回収業者と連携して、一般廃棄物として適正に処理します」）。
-#   刈った草をフッ軽が持ち込む話（ごみ・廃棄物の言葉が無い）と、9/23 の形（「…回収業者と一緒に片付けます」＝処分・処理の言葉が無い）は残る
-_TEIKI_GOMI = re.compile(r"ごみ|ゴミ|廃棄物")
-_TEIKI_SHOBUN = re.compile(r"処分|処理|持ち帰|回収")
-_TEIKI_SHOBUN_YAKU = re.compile(r"対応|承|いたします|します|お任せ|任せ|可能|責任|ご安心")
+_TEIKI_HITO = re.compile(r"両親|ご家族|高齢|親御|お年寄り|安否|自治体|警備|センサー|お子|見守りカメラ|ペット")
+# 定期の中身にしていない作業。約束の言葉と同じ文にあるときだけ外す。断りの文（…ません）と、ほかの頼み先へ案内する文は残す
+_TEIKI_NAI = re.compile(r"郵便物|郵便受け|ポスト|電球|修繕|修理|補修|除草剤|鍵の(?:お)?預か|合鍵|通報|防犯カメラ|駆除|ネズミ|"
+                        r"ハウスクリーニング|雨戸|カビ取り|消毒|臨時|エアコン|フィルター|掃除機")
+_TEIKI_YAKUSOKU = re.compile(r"対応|承|可能|お任せ|おまかせ|追加料金|別途|含ま|行います|いたします|させていただ|できます|いただけます|ご利用|オプション|プラン|サービス|定期の中|月額に")
+_TEIKI_NAI_OK = re.compile(r"ません|おりません|工務店|工事会社|専門の(?:業者|会社)|郵便局の手続き|警備|シルバー|市が")
+_TEIKI_NAI_DAME = re.compile(r"追加料金|無料|別途|承り")
+# 見回りの回数（見回りは月1回だけ）。アパートの共用部（月1回・月2回がある）の文は見ない
+_TEIKI_KAISU = re.compile(r"年\s*[0-9０-９]+\s*回|月に?\s*[2-9２-９]\s*回|[0-9０-９]+\s*週間に|週\s*[0-9０-９]|毎週|隔週|半年に|毎日|臨時")
+_TEIKI_KAISU_OK = re.compile(r"清掃|共用部|アパート|掃除|巡回|帰省|帰れ")
+# 清掃で集めたごみ・落ち葉・家財を、フッ軽が持ち帰る・引き取る・処分する・月額に含む、と読める文。
+#   9/23 の形（「…回収業者と一緒に片付けます」）・ご自身で出す話・お見積りで決める話は残す
+_TEIKI_GOMI = re.compile(r"ごみ|ゴミ|廃棄物|不用品|家財|落ち葉")
+_TEIKI_SHOBUN = re.compile(r"持ち帰|引き取|引取|回収|処分|処理|含ま|片付け|片づけ")
+_TEIKI_GOMI_OK = re.compile(r"一緒に|間に入|ご自身|自治体|市の|お見積|ご相談|ません")
+# 草刈り・洗浄は定期の月額に入っていない（別にお見積り）。「月額に含む・セット・込み」と読める文を外す
+_TEIKI_KUSA = re.compile(r"草刈り|草取り|草むしり|除草|剪定|高圧洗浄|洗浄")
+_TEIKI_KOMI = re.compile(r"含ま|含め|セット|込み|月額|定期プラン|いたします|承ります")
+_TEIKI_KUSA_OK = re.compile(r"別|入っていません|入りません|含まれません|含みません|ではありません")
+# 契約の約束（決めていない）。最低の契約期間は「ありません」が決まった形なので、数字のついた最低だけ見る
+_TEIKI_KEIYAKU = re.compile(r"(?:解約|キャンセル)[^。]{0,14}(?:無料|かかりません|いつでも)|初月[^。]{0,6}無料|お試し|"
+                            r"最低\s*[0-9０-９]+\s*(?:か月|ヶ月|カ月|年)|[0-9０-９]+\s*年(?:更新|契約|ごと)|返金|違約金|"
+                            r"24時間|駆けつけ|管理を?代行|管理会社の代わり")
+_TEIKI_KINGAKU = re.compile(r"(5,500|5500|8,800|8800|6,600|6600|11,000|11000)円(?![〜～]|から|より|（税込）[〜～]|（税込）から|\(税込\)[〜～])")
 TEIKI_SHIHARAI = "定期の月額は、ご了承いただいたお見積りのあと、LINEでお送りするお申し込みのリンクからお支払いいただけます。"
 
 
@@ -2461,27 +2481,59 @@ def teiki_kiji(art: dict) -> bool:
     return bool(_TEIKI_KIJI.search(t))
 
 
+def _teiki_mimamori(b: str) -> str:
+    return b if _TEIKI_HITO.search(b) else _TEIKI_MIMAMORI.sub("見回り", b)
+
+
+def _teiki_suteru(b: str) -> bool:
+    """定期の記事で、この1文を外すか"""
+    if _TEIKI_NAI.search(b) and _TEIKI_YAKUSOKU.search(b) and not (_TEIKI_NAI_OK.search(b) and not _TEIKI_NAI_DAME.search(b)):
+        return True
+    if "見回" in b and _TEIKI_KAISU.search(b) and not _TEIKI_KAISU_OK.search(b):
+        return True
+    if _TEIKI_GOMI.search(b) and _TEIKI_SHOBUN.search(b) and not _TEIKI_GOMI_OK.search(b):
+        return True
+    if _TEIKI_KUSA.search(b) and _TEIKI_KOMI.search(b) and not _TEIKI_KUSA_OK.search(b):
+        return True
+    if _TEIKI_KEIYAKU.search(b):
+        return True
+    return False
+
+
 def _teiki(s: str, tk: bool) -> str:
-    """文ごとに見る。税の倍の話は外す（どの記事でも）。定期の記事は、見守り→見回り・決めていない作業・回数・支払いの1文"""
+    """文ごとに見る。税の倍の話は外す（どの記事でも）。定期の記事は、見守り→見回り・外す文・月額の「〜」・支払いの1文"""
     if not isinstance(s, str) or not s:
         return s
     out = []
     for b in _bun_kagi(s):
         if _TEIKI_ZEI.search(b) and _TEIKI_BAI.search(b):
             continue
-        b = _TEIKI_OOHABA.sub(r"\1\2\3", b)
+        if _TEIKI_OOHABA_WADAI.search(b) and not _TEIKI_UCHIKESHI.search(b):
+            b = _TEIKI_OOHABA.sub(r"\1\2\3", b)
         if tk:
-            b = _TEIKI_MIMAMORI.sub(lambda m: m.group(0).replace("見守り", "見回り"), b)
-            if _TEIKI_NAI.search(b) and _TEIKI_YAKUSOKU.search(b):
+            b = _teiki_mimamori(b)
+            if _teiki_suteru(b):
                 continue
-            if "見回" in b and "清掃" not in b and _TEIKI_KAISU.search(b):
-                continue
-            if _TEIKI_GOMI.search(b) and _TEIKI_SHOBUN.search(b) and _TEIKI_SHOBUN_YAKU.search(b):
-                continue
+            b = _TEIKI_KINGAKU.sub(r"\1円〜", b)
             if SHIHARAI_NAKAMI in b:
                 b = b.replace(SHIHARAI_BUN, TEIKI_SHIHARAI)
+                if SHIHARAI_NAKAMI in b:          # 見出しつき（「お支払い：現金・…」）・答えだけの形
+                    b = b.replace(SHIHARAI_NAKAMI, TEIKI_SHIHARAI)
         out.append(b)
     return "".join(out)
+
+
+def _teiki_gyou(r: list, tk: bool) -> list | None:
+    """表の1行。定期の記事で、決めていない作業・ごみの処分の行は外す（None）。見守りは直す"""
+    if not tk:
+        return r
+    moji = " ".join(x for x in r if isinstance(x, str))
+    if _TEIKI_NAI.search(moji) and not _TEIKI_NAI_OK.search(moji):
+        return None
+    # 表は「別途お見積り」の列があるので、お見積り・ご相談を残す目印にしない（「長期間放置されたゴミ｜別途お見積り」が残った）
+    if _TEIKI_GOMI.search(moji) and re.search(r"放置|処分|回収|残置|不法投棄|持ち帰|引き取", moji) and not re.search(r"一緒に|間に入|ご自身|自治体|市の|ません", moji):
+        return None
+    return [_teiki_mimamori(x) if isinstance(x, str) else x for x in r]
 
 
 def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
@@ -2495,7 +2547,7 @@ def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
                 art[k] = c
                 n += 1
     if tk and isinstance(art.get("keywords"), list):
-        kw = [_TEIKI_MIMAMORI.sub(lambda m: m.group(0).replace("見守り", "見回り"), x) if isinstance(x, str) else x for x in art["keywords"]]
+        kw = [_teiki_mimamori(x) if isinstance(x, str) else x for x in art["keywords"]]
         if kw != art["keywords"]:
             art["keywords"] = kw
             n += 1
@@ -2512,8 +2564,8 @@ def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
                     if t.strip():
                         c[k] = t
                         kawatta = True
-                    elif c.get("type") == "p" and k == "text":
-                        suteru = True
+                    elif k == "text" and c.get("type") in ("p", "h3", "note"):
+                        suteru = True      # 段落・小見出し・注記がその1文だけなら外す（導入 lead と大見出し h2 は残す）
         if isinstance(c.get("items"), list):
             items = []
             for x in c["items"]:
@@ -2540,13 +2592,16 @@ def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
         if isinstance(c.get("rows"), list):
             rows = []
             for r in c["rows"]:
-                if isinstance(r, list):
-                    r2 = [_TEIKI_MIMAMORI.sub(lambda m: m.group(0).replace("見守り", "見回り"), x) if tk and isinstance(x, str) else x for x in r]
-                    if r2 != r:
-                        kawatta = True
-                    r = r2
-                rows.append(r)
-            c["rows"] = rows
+                r2 = _teiki_gyou(r, tk) if isinstance(r, list) else r
+                if r2 != r:
+                    kawatta = True
+                if r2 is not None:
+                    rows.append(r2)
+            if kawatta:
+                if rows:
+                    c["rows"] = rows
+                else:
+                    suteru = True          # 行が全部消えたら、表ごと外す
         if suteru:
             n += 1
             continue
