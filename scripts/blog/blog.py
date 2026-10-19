@@ -255,6 +255,29 @@ FACTS = """
   土・ブロック・レンガ・石・コンクリート・生木・観葉植物など／
   ガラス・蛍光灯・破損した鏡など／産業廃棄物／注射器・針・メスなどの医療機器
   （これらは「自治体での出し方をご案内します」と書く。「相談可」を売り文句にしない）
+【定期の見回り・巡回清掃】（2026-10-19 中元さんが決めた。HPの料金表と同じ。専用のページは fuji.creo-sumai.jp）
+  ・空き家・実家の外まわりの見回り：月1回・月額5,500円〜（税込）。家と庭の様子を確かめて、写真でご報告
+  ・空き家・実家の室内も見回り：月1回・月額8,800円〜（税込）。外まわりに加えて、換気・通水・室内の目視確認
+  ・アパート共用部の巡回清掃：月1回 月額6,600円〜／月2回 月額11,000円〜（税込）。廊下・階段・駐車場などの清掃と写真報告
+  ・対応する地域は、富士市・富士宮市・沼津市・静岡市
+  ・始め方：LINEでご相談 → 作業の範囲・月額・始める日・やめるときの決まりを書いたお見積り → ご了承いただいてから、
+    お申し込みのリンクをLINEでお送りします。会員登録はいりません
+  ・最低の契約期間はありません（月ごとの更新）。やめるときの締め切りは、お見積りに書いてお伝えします
+  ・草刈り・高圧洗浄は、定期の月額に入っていません。必要なときは、別にお見積りします
+  ・巡回清掃で集めた落ち葉やごみをどうするかは、建物ごとにお見積りのときに決める（フッ軽が持ち帰る・処分するとは書かない）
+  ・定期の中身は、上の3つの説明に書いたことだけ。それ以外の作業を、定期の中身として足さない
+  ・「管理を代行」「管理会社の代わり」とは書かない。「見回り」「巡回清掃」「写真でご報告」と書く
+【富士市の空き家の決まり】（富士市「空き家の適正管理について」更新日 2025-07-17・2026-10-20 に確認）
+  ・空き家の管理は所有者の責任。管理の責任は、所有者だけでなく相続人にも及ぶ
+  ・庭の草木を手入れしないと、景観が悪くなるだけでなく、ごみの不法投棄・衛生・防犯（放火など）の心配が出る
+  ・瓦や建物の一部が飛んだり、塀や樹木が倒れたりして人や車に損害を与えると、民法による損害賠償を求められることがある
+  ・市が「管理不全空家等」「特定空家等」と認定し、助言・指導に従わず勧告の対象になると、
+    固定資産税・都市計画税の住宅用地特例から外れて、税額が上がる（何倍とは書かない）
+  ・富士市シルバー人材センターも、市と協力して、見回り・除草・植木の剪定と状態の報告をする空き家管理サービスをしている
+    （頼み先の1つとして公平に書く。下げない）
+  ・空き家の相談先は、富士市の住宅政策課
+  ・補助金が使えるとは書かない（市の利活用の補助金は、ふつうの相続した空き家の管理には当てはまらない）
+  ・富士宮市・沼津市・静岡市の空き家の決まりは確かめていない。その市の記事では市の決まりを書かず、「お住まいの市の窓口にご確認ください」と書く
 """
 
 RULES = """
@@ -841,7 +864,9 @@ FUJI_CITY_FEES = {
 # 出どころは components/Services.tsx。サイトに無い金額は、これまでどおり弾かれます。
 # 件・%・人・割 などは、これまでどおり全部弾きます（捏造の危険がそのまま残るため）。
 SERVICES_TSX = REPO / "components" / "Services.tsx"
-PRICE_IN_TSX = re.compile(r"price:\s*'([\d,]+円)")
+# 2026-10-20：定期サービスの行は「月額5,500円〜」と頭に言葉が付く。前の形（数字で始まる額だけ）では読めず、
+#   料金表から AI に渡す額（price_table）と、弁が通す額（site_prices）が食い違っていた → 頭の言葉（月額・1時間など）を飛ばして読む
+PRICE_IN_TSX = re.compile(r"price:\s*'[^'\d]*?(?:\d+時間)?([\d,]+円)")
 
 
 PRICE_ROW_IN_TSX = re.compile(r"\{\s*title:\s*'([^']+)',\s*price:\s*'([^']+)'")
@@ -2395,6 +2420,215 @@ def kabe_naosu(art: dict, blocks: list) -> tuple[list, int]:
     return out, n
 
 
+
+# ── 定期の見回り・巡回清掃の記事と、空き家の税の書き方（2026-10-20）──
+# 中元さん「空き家や管理、大家、などを狙ったキーワード戦略も増やしていってください」で、狙いに定期の見回り・巡回清掃の行を足した。
+# 事実の欄に「何倍とは書かない」「定期の中身は3つの説明だけ」と書いても、本物のAIの試し運転12本で、AIは次を書いた：
+#   ・「固定資産税が最大6倍になるケースも」「本来の税額の1/6（固定資産税）または1/3（都市計画税）に軽減」（富士市のページに倍の話は無い）
+#   ・「年2回の室内見回り（月額8,800円〜）も追加可能」「月2回以上の実施」（見回りは月1回だけ）
+#   ・「郵便物の受け取り、電球交換、簡単な修繕など…追加料金」「除草剤散布」（決めていない作業）
+#   ・「実家・空き家見守り」（人を見守るサービスと読める。受けているのは家の見回り）
+#   ・「清掃で出た草やゴミの処分も、フッ軽が責任を持って対応いたします」「回収業者と連携して、一般廃棄物として適正に処理します」
+#   ・定期の記事に、ふつうの作業の支払い方法の1文（定期の月額は、お見積りのあとにLINEで送るリンクから払う）
+# 言って聞かせるより、こちらで直す（CLAUDE.md の17）。弾かずに、文・表の行を外す／言葉を直す。
+#   税の倍の話は、どの記事でも外す（税・特例・軽減の言葉と同じ文に、倍・分の1 があるときだけ）。
+#   ほかは、定期の記事（題名・説明・言葉に 見回り・見守り・巡回清掃・共用部・月額 がある記事）だけ。
+#   はじめの形は、別の目に「必ず直す」を3つ返された（否定の「大幅に上がることはありません」を外して言い切りにした／
+#   「フッ軽が持ち帰ります」「処分費は月額に含まれています」が通った／表のマスは素通り）。そのとき並べてもらった文は tameshi/naoshi.py に
+# 定期の記事の目印は、定期にしかない言葉だけ（「空き家管理」は入れない。空き家の草刈りの記事＝1回ずつの仕事にも出る。
+#   全記事の比べで、富士宮・沼津の空き家の草刈りの記事の支払いの1文を、定期の1文に書き換えていた）
+_TEIKI_KIJI = re.compile(r"見回り|見守り|巡回清掃|共用部|月額")
+_TEIKI_ZEI = re.compile(r"固定資産税|都市計画税|税額|税金|税負担|課税|住宅用地|特例|軽減")      # 「税込」「税抜」は見ない（料金の文に多い）
+_TEIKI_BAI = re.compile(r"[0-9０-９]+(?:\.[0-9]+)?\s*倍|数倍|何倍|倍に(?:な|跳|増|上)|[1１]\s*[/／]\s*[0-9０-９]|[0-9０-９]\s*分の\s*[1１]|"
+                        r"[0-9０-９]+\s*割(?:増|高|アップ|も上)")
+# 「大幅に」を外すのは、空き家の特例の話で、言い切りの文だけ（「物置で固定資産税が大幅に上がることはありません」を外すと、
+#   税が上がらないという言い切りになる。物置の税は市が判断する＝事実の欄）
+_TEIKI_OOHABA = re.compile(r"(税額?|税金|税負担|固定資産税|都市計画税)(が|は|も)(?:大幅に|大きく|一気に|跳ね)(上が|増え|高く|増税|アップ)")
+_TEIKI_OOHABA_WADAI = re.compile(r"特例|住宅用地|勧告|認定|管理不全|特定空")
+_TEIKI_UCHIKESHI = re.compile(r"ません|ない|少な|心配|のでは|わけではなく|とは限ら")
+# 見守り→見回り は、人の話が無い文だけ（「ご両親の見守り」「自治体の高齢者見守り事業」「見守りサービス（センサー・安否確認）とは別に」は触らない）
+_TEIKI_MIMAMORI = re.compile(r"見守り")
+_TEIKI_HITO = re.compile(r"両親|高齢|親御|お年寄り|安否|自治体|警備|センサー|お子|見守りカメラ|ペット|とは別|は別の")
+# 「ご家族」は読む人のこと（「遠方のご家族様向けに、空き家の月1回見守りサービス」）が多いので、空き家・実家の文では人の話と見ない（試し運転の4回目）
+_TEIKI_KAZOKU = re.compile(r"ご家族")
+_TEIKI_IE = re.compile(r"空き家|実家|空家")
+# 定期の中身にしていない作業。約束の言葉と同じ文にあるときだけ外す。断りの文（…ません）と、ほかの頼み先へ案内する文は残す
+_TEIKI_NAI = re.compile(r"郵便物|郵便受け|ポスト|電球|修繕|修理|補修|除草剤|鍵の(?:お)?預か|合鍵|通報|防犯カメラ|駆除|ネズミ|"
+                        r"ハウスクリーニング|雨戸の(?:開閉|開け閉め)|カビ取り|消毒|臨時|エアコン|フィルター|掃除機")
+_TEIKI_YAKUSOKU = re.compile(r"対応|承|可能|お任せ|おまかせ|追加料金|別途|含ま|行います|いたします|させていただ|できます|いただけます|ご利用|オプション|プラン|サービス|定期の中|月額に")
+_TEIKI_NAI_OK = re.compile(r"ません|おりません|工務店|工事会社|専門の(?:業者|会社)|郵便局の手続き|警備|シルバー|市が|換気")
+_TEIKI_NAI_DAME = re.compile(r"追加料金|無料|別途|承り")
+# 見回りの回数（見回りは月1回だけ）。アパートの共用部（月1回・月2回がある）の文は見ない
+_TEIKI_KAISU = re.compile(r"年\s*[0-9０-９]+\s*回|月に?\s*[2-9２-９]\s*回|[0-9０-９]+\s*週間に|週\s*[0-9０-９]|毎週|隔週|半年に|毎日|臨時")
+_TEIKI_KAISU_OK = re.compile(r"清掃|共用部|アパート|掃除|巡回|帰省|帰れ")
+_TEIKI_MIRU = re.compile(r"見回|室内の?確認|点検")
+# 清掃で集めたごみ・落ち葉・家財を、フッ軽が持ち帰る・引き取る・処分する・月額に含む、と読める文。
+#   9/23 の形（「…回収業者と一緒に片付けます」）・ご自身で出す話・お見積りで決める話は残す
+_TEIKI_GOMI = re.compile(r"ごみ|ゴミ|廃棄物|不用品|不要品|不要なもの|要らな|残置物|遺品|家財|落ち葉")      # 「荷物」は入れない（運搬の話に多い）
+_TEIKI_SHOBUN = re.compile(r"持ち帰|引き取|引取|回収|処分|処理|含ま|片付け|片づけ")
+_TEIKI_GOMI_OK = re.compile(r"一緒に|間に入|ご自身|自治体|市の|お見積|ご相談|ません")
+# 9/23 の形の前半「まだ使えるものは引き取ります」（古物商）は残す。ただし同じ文で処分・持ち帰り・月額に含むなら外す（別の目・2回目）
+# 残すのは「まだ使え」がある文だけ（古物商・買取だけで残すと、「古物商許可があるので、不要な家財はすべて引き取れます」が通った＝別の目・3回目）
+_TEIKI_MADA = re.compile(r"まだ使え")
+_TEIKI_KATAI = re.compile(r"処分|処理|持ち帰|含ま|回収")
+# 清掃の中身（ごみ置き場のまわりを片付ける・落ち葉の掃き掃除）は、処分の言葉が無ければ残す
+_TEIKI_SOUJI = re.compile(r"ごみ置き場|ゴミ置き場|集積所|掃き掃除|掃いて")      # 「集めて」は入れない（「ごみを集めて片付けます」が通った）
+# 草刈り・洗浄は定期の月額に入っていない（別にお見積り）。「月額に含む・セット・込み」と読める文を外す
+_TEIKI_KUSA = re.compile(r"草刈り|草取り|草むしり|除草|剪定|高圧洗浄|洗浄")
+_TEIKI_KOMI = re.compile(r"含ま|含め|セット|込み|月額|定期プラン")
+_TEIKI_KUSA_OK = re.compile(r"別|入っていません|入りません|含まれません|含みません|ではありません|ではなく|には入")
+# 契約の約束（決めていない）。最低の契約期間は「ありません」が決まった形なので、数字のついた最低だけ見る
+_TEIKI_KEIYAKU = re.compile(r"(?:解約|キャンセル)[^。]{0,14}(?:無料|かかりません|いつでも)|初月[^。]{0,6}無料|お試し|"
+                            r"最低\s*[0-9０-９]+\s*(?:か月|ヶ月|カ月|年)|[0-9０-９]+\s*年(?:更新|契約|ごと)|返金|違約金|"
+                            r"24時間|駆けつけ|管理を?代行|管理会社の代わり")
+_TEIKI_KINGAKU = re.compile(r"(5,500|5500|8,800|8800|6,600|6600|11,000|11000)円(?![〜～]|から|より|（税込）[〜～]|（税込）から|\(税込\)[〜～])")
+TEIKI_SHIHARAI = "定期の月額は、ご了承いただいたお見積りのあと、LINEでお送りするお申し込みのリンクからお支払いいただけます。"
+
+
+def teiki_kiji(art: dict) -> bool:
+    kw = art.get("keywords")
+    t = " ".join(str(art.get(k) or "") for k in ("title", "metaDescription")) + " " + (" ".join(map(str, kw)) if isinstance(kw, list) else "")
+    return bool(_TEIKI_KIJI.search(t))
+
+
+def _teiki_mimamori(b: str) -> str:
+    if _TEIKI_HITO.search(b) or (_TEIKI_KAZOKU.search(b) and not _TEIKI_IE.search(b)):
+        return b
+    return _TEIKI_MIMAMORI.sub("見回り", b)
+
+
+def _teiki_suteru(b: str) -> bool:
+    """定期の記事で、この1文を外すか"""
+    if _TEIKI_NAI.search(b) and _TEIKI_YAKUSOKU.search(b) and not (_TEIKI_NAI_OK.search(b) and not _TEIKI_NAI_DAME.search(b)):
+        return True
+    if _TEIKI_MIRU.search(b) and _TEIKI_KAISU.search(b) and not _TEIKI_KAISU_OK.search(b):
+        return True
+    if _TEIKI_GOMI.search(b) and _TEIKI_SHOBUN.search(b) and not _TEIKI_GOMI_OK.search(b):
+        mada_ok = _TEIKI_MADA.search(b) and not _TEIKI_KATAI.search(b)
+        souji_ok = _TEIKI_SOUJI.search(b) and not re.search(r"処分|処理|持ち帰|回収", b)    # 掃き掃除が「作業に含まれます」は残す
+        if not (mada_ok or souji_ok):
+            return True
+    if _TEIKI_MADA.search(b) and re.search(r"処分|処理|持ち帰|回収", b) and not _TEIKI_GOMI_OK.search(b):
+        return True                        # 「まだ使えるものも、そうでないものも…回収します」（ごみの言葉が無くても）
+    if _TEIKI_KUSA.search(b) and _TEIKI_KOMI.search(b) and not _TEIKI_KUSA_OK.search(b):
+        return True
+    if _TEIKI_KEIYAKU.search(b):
+        return True
+    return False
+
+
+def _teiki(s: str, tk: bool) -> str:
+    """文ごとに見る。税の倍の話は外す（どの記事でも）。定期の記事は、見守り→見回り・外す文・月額の「〜」・支払いの1文"""
+    if not isinstance(s, str) or not s:
+        return s
+    out = []
+    for b in _bun_kagi(s):
+        if _TEIKI_ZEI.search(b) and _TEIKI_BAI.search(b):
+            continue
+        if _TEIKI_OOHABA_WADAI.search(b) and not _TEIKI_UCHIKESHI.search(b):
+            b = _TEIKI_OOHABA.sub(r"\1\2\3", b)
+        if tk:
+            b = _teiki_mimamori(b)
+            if _teiki_suteru(b):
+                continue
+            b = _TEIKI_KINGAKU.sub(r"\1円〜", b)
+            if SHIHARAI_NAKAMI in b:
+                b = b.replace(SHIHARAI_BUN, TEIKI_SHIHARAI)
+                if SHIHARAI_NAKAMI in b:          # 見出しつき（「お支払い：現金・…」）・答えだけの形
+                    b = b.replace(SHIHARAI_NAKAMI, TEIKI_SHIHARAI)
+        out.append(b)
+    return "".join(out)
+
+
+def _teiki_gyou(r: list, tk: bool) -> list | None:
+    """表の1行。定期の記事で、決めていない作業・ごみの処分の行は外す（None）。見守りは直す"""
+    if not tk:
+        return r
+    moji = " ".join(x for x in r if isinstance(x, str))
+    if _TEIKI_NAI.search(moji) and not (_TEIKI_NAI_OK.search(moji) or re.search(r"ご相談|ご報告|ご案内", moji)):
+        return None
+    # 表は「別途お見積り」の列があるので、お見積り・ご相談を残す目印にしない（「長期間放置されたゴミ｜別途お見積り」が残った）
+    if (_TEIKI_GOMI.search(moji) and re.search(r"放置|処分|回収|残置|不法投棄|持ち帰|引き取", moji)
+            and not re.search(r"一緒に|間に入|ご自身|自治体|市の|ません", moji)
+            and not (_TEIKI_MADA.search(moji) and not _TEIKI_KATAI.search(moji))):
+        return None
+    return [_TEIKI_KINGAKU.sub(r"\1円〜", _teiki_mimamori(x)) if isinstance(x, str) else x for x in r]
+
+
+def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
+    n = 0
+    tk = teiki_kiji(art)
+    for k in ("title", "metaDescription"):
+        v = art.get(k)
+        if isinstance(v, str):
+            c = _teiki(v, tk)
+            if c != v and c.strip():
+                art[k] = c
+                n += 1
+    if tk and isinstance(art.get("keywords"), list):
+        kw = [_teiki_mimamori(x) if isinstance(x, str) else x for x in art["keywords"]]
+        if kw != art["keywords"]:
+            art["keywords"] = kw
+            n += 1
+    out = []
+    for b in blocks:
+        if not isinstance(b, dict):
+            out.append(b)
+            continue
+        c, kawatta, suteru = dict(b), False, False
+        for k in ("text", "heading", "sub"):
+            if isinstance(c.get(k), str):
+                t = _teiki(c[k], tk)
+                if t != c[k]:
+                    if t.strip():
+                        c[k] = t
+                        kawatta = True
+                    elif k == "text" and c.get("type") in ("p", "h3", "note"):
+                        suteru = True      # 段落・小見出し・注記がその1文だけなら外す（導入 lead と大見出し h2 は残す）
+        if isinstance(c.get("items"), list):
+            items = []
+            for x in c["items"]:
+                if isinstance(x, str):
+                    t = _teiki(x, tk)
+                    if t != x:
+                        kawatta = True
+                        if t.strip():
+                            items.append(t)
+                        continue
+                elif isinstance(x, dict) and isinstance(x.get("q"), str) and isinstance(x.get("a"), str):
+                    q, a = _teiki(x["q"], tk), _teiki(x["a"], tk)
+                    if (q, a) != (x["q"], x["a"]):
+                        kawatta = True
+                        if not q.strip() or not a.strip():
+                            continue       # 質問か答えがその話だけなら、組ごと外す
+                        x = dict(x, q=q, a=a)
+                items.append(x)
+            if kawatta:
+                if items:
+                    c["items"] = items
+                else:
+                    suteru = True
+        if isinstance(c.get("rows"), list):
+            rows = []
+            for r in c["rows"]:
+                r2 = _teiki_gyou(r, tk) if isinstance(r, list) else r
+                if r2 != r:
+                    kawatta = True
+                if r2 is not None:
+                    rows.append(r2)
+            if kawatta:
+                if rows:
+                    c["rows"] = rows
+                else:
+                    suteru = True          # 行が全部消えたら、表ごと外す
+        if suteru:
+            n += 1
+            continue
+        out.append(c if kawatta else b)
+        n += int(kawatta)
+    return out, n
+
+
 # ── 「できません」の言い切りをやわらげる（2026-09-14・中元さん「なるべく濁して相談につなぐ」）──
 # 受けていない事実は消さない。言い方だけ「お受けしていません」にそろえる。
 # **ごみ・許可・引き取り・修理の話が同じ文にあるときだけ**（「自分で対処できません」には触らない）。
@@ -2721,6 +2955,9 @@ def seikei(art: dict) -> int:
     atarashii, n = kotowari_naosu(art, atarashii)
     naoshita += n
     atarashii, n = renzoku_naosu(atarashii)
+    naoshita += n
+    # 定期の見回り・巡回清掃の記事と、空き家の税の倍の話（2026-10-20）。支払いの1文を直すので、支払いの直し（_shiharai）より後
+    atarashii, n = teiki_naosu(art, atarashii)
     naoshita += n
     if naoshita:
         art["blocks"] = atarashii
