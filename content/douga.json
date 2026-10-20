@@ -143,6 +143,107 @@
       ],
       "setsumei": "富士市のページに載っている、空き家になったら考える3つと、おまけ1つ。",
       "youtube": ""
+    },
+    {
+      "no": "No.12",
+      "topic": "家具の転倒防止",
+      "area": "",
+      "kiji": [],
+      "kotoba": [
+        "転倒防止"
+      ],
+      "setsumei": "東京消防庁の資料から、家具の転倒防止の○×クイズ3問と、おまけ1問。",
+      "youtube": ""
+    },
+    {
+      "no": "No.13",
+      "topic": "富士市で家具を手放す順番",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-sodai-gomi-dashikata-benriya"
+      ],
+      "kotoba": [
+        "家具の処分"
+      ],
+      "setsumei": "富士市のページに載っている、家具を手放す順番3つと、おまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.14",
+      "topic": "リチウムイオン電池の出し方",
+      "area": "富士市",
+      "kiji": [],
+      "kotoba": [
+        "リチウムイオン電池",
+        "モバイルバッテリー"
+      ],
+      "setsumei": "富士市の決まりから、充電池の捨て方の○×クイズ3問と、おまけ1問。",
+      "youtube": ""
+    },
+    {
+      "no": "No.15",
+      "topic": "物置を買う前に",
+      "area": "",
+      "kiji": [
+        "fuji-monooki-kumitate-junbi-benriya",
+        "fuji-monooki-kumitate-irai-point"
+      ],
+      "kotoba": [
+        "物置の組み立て"
+      ],
+      "setsumei": "イナバ物置の確認事項から、物置を買う前に知っておきたい3つと、おまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.16",
+      "topic": "実家・遺品の片付けで出たごみ",
+      "area": "富士市",
+      "kiji": [
+        "fuji-jitsuka-jitsugou-kataduke-benriya",
+        "fuji-city-ippan-sangyo-haikibutsu-chigai-benriya"
+      ],
+      "kotoba": [
+        "遺品整理"
+      ],
+      "setsumei": "富士市のページから、片付けで出たごみの○×クイズ3問と、おまけ1問。",
+      "youtube": ""
+    },
+    {
+      "no": "No.17",
+      "topic": "家具の地震対策の進め方",
+      "area": "",
+      "kiji": [],
+      "kotoba": [
+        "転倒防止"
+      ],
+      "setsumei": "東京消防庁の資料から、家具の地震対策を進める順番3つと、おまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.18",
+      "topic": "燃えるごみに出せる大きさ",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-sodai-gomi-dashikata-benriya"
+      ],
+      "kotoba": [
+        "マットレス"
+      ],
+      "setsumei": "富士市の決まりから、燃えるごみに出せる大きさの○×クイズ3問と、おまけ1問。",
+      "youtube": ""
+    },
+    {
+      "no": "No.19",
+      "topic": "高齢者の大型ごみの戸別収集",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-sodai-gomi-dashikata-benriya"
+      ],
+      "kotoba": [
+        "戸別収集"
+      ],
+      "setsumei": "富士市の高齢者向けの大型ごみの戸別収集から、知っておきたい3つと、おまけ1つ。",
+      "youtube": ""
     }
   ]
 }
