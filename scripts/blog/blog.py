@@ -2451,7 +2451,7 @@ _TEIKI_BAI = re.compile(r"[0-9０-９]+(?:\.[0-9]+)?\s*倍|数倍|何倍|倍に(
                         r"[0-9０-９]+\s*割(?:増|高|アップ|も上)")
 # 「大幅に」を外すのは、空き家の特例の話で、言い切りの文だけ（「物置で固定資産税が大幅に上がることはありません」を外すと、
 #   税が上がらないという言い切りになる。物置の税は市が判断する＝事実の欄）
-_TEIKI_OOHABA = re.compile(r"(税額?|税金|税負担|固定資産税|都市計画税)(が|は|も)(?:大幅に|大きく|一気に|跳ね)(上が|増え|高く|増税|アップ)")
+_TEIKI_OOHABA = re.compile(r"(税額?|税金|税負担|固定資産税|都市計画税)(が|は|も)(?:大幅に|大きく|一気に|跳ね)(上が|上昇|増え|高く|増税|アップ)")   # 上昇は 10/20 夜の試し運転で
 _TEIKI_OOHABA_WADAI = re.compile(r"特例|住宅用地|勧告|認定|管理不全|特定空")
 _TEIKI_UCHIKESHI = re.compile(r"ません|ない|少な|心配|のでは|わけではなく|とは限ら")
 # 見守り→見回り は、人の話が無い文だけ（「ご両親の見守り」「自治体の高齢者見守り事業」「見守りサービス（センサー・安否確認）とは別に」は触らない）
@@ -2543,6 +2543,14 @@ _TEIKI_ERIA = re.compile(r"静岡県全域(?:、山梨県全域)?(?:、神奈川
 TEIKI_ERIA = "富士市・富士宮市・沼津市・静岡市"
 _TEIKI_MOCHIKOMI = re.compile(r"(?:弊社|フッ軽|当社)[^。]{0,16}持ち込(?:み|め|む|ん)|持ち込み(?:が)?可能|持ち込めます")
 _TEIKI_MOCHIKOMI_OK = re.compile(r"草|枝|剪定|物置")
+# 試し運転の4回目（10/20 夜）
+#   ・「またはフッ軽が回収・処理する場合など…ご相談ください」：同じ文に「ご自身で」があって残っていた → フッ軽が回収・処理・処分すると書いた文は外す
+#   ・「地域外への訪問の場合…別途出張費がかかる」：定期の対応は4市だけで、地域外の出張費の話は無い → 外す
+#   ・「草や剪定した木などの処分をお引き受けできます」：処分を引き受けるとは書かない（持ち込めるのは、フッ軽が作業で出した草・枝） → 外す
+_TEIKI_JISHA_SHOBUN = re.compile(r"(?:フッ軽|弊社|当社|私たち)(?:が|で|にて)[^。、]{0,8}(?:回収|処理|処分|持ち帰)")
+_TEIKI_JISHA_OK = re.compile(r"ません|一緒に|許可を持つ")
+_TEIKI_SHUCCHO = re.compile(r"(?:出張費|交通費)[^。]{0,12}(?:別途|かか|発生|いただ|頂)|(?:別途|追加)[^。]{0,4}(?:出張費|交通費)")
+_TEIKI_SHOBUN_HIKIUKE = re.compile(r"処分(?:を|も)?(?:お)?引き受け|処分(?:を|も)?(?:承|お受け)")
 
 
 def _teiki_kagi_hazusu(b: str) -> str | None:
@@ -2583,7 +2591,10 @@ def _teiki_joken(b: str, masu: bool = False) -> str | None:
         b = _TEIKI_HITSUYOU_ATO.sub(r"\1ご希望に応じて事前にお見積もりします", b)
     if not masu and _TEIKI_TSUIKA_RE.search(b) and not _TEIKI_TSUIKA_OK.search(b):
         return TEIKI_TSUIKA
-    if not masu and (_TEIKI_WARIBIKI.search(b) or (_TEIKI_MOCHIKOMI.search(b) and not _TEIKI_MOCHIKOMI_OK.search(b))):
+    if not masu and (_TEIKI_WARIBIKI.search(b) or (_TEIKI_MOCHIKOMI.search(b) and not _TEIKI_MOCHIKOMI_OK.search(b))
+                     or (_TEIKI_JISHA_SHOBUN.search(b) and not _TEIKI_JISHA_OK.search(b))
+                     or (_TEIKI_SHUCCHO.search(b) and "無料" not in b)
+                     or (_TEIKI_SHOBUN_HIKIUKE.search(b) and not _TEIKI_JISHA_OK.search(b))):
         return None
     return _TEIKI_ERIA.sub(TEIKI_ERIA, b)
 
