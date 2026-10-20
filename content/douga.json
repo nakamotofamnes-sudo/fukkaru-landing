@@ -1,0 +1,148 @@
+{
+  "_setsumei": [
+    "記事に差し込むYouTubeのショート動画（2026-10-20〜）。差し込むのは scripts/build-blog.mjs。記事のファイル（content/articles）は触らない。",
+    "kiji：差し込む記事・柱のslug（書いた順が優先）。kotoba：新しい記事にも自動で入れるための言葉。記事の題名に area と kotoba のどれかが両方あれば入る。",
+    "1ページに動画は1本だけ。kiji に名前があるものが先、次に kotoba。中身の合わない記事には入れない（kotoba は狭く書く）。",
+    "youtube が空のものは、blog.py が毎回 YouTube の公開一覧（RSS）から題名の「｜topic（」で探して埋める（scripts/blog/douga_ids.py）。埋まるまでは出ない。",
+    "元はネタ帳 ~/.fukkaru/douga/neta.json の kiji・kiji_kotoba。ネタを足したら ~/.fukkaru/douga/kiji_douga.py でここへ写す。"
+  ],
+  "channel_id": "UCJTlJxDUxDOT8a0trweUSpQ",
+  "douga": [
+    {
+      "no": "No.01",
+      "topic": "富士市の粗大ごみ",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-sodai-gomi-dashikata-benriya",
+        "fuji-gomi-dashikata",
+        "fuji-fuyohin-yasuku-shobun-benriya"
+      ],
+      "kotoba": [
+        "粗大ごみ"
+      ],
+      "setsumei": "富士市の粗大ごみ、出す前に知っておきたい3つと、おまけ1つ。",
+      "youtube": "07BxGRBa8Bc",
+      "title": "富士市の粗大ごみは、月1回｜富士市の粗大ごみ（くらしの豆知識）#Shorts",
+      "uploadDate": "2026-10-16T11:20:52+00:00"
+    },
+    {
+      "no": "No.02",
+      "topic": "富士市の庭木の枝",
+      "area": "富士市",
+      "kiji": [
+        "fuji-kusakari-shori-benriya-hikaku"
+      ],
+      "kotoba": [
+        "剪定枝",
+        "枝の出し方"
+      ],
+      "setsumei": "ご自分で切った庭木の枝を、富士市で出す前に知っておきたい3つと、おまけ1つ。",
+      "youtube": "a3bPkEqHf3Q",
+      "title": "富士市の庭木の枝、集積所は50センチまで｜富士市の庭木の枝（くらしの豆知識）#Shorts",
+      "uploadDate": "2026-10-17T11:18:23+00:00"
+    },
+    {
+      "no": "No.03",
+      "topic": "富士市のパソコン",
+      "area": "富士市",
+      "kiji": [],
+      "kotoba": [
+        "パソコン"
+      ],
+      "setsumei": "富士市の家庭のパソコンを手放す前に、知っておきたい3つと、おまけ1つ。",
+      "youtube": "WT81qetzg-M",
+      "title": "富士市のパソコン、集積所はNG｜富士市のパソコン（くらしの豆知識）#Shorts",
+      "uploadDate": "2026-10-18T11:23:21+00:00"
+    },
+    {
+      "no": "No.04",
+      "topic": "物置と固定資産税",
+      "area": "富士市",
+      "kiji": [
+        "fuji-monooki-kotei-shisanzei"
+      ],
+      "kotoba": [
+        "固定資産税"
+      ],
+      "setsumei": "富士市で物置を置く前に知っておきたい3つと、おまけ1つ（判断するのは市です）。",
+      "youtube": "JCFcwsS3A1c",
+      "title": "物置にも、固定資産税がかかることがあります｜物置と固定資産税（くらしの豆知識）#Shorts",
+      "uploadDate": "2026-10-19T11:20:10+00:00"
+    },
+    {
+      "no": "No.05",
+      "topic": "富士市の引越しの届出",
+      "area": "富士市",
+      "kiji": [],
+      "kotoba": [
+        "転出",
+        "転入"
+      ],
+      "setsumei": "富士市の引越し、忘れがちな届出の期限3つと、おまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.06",
+      "topic": "排水管洗浄の勧誘",
+      "area": "",
+      "kiji": [],
+      "kotoba": [
+        "排水管"
+      ],
+      "setsumei": "排水管の点検や洗浄の勧誘、頼む前に知っておきたい3つと、おまけ1つ（国民生活センターより）。",
+      "youtube": ""
+    },
+    {
+      "no": "No.07",
+      "topic": "物置に向かないもの",
+      "area": "",
+      "kiji": [
+        "monooki"
+      ],
+      "kotoba": [],
+      "setsumei": "イナバ物置の説明書と、NITE（製品評価技術基盤機構）の注意から、3つとおまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.09",
+      "topic": "家電4品目の手放し方",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-kakudai-kakaku-denntaku-sutekata"
+      ],
+      "kotoba": [
+        "家電4品目",
+        "家電リサイクル"
+      ],
+      "setsumei": "富士市の決まりから、家電の手放し方の○×クイズ3問と、おまけ1問。",
+      "youtube": ""
+    },
+    {
+      "no": "No.10",
+      "topic": "クリーンセンターへの持ち込みの予約",
+      "area": "富士市",
+      "kiji": [
+        "fuji-city-unusable-items-disposal"
+      ],
+      "kotoba": [
+        "クリーンセンター"
+      ],
+      "setsumei": "富士市の新環境クリーンセンターに家庭ごみを持ち込む前に知っておきたい3つと、おまけ1つ。",
+      "youtube": ""
+    },
+    {
+      "no": "No.11",
+      "topic": "空き家になったらやること",
+      "area": "富士市",
+      "kiji": [
+        "akiya",
+        "fuji-jitsuka-jitsugou-kataduke-benriya"
+      ],
+      "kotoba": [
+        "空き家"
+      ],
+      "setsumei": "富士市のページに載っている、空き家になったら考える3つと、おまけ1つ。",
+      "youtube": ""
+    }
+  ]
+}
