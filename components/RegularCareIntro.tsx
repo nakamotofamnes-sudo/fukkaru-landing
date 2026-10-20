@@ -6,7 +6,7 @@ const RegularCareIntro: React.FC = () => (
     <div className="shell">
       <div className="max-w-3xl">
         <span className="eyebrow">新しい定期サービスを始めました</span>
-        <h2 className="h-section">実家も、貸している建物も。<br className="sm:hidden" />草と汚れをためないお手入れ。</h2>
+        <h2 className="h-section text-balance">実家も、貸している建物も。<br className="sm:hidden" />草と汚れをためないお手入れ。</h2>
         <p className="lede">遠くのご実家が気になるご家族へ。お掃除に行く時間が取れない大家さんへ。毎回の清掃・小さな草取りに、季節の草刈り・低木の剪定・高圧洗浄を組み合わせます。作業前後は写真でご報告し、次に必要なお手入れもご提案します。</p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-2">
