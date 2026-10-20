@@ -6,26 +6,26 @@ const RegularCareIntro: React.FC = () => (
     <div className="shell">
       <div className="max-w-3xl">
         <span className="eyebrow">新しい定期サービスを始めました</span>
-        <h2 className="h-section">空き家の見回りと、<br className="sm:hidden" />アパートの定期清掃。</h2>
-        <p className="lede">遠くのご実家が気になるご家族へ。お掃除に行く時間が取れない大家さんへ。定期的に訪ねて、家の様子と作業の結果を写真でお知らせします。</p>
+        <h2 className="h-section">実家も、貸している建物も。<br className="sm:hidden" />草と汚れをためないお手入れ。</h2>
+        <p className="lede">遠くのご実家が気になるご家族へ。お掃除に行く時間が取れない大家さんへ。毎回の清掃・小さな草取りに、季節の草刈り・低木の剪定・高圧洗浄を組み合わせます。作業前後は写真でご報告し、次に必要なお手入れもご提案します。</p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-2">
         <article className="card flex flex-col p-6 sm:p-8">
           <Home size={26} className="mb-5 text-ink-500" aria-hidden="true" />
-          <h3 className="text-[20px] font-semibold text-ink-900">空き家・ご実家の見回り</h3>
-          <p className="mt-3 text-[15px] font-semibold text-ink-900">月1回・月額5,500円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
-          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">外壁・窓・庭木・郵便受けの様子を確認し、写真でLINE報告。室内の換気・通水を含むプランは月額8,800円〜（税込）です。</p>
+          <h3 className="text-[20px] font-semibold text-ink-900">空き家・ご実家のお手入れ</h3>
+          <p className="mt-3 text-[15px] font-semibold text-ink-900">月1回・基本月額5,500円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
+          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">外まわりの確認・玄関清掃・決めた範囲の小さな草取り。庭の草刈り・低木の剪定も、面積・本数・回数を決めて計画に組み込めます。室内の換気・通水を含む基本月額は8,800円〜（税込）です。</p>
           <a href="https://fuji.creo-sumai.jp/#vacant" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-ink-900 underline underline-offset-4">作業範囲・料金を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
         </article>
         <article className="card flex flex-col p-6 sm:p-8">
           <Building2 size={26} className="mb-5 text-ink-500" aria-hidden="true" />
-          <h3 className="text-[20px] font-semibold text-ink-900">アパート共用部の巡回清掃</h3>
-          <p className="mt-3 text-[15px] font-semibold text-ink-900">月1回・月額6,600円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
-          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">廊下・階段・玄関・駐車場の日常清掃と写真報告。月2回のプランは月額11,000円〜（税込）。小規模店舗・事務所も個別にご相談いただけます。</p>
+          <h3 className="text-[20px] font-semibold text-ink-900">アパート共用部のお手入れ</h3>
+          <p className="mt-3 text-[15px] font-semibold text-ink-900">月1回・基本月額6,600円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
+          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">廊下・階段・玄関・駐車場の日常清掃と小さな草取り。季節の除草・剪定・床の高圧洗浄も計画に。月2回の基本月額は11,000円〜（税込）。小規模店舗・事務所も個別にご相談いただけます。</p>
           <a href="https://fuji.creo-sumai.jp/#apartment" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-ink-900 underline underline-offset-4">作業範囲・料金を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
         </article>
       </div>
-      <div className="mt-6 flex items-start gap-2 text-[13px] leading-[1.9] text-ink-500"><Camera size={17} className="mt-1 shrink-0" aria-hidden="true" /><p>富士市・富士宮市・沼津市・静岡市に対応。規模・状態を確認して作業範囲と月額を決めます。草刈り・高圧洗浄・大量の片付け等は別途お見積もり。1回だけのお試しもご相談ください。</p></div>
+      <div className="mt-6 flex items-start gap-2 text-[13px] leading-[1.9] text-ink-500"><Camera size={17} className="mt-1 shrink-0" aria-hidden="true" /><p>富士市・富士宮市・沼津市・静岡市に対応。表示は毎回のお手入れの基本月額です。季節の草刈り・剪定・洗浄は、範囲と回数を決めて費用を加え、年間総額と支払い時期を契約前にご提示します。必要な初回整備や契約外の作業も事前見積もり。1回だけのお試しもご相談ください。</p></div>
       <div className="mt-7 flex flex-wrap gap-3">
         <a href="https://fuji.creo-sumai.jp/" className="btn btn-primary inline-flex items-center gap-2">詳しい内容・料金を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
         <a href="https://lin.ee/Bh5gFU6" target="_blank" rel="noopener noreferrer" className="btn btn-line inline-flex items-center gap-2"><MessageCircle size={17} aria-hidden="true" />LINEで無料相談する</a>

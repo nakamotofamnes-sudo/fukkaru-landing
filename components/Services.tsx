@@ -10,14 +10,14 @@ type Group = { id: string; title: string; note: string; services: Service[]; def
 const groups: Group[] = [
   {
     id: 'regular-care',
-    title: '空き家の見回り・アパートの定期清掃',
-    note: '富士・富士宮・沼津・静岡の4市／写真でLINE報告',
+    title: '空き家・アパートの定期お手入れ',
+    note: '4市対応／清掃・小さな草取りが基本。季節作業費を含む年間総額は事前見積もり',
     defaultOpen: true,
     services: [
-      { title: '空き家・外まわり見回り', price: '月額5,500円〜', desc: '税込・月1回。家と庭の様子を確認し、写真でご報告', link: 'https://fuji.creo-sumai.jp/#vacant' },
-      { title: '空き家・室内も見回り', price: '月額8,800円〜', desc: '税込・月1回。外まわりに加え、換気・通水・室内の目視確認', link: 'https://fuji.creo-sumai.jp/#vacant' },
-      { title: 'アパート共用部の巡回清掃（月1回）', price: '月額6,600円〜', desc: '税込。廊下・階段・駐車場などの清掃と写真報告', link: 'https://fuji.creo-sumai.jp/#apartment' },
-      { title: 'アパート共用部の巡回清掃（月2回）', price: '月額11,000円〜', desc: '税込。規模と作業範囲を確認して月額を確定。LINE相談後にStripeでカード払い', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: '空き家・外まわりのお手入れ', price: '基本月額5,500円〜', desc: '税込・月1回。外まわり確認・玄関清掃・指定範囲の小さな草取り・写真報告', link: 'https://fuji.creo-sumai.jp/#vacant' },
+      { title: '空き家・室内込みのお手入れ', price: '基本月額8,800円〜', desc: '税込・月1回。外まわりに加え、換気・通水・室内の目視確認', link: 'https://fuji.creo-sumai.jp/#vacant' },
+      { title: 'アパート共用部の巡回清掃（月1回）', price: '基本月額6,600円〜', desc: '税込。廊下・階段・駐車場の清掃・指定範囲の小さな草取り・写真報告', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: 'アパート共用部の巡回清掃（月2回）', price: '基本月額11,000円〜', desc: '税込。規模と作業範囲を確認して月額を確定。LINE相談後にStripeでカード払い', link: 'https://fuji.creo-sumai.jp/#apartment' },
     ],
   },
   {
