@@ -2490,6 +2490,39 @@ _TEIKI_KEIYAKU = re.compile(r"(?:解約|キャンセル)[^。]{0,14}(?:無料|�
                             r"24時間|駆けつけ|管理を?代行|管理会社の代わり")
 _TEIKI_KINGAKU = re.compile(r"(4,400|4400|6,600|6600|5,500|5500|9,900|9900)円(?![〜～]|から|より|（税込）[〜～]|（税込）から|\(税込\)[〜～])")
 TEIKI_SHIHARAI = "定期の月額は、ご了承いただいたお見積りのあと、LINEでお送りするお申し込みのリンクからお支払いいただけます。"
+# 10/20 夜：#9 の新しい条件（室内込みは月額6,600円〜の決まったプラン・9,900円は月2回・別の作業は事前のお見積り）と、
+#   試し運転3本（見回り:富士市・巡回清掃:富士市・空き家管理の費用:静岡市）でずれた形。弾かずに、言葉を直す／その1文を外す。
+#   ・9,900円 と同じ文の「週に1回ほど」「毎週」→「月2回」（9,900円 は月2回。週の回数は決めていない）
+#   ・室内の見回り・確認・換気・通水を「別途・追加料金・別料金」と書く文 → かぎかっこのご要望の1つなら、それだけ外す。ほかは文ごと外す
+#     （室内込み・6,600円・プラン と書いてあれば触らない。室内の片付け・掃除・家具の移動の「別途」は正しいので触らない）
+#   ・「必要に応じて発生する／かかる」費用 →「ご希望に応じて事前にお見積もりする」（勝手にかかる費用は無い。#9 の「範囲外は先に相談」）
+#   ・表の支払い方法のマス（現金・振込・カード・PayPay）→ 定期の払い方（ふつうの作業の払い方は、定期には当たらない）
+#   ・数字の弁：事実の欄の「駐車場10台程度」を、定期の記事でだけ通す（はじめの試し運転で2回やり直していた）
+_TEIKI_9900 = re.compile(r"9,?900円")
+_TEIKI_SHU = re.compile(r"週(?:に)?\s*[1１一]\s*回(?:ほど|程度|くらい|ぐらい)?|毎週")
+_TEIKI_SHITSUNAI_MIRU = re.compile(r"室内(?:も|の|まで)?[^。」]{0,8}?(?:見て|見回|確認|点検|換気|通水|チェック)")
+_TEIKI_BETSU = re.compile(r"別途|別見積|別のお見積|別料金|追加料金|オプション")
+_TEIKI_SHITSUNAI_OK = re.compile(r"室内込み|6,?600円|プラン")
+_TEIKI_HITSUYOU = re.compile(r"必要に応じて(?:発生|かか)(する|る|ります|します)")
+_TEIKI_HIYOU = re.compile(r"費|料金|代金|お金")
+_TEIKI_SHIHARAI_MASU_RE = re.compile(r"現金[^。]{0,20}(?:PayPay|ペイペイ|カード|振込|振り込み)|(?:PayPay|ペイペイ|カード|振込|振り込み)[^。]{0,20}現金")
+TEIKI_SHIHARAI_MASU = "お見積りのご了承後、LINEでお送りするリンクから"
+TEIKI_KAZU = {"10台"}
+
+
+def _teiki_joken(b: str, masu: bool = False) -> str | None:
+    """定期の記事の1文（masu＝表のマス）を、#9 の条件にそろえる。外す文は None（マスは外さない）"""
+    if _TEIKI_9900.search(b) and _TEIKI_SHU.search(b):
+        b = _TEIKI_SHU.sub("月2回", b)
+    if _TEIKI_SHITSUNAI_MIRU.search(b) and _TEIKI_BETSU.search(b) and not _TEIKI_SHITSUNAI_OK.search(b):
+        b2 = re.sub(r"「[^「」]*室内[^「」]*」(?:や|と|、)?", "", b)
+        if b2 != b and "「" in b2:
+            b = b2
+        elif not masu:
+            return None
+    if _TEIKI_HITSUYOU.search(b) and _TEIKI_HIYOU.search(b):
+        b = _TEIKI_HITSUYOU.sub(lambda mm: "ご希望に応じて事前にお見積もり" + ("する" if mm.group(1) in ("する", "る") else "します"), b)
+    return b
 
 
 def teiki_kiji(art: dict) -> bool:
@@ -2547,6 +2580,10 @@ def _teiki(s: str, tk: bool) -> str:
             b = _TEIKI_OOHABA.sub(r"\1\2\3", b)
         if tk:
             b = _teiki_mimamori(b)
+            b2 = _teiki_joken(b)
+            if b2 is None:
+                continue
+            b = b2
             if _teiki_suteru(b):
                 continue
             b = _TEIKI_KINGAKU.sub(r"\1円〜", b)
@@ -2570,7 +2607,11 @@ def _teiki_gyou(r: list, tk: bool) -> list | None:
             and not re.search(r"一緒に|間に入|ご自身|自治体|市の|ません", moji)
             and not (_TEIKI_MADA.search(moji) and not _TEIKI_KATAI.search(moji))):
         return None
-    return [_TEIKI_KINGAKU.sub(r"\1円〜", _teiki_mimamori(x)) if isinstance(x, str) else x for x in r]
+    def masu(x: str) -> str:
+        if _TEIKI_SHIHARAI_MASU_RE.search(x):
+            return TEIKI_SHIHARAI_MASU      # 支払い方法のマスは、定期の払い方に
+        return _TEIKI_KINGAKU.sub(r"\1円〜", _teiki_joken(_teiki_mimamori(x), masu=True) or x)
+    return [masu(x) if isinstance(x, str) else x for x in r]
 
 
 def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
@@ -3200,6 +3241,8 @@ def check(art: dict, done: list[dict], attempt: int = 1, last: int = 1,
     # **1は、盛れません。**その日の16時の記事は「1台」ひとつで4回とも落ち、
     # **1本も出ませんでした。**円と割は通しません（金額と値引き率になるため）。
     allowed = set(KNOWN_NUMBERS) | set(FUJI_CITY_FEES) | site_prices()
+    if teiki_kiji(art):
+        allowed |= TEIKI_KAZU             # 定期の事実の欄の「駐車場10台程度」（10/20 夜）
     found = {m.group(0) for m in NUM.finditer(json.dumps(art, ensure_ascii=False))}
     hits = sorted(h for h in found
                   if h.replace(" ", "") not in allowed
