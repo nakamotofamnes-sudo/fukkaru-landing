@@ -2106,6 +2106,7 @@ NAI_BUN = re.compile(
     r"蛇口|パッキン|トイレのつまり|トイレの詰まり|シャワーヘッド|夜間|"
     r"保険で(?:保証|補償)|補償いたします|補償します|保証いたします|"
     r"(?<!火災)(?<!家財)(?<!地震)(?<!車両)保険(?:による|での|で)(?:の)?(?:対応|カバー|補てん|補填)(?:が|も|を)?(?:可能|でき|いたし|させていただ|します)|"
+    r"(?<!火災)(?<!家財)(?<!地震)(?<!車両)保険(?:で|により)(?:カバー|補償|補てん|補填)され|"
     r"[0-9０-９]{2,4}-[xXｘＸ]{2,4}-[xXｘＸ]{2,4}|[xX]{4}|番号は仮|"
     r"キャンセル料|一人だからこそ|代表がひとり|代表が一人")
 _LINE_URL = re.compile(r"[\s（(【]*(?:公式LINE(?:はこちら)?[:：]?\s*)?\[?https://lin\.ee/[A-Za-z0-9]+\]?(?:\(https://lin\.ee/[A-Za-z0-9]+\))?[)）】]*")
@@ -2474,7 +2475,7 @@ _TEIKI_MIRU = re.compile(r"見回|室内の?確認|点検")
 #   9/23 の形（「…回収業者と一緒に片付けます」）・ご自身で出す話・お見積りで決める話は残す
 _TEIKI_GOMI = re.compile(r"ごみ|ゴミ|廃棄物|不用品|不要品|不要なもの|要らな|残置物|遺品|家財|落ち葉")      # 「荷物」は入れない（運搬の話に多い）
 _TEIKI_SHOBUN = re.compile(r"持ち帰|引き取|引取|回収|処分|処理|含ま|片付け|片づけ")
-_TEIKI_GOMI_OK = re.compile(r"一緒に|間に入|ご自身|自治体|市の|ません|許可を持つ(?:回収)?業者|許可業者")
+_TEIKI_GOMI_OK = re.compile(r"一緒に|間に入|段取り|ご自身|ご自分|自治体|市の|ません|ない(?=[。、]|ため|ので|こと)|できず|許可を持つ(?:回収)?業者|許可業者")
 # お見積・ご相談で残すのは、相談をうながすだけの文（請ける言葉が無い）・片付けの相談（処分・回収の言葉が無い）・作業で出た草・枝の扱いの話。
 #   （10/20 夜・別の目の「必ず直す」2。「作業で出たゴミの処理など…別途お見積もりとなります」「ごみの回収・処分も、別途お見積もりでお受けします」が、
 #   お見積・ご相談で残っていた。前の別の目が残すとした「集めたごみの処分は、お見積りのときにご相談ください」は、請ける言葉が無いので残る）
@@ -2518,38 +2519,71 @@ _TEIKI_9900 = re.compile(r"9,?900円")
 _TEIKI_SHU = re.compile(r"週(?:に)?\s*[1-9１-９一二]\s*(?:回|度)(?:ほど|程度|くらい|ぐらい)?|毎週")
 _TEIKI_SHU_OK = re.compile(r"月に?\s*[2２二]\s*回|ません|ではなく|できず|できない")
 _TEIKI_SHITSUNAI_MIRU = re.compile(r"(?:室内|家の中|屋内|お?部屋の中|建物の中)(?:も|の|まで)?[^。」]{0,8}?(?:見て|見る|見た|見回|確認|点検|換気|通水|チェック)")
-_TEIKI_BETSU = re.compile(r"別途|別見積|別のお見積|別料金|別に|追加料金|オプション")
-_TEIKI_SHITSUNAI_OK = re.compile(r"室内込み|6,?600円|片付け|片づけ|清掃|掃除|家具|荷物|不用品|写真|移動|整理|をお出し|"
-                                 r"ではなく|ではありません|かかりません|含まれ(?:ます|る)|含みます")
+_TEIKI_BETSU = re.compile(r"別途|別見積|別のお見積|別料金|別に(?=[^。、]{0,6}(?:料金|費用|お見積|オプション))|追加料金|オプション")
+_TEIKI_SHITSUNAI_OK = re.compile(r"室内込み|6,?600円|ではなく|ではありません|かかりません|含まれ(?:ます|る)|含みます")
+# 片付け・写真などの言葉は、「別途」と同じ句か、そのすぐ前の句（「…をご希望の場合は、別途…」）にあるときだけ数える（2回目の別の目：
+#   「室内の確認や清掃は別途お見積もりです」が「清掃」で残っていた）。「移動」は入れない（「移動の手間がかかるため別途です」）
+_TEIKI_SHITSUNAI_KU_OK = re.compile(r"片付け|片づけ|清掃|掃除|家具|荷物|不用品|写真|をお出し|整理")
+
+
+def _teiki_shitsunai_betsu(b: str) -> bool:
+    """室内の見回り・確認を、別料金・別途・オプションと書いた文か"""
+    m = _TEIKI_SHITSUNAI_MIRU.search(b)
+    if not m or _TEIKI_SHITSUNAI_OK.search(b):
+        return False
+    bts = list(_TEIKI_BETSU.finditer(b))
+    if not bts:
+        return False
+    bt = next((x for x in bts if x.start() >= m.start()), bts[0])
+    ku = re.split(r"(?<=、)", b)
+    ichi, kugiri = 0, []
+    for k in ku:
+        kugiri.append((ichi, ichi + len(k)))
+        ichi += len(k)
+    km = next(i for i, (a, e) in enumerate(kugiri) if a <= m.start() < e)
+    kb = next(i for i, (a, e) in enumerate(kugiri) if a <= bt.start() < e)
+    if km == kb:
+        return True
+    chikaku = ku[kb] + (ku[kb - 1] if kb - 1 > km else "")
+    return not _TEIKI_SHITSUNAI_KU_OK.search(chikaku)
 _TEIKI_KAGI = re.compile(r"「[^「」]*」")
 _TEIKI_KAGI_TSUNAGI = re.compile(r"(?:や、|や|と|、|・)?")
-_TEIKI_HITSUYOU_MAE = re.compile(r"必要に応じて(?:発生|かか)(?:する|る)(?![^。]{0,3}(?:場合|こと))(?=[「『]?[^。、]{0,8}?(?:費|料金|代金))")
+_TEIKI_HITSUYOU_MAE = re.compile(r"必要に応じて(?:発生|かか)(?:する|る)(?![^。]{0,3}(?:場合|こと|可能性))(?=[「『]?[^。、]{0,8}?(?:費|料金|代金))")
 _TEIKI_HITSUYOU_ATO = re.compile(r"((?:費用|料金|代金)(?:は|が)、?)必要に応じて(?:発生|かか)(?:ります|します)(?=。|$)")
 _TEIKI_HITSUYOU_MASU = re.compile(r"必要に応じて(?:発生|かか)(?:ります|します)。?")
 _TEIKI_HIYOU = re.compile(r"費|料金|代金|お金")
 _TEIKI_TSUIKA_RE = re.compile(r"(?:追加|別途)(?:の)?(?:料金|費用)が(?:発生|かか)")
 _TEIKI_TSUIKA_OK = re.compile(r"事前|前もって|ご了承|ご相談|お見積|見積もり|見積り|ご説明|ご確認|ご納得|ません|草刈り|剪定|洗浄|伐採|範囲外|ご希望|ご要望")
 TEIKI_TSUIKA = "月額や、範囲外の作業の料金は、事前のお見積もりでお伝えします。"
+# 決まった1文に置き換えるのは、言い切りの文（「。」で終わり、問いでない）だけ。見出し・質問は外す（2回目の別の目：
+#   小見出し「追加料金がかかるケース」・質問「追加料金が発生することはありますか？」が言い切りに変わっていた）。他社の話には当てない
+_TEIKI_TOI = re.compile(r"[？?]\s*$|か。?\s*$")
+_TEIKI_TANIN_BUN = re.compile(r"他社|業者では|専門業者|一般的に|多くの業者|業者によって|業者の中には|ほかの業者|他の業者")
+TEIKI_ERIA_BUN = "定期の見回り・巡回清掃は、富士市・富士宮市・沼津市・静岡市が対象です（4市内の出張費は無料）。"
+_TEIKI_ERIA_KOTOBA = re.compile(r"静岡県全域|山梨県|神奈川県")
+_TEIKI_ERIA_OK = re.compile(r"定期|見回り|巡回|共用部|富士宮|沼津")
+TEIKI_GOMI_BUN = ("清掃で集めたごみは、敷地内の指定場所にまとめます。"
+                  "持ち出しが必要なときは、一般廃棄物の許可を持つ回収業者と一緒に片付ける段取りをご相談ください。")
 _TEIKI_SHIHARAI_SHUDAN = re.compile(r"現金|振込|振り込み|カード|PayPay|ペイペイ|クレジット|銀行|キャッシュレス")
 _TEIKI_SHIHARAI_TANIN = re.compile(r"シルバー|他社|業者|センター|市の|専門|ほかの|他の")
 TEIKI_SHIHARAI_MASU = "お見積りのご了承後、LINEでお送りするリンクから"
 TEIKI_KAZU = {"10台"}
-# 試し運転の3回目（10/20 夜）：事実の欄の「ふつうの作業」の事実を、定期の記事に書いた形。定期の記事だけ直す
-#   ・LINEの割引（最大3,000円）は、定期の決まりに無い → 文を外す
-#   ・「静岡県全域（、山梨県全域、神奈川県海老名市以西）」→ 定期の対応地域の4市
-#   ・「フッ軽が作業で出したものは…弊社が持ち込み可能」→ 草・枝・剪定・物置の話でなければ外す（清掃で集めたごみは指定場所へ）
+# 試し運転の3回目・4回目（10/20 夜）：事実の欄の「ふつうの作業」の事実を、定期の記事に書いた形。定期の記事だけ直す
+#   ・LINEの割引（最大3,000円）は、定期の決まりに無い → 文・行を外す
+#   ・対応地域の文（静岡県全域・山梨県・神奈川県）→ 定期の対応地域の1文 TEIKI_ERIA_BUN（定期・見回り・4市の名前がある文は触らない）
+#   ・「弊社が持ち込み可能」：草・枝・剪定・物置の話、ご自身・お客様・自治体の話でなければ外す
+#   ・フッ軽が回収・処理・処分・持ち帰る：回収業者との段取り・できない・草・枝・物置の話、打ち消しでなければ外す
+#   ・地域外の出張費・交通費：無料・打ち消し・他社の話でなければ外す
+#   ・「処分をお引き受け」：打ち消しでなければ外す（「一緒に」が付いていても。9/23 の形は「一緒に片付けます」）
 _TEIKI_WARIBIKI = re.compile(r"割引|値引")
-_TEIKI_ERIA = re.compile(r"静岡県全域(?:、山梨県全域)?(?:、神奈川県海老名市以西)?")
-TEIKI_ERIA = "富士市・富士宮市・沼津市・静岡市"
-_TEIKI_MOCHIKOMI = re.compile(r"(?:弊社|フッ軽|当社)[^。]{0,16}持ち込(?:み|め|む|ん)|持ち込み(?:が)?可能|持ち込めます")
+_TEIKI_MOCHIKOMI_JISHA = re.compile(r"(?:弊社|フッ軽|当社)[^。]{0,16}持ち込(?:み|め|む|ん)")       # 主語がフッ軽
+_TEIKI_MOCHIKOMI = re.compile(r"持ち込み(?:が)?可能|持ち込めます")
 _TEIKI_MOCHIKOMI_OK = re.compile(r"草|枝|剪定|物置")
-# 試し運転の4回目（10/20 夜）
-#   ・「またはフッ軽が回収・処理する場合など…ご相談ください」：同じ文に「ご自身で」があって残っていた → フッ軽が回収・処理・処分すると書いた文は外す
-#   ・「地域外への訪問の場合…別途出張費がかかる」：定期の対応は4市だけで、地域外の出張費の話は無い → 外す
-#   ・「草や剪定した木などの処分をお引き受けできます」：処分を引き受けるとは書かない（持ち込めるのは、フッ軽が作業で出した草・枝） → 外す
+_TEIKI_MOCHIKOMI_KYAKU = re.compile(r"ご自身|ご自分|お客様|自治体|市の")         # ご自身で持ち込む話（主語がフッ軽のときは数えない）
 _TEIKI_JISHA_SHOBUN = re.compile(r"(?:フッ軽|弊社|当社|私たち)(?:が|で|にて)[^。、]{0,8}(?:回収|処理|処分|持ち帰)")
-_TEIKI_JISHA_OK = re.compile(r"ません|一緒に|許可を持つ")
+_TEIKI_JISHA_OK = re.compile(r"ません|一緒に|許可を持つ|回収業者|許可業者|段取り|できない|草|枝|剪定|物置")
 _TEIKI_SHUCCHO = re.compile(r"(?:出張費|交通費)[^。]{0,12}(?:別途|かか|発生|いただ|頂)|(?:別途|追加)[^。]{0,4}(?:出張費|交通費)")
+_TEIKI_SHUCCHO_OK = re.compile(r"無料|ません|ない(?=[。、]|こと)")
 _TEIKI_SHOBUN_HIKIUKE = re.compile(r"処分(?:を|も)?(?:お)?引き受け|処分(?:を|も)?(?:承|お受け)")
 
 
@@ -2581,7 +2615,7 @@ def _teiki_joken(b: str, masu: bool = False) -> str | None:
     """定期の記事の1文（masu＝表のマス）を、#9 の条件にそろえる。外す文は None（マスは外さない。行は _teiki_gyou が見る）"""
     if _TEIKI_9900.search(b) and _TEIKI_SHU.search(b) and not _TEIKI_SHU_OK.search(b):
         b = _TEIKI_SHU.sub("月2回", b)
-    if not masu and _TEIKI_SHITSUNAI_MIRU.search(b) and _TEIKI_BETSU.search(b) and not _TEIKI_SHITSUNAI_OK.search(b):
+    if not masu and _teiki_shitsunai_betsu(b):
         b2 = _teiki_kagi_hazusu(b)
         if b2 is None:
             return None
@@ -2589,14 +2623,21 @@ def _teiki_joken(b: str, masu: bool = False) -> str | None:
     if "ません" not in b:
         b = _TEIKI_HITSUYOU_MAE.sub("ご希望に応じて事前にお見積もりする", b)
         b = _TEIKI_HITSUYOU_ATO.sub(r"\1ご希望に応じて事前にお見積もりします", b)
-    if not masu and _TEIKI_TSUIKA_RE.search(b) and not _TEIKI_TSUIKA_OK.search(b):
-        return TEIKI_TSUIKA
-    if not masu and (_TEIKI_WARIBIKI.search(b) or (_TEIKI_MOCHIKOMI.search(b) and not _TEIKI_MOCHIKOMI_OK.search(b))
-                     or (_TEIKI_JISHA_SHOBUN.search(b) and not _TEIKI_JISHA_OK.search(b))
-                     or (_TEIKI_SHUCCHO.search(b) and "無料" not in b)
-                     or (_TEIKI_SHOBUN_HIKIUKE.search(b) and not _TEIKI_JISHA_OK.search(b))):
+    if masu:
+        return b
+    if (_TEIKI_WARIBIKI.search(b)
+            or (_TEIKI_MOCHIKOMI_JISHA.search(b) and not _TEIKI_MOCHIKOMI_OK.search(b))
+            or (_TEIKI_MOCHIKOMI.search(b) and not _TEIKI_MOCHIKOMI_OK.search(b) and not _TEIKI_MOCHIKOMI_KYAKU.search(b))
+            or (_TEIKI_JISHA_SHOBUN.search(b) and not _TEIKI_JISHA_OK.search(b))
+            or (_TEIKI_SHUCCHO.search(b) and not _TEIKI_SHUCCHO_OK.search(b) and not _TEIKI_TANIN_BUN.search(b))
+            or (_TEIKI_SHOBUN_HIKIUKE.search(b) and "ません" not in b)):
         return None
-    return _TEIKI_ERIA.sub(TEIKI_ERIA, b)
+    iikiri = b.rstrip().endswith("。") and not _TEIKI_TOI.search(b)
+    if _TEIKI_TSUIKA_RE.search(b) and not _TEIKI_TSUIKA_OK.search(b) and not _TEIKI_TANIN_BUN.search(b):
+        return TEIKI_TSUIKA if iikiri else b
+    if _TEIKI_ERIA_KOTOBA.search(b) and not _TEIKI_ERIA_OK.search(b):
+        return TEIKI_ERIA_BUN if iikiri else None
+    return b
 
 
 def teiki_kiji(art: dict) -> bool:
@@ -2617,12 +2658,6 @@ def _teiki_suteru(b: str) -> bool:
         return True
     if _TEIKI_MIRU.search(b) and _TEIKI_KAISU.search(b) and not _TEIKI_KAISU_OK.search(b):
         return True
-    if _TEIKI_GOMI.search(b) and _TEIKI_SHOBUN.search(b) and not _TEIKI_GOMI_OK.search(b):
-        mada_ok = _TEIKI_MADA.search(b) and not _TEIKI_KATAI.search(b)
-        souji_ok = _TEIKI_SOUJI.search(b) and not re.search(r"処分|処理|持ち帰|回収", b)    # 掃き掃除が「作業に含まれます」は残す
-        soudan_ok = _TEIKI_GOMI_SOUDAN.search(b) and (not _TEIKI_SHOBUN_KATAI.search(b) or _TEIKI_KUSA_SHOBUN.search(b) or not _TEIKI_UKERU.search(b))
-        if not (mada_ok or souji_ok or soudan_ok):
-            return True
     if _TEIKI_MADA.search(b) and re.search(r"処分|処理|持ち帰|回収", b) and not _TEIKI_GOMI_OK.search(b) and not _TEIKI_KUSA_SHOBUN.search(b):
         return True                        # 「まだ使えるものも、そうでないものも…回収します」（ごみの言葉が無くても）
     if _TEIKI_KUSA.search(b) and _TEIKI_KOMI.search(b) and not _TEIKI_KUSA_OK.search(b):
@@ -2643,6 +2678,25 @@ def _teiki_suteru(b: str) -> bool:
     return False
 
 
+def _teiki_gomi(b: str) -> bool:
+    """定期の記事で、ごみを集めて処分・回収・持ち帰ると読める文か（外さずに TEIKI_GOMI_BUN に置き換える）。
+    残すのは、9/23 の形（一緒に・許可を持つ業者・段取り）・ご自身や自治体の話・打ち消し・まだ使える物（処分の言葉なし）・掃き掃除・片付けの相談だけ。
+    請ける言葉を並べて見る方式は漏れた（2回目の別の目：「お見積もりで可能です」「お見積もりに含まれます」「ご相談いただければ引き受けます」が残った）"""
+    if not (_TEIKI_GOMI.search(b) and _TEIKI_SHOBUN.search(b)):
+        return False
+    if _TEIKI_SHOBUN_HIKIUKE.search(b) and "ません" not in b:
+        return True
+    if _TEIKI_GOMI_OK.search(b):
+        return False
+    if _TEIKI_MADA.search(b) and not _TEIKI_KATAI.search(b):
+        return False
+    if _TEIKI_SOUJI.search(b) and not re.search(r"処分|処理|持ち帰|回収", b):
+        return False                       # 掃き掃除が「作業に含まれます」は残す
+    if _TEIKI_GOMI_SOUDAN.search(b) and not _TEIKI_SHOBUN_KATAI.search(b):
+        return False                       # 片付けの見積もり・相談（処分・回収の言葉なし）
+    return True
+
+
 def _teiki(s: str, tk: bool) -> str:
     """文ごとに見る。税の倍の話は外す（どの記事でも）。定期の記事は、見守り→見回り・外す文・月額の「〜」・支払いの1文"""
     if not isinstance(s, str) or not s:
@@ -2657,8 +2711,12 @@ def _teiki(s: str, tk: bool) -> str:
             b = _teiki_mimamori(b)
             if _teiki_suteru(b):           # 外す文（決めていない作業など）は、直す前に外す（直すと目印が消える）
                 continue
+            if _teiki_gomi(b):             # ごみを請ける文は、決まった1文に（言い切りの文だけ。見出し・質問は外す）
+                if b.rstrip().endswith("。") and not _TEIKI_TOI.search(b) and TEIKI_GOMI_BUN not in "".join(out):
+                    out.append(TEIKI_GOMI_BUN)
+                continue
             b2 = _teiki_joken(b)
-            if b2 is None or (b2 == TEIKI_TSUIKA and out and out[-1] == TEIKI_TSUIKA):
+            if b2 is None or (b2 in (TEIKI_TSUIKA, TEIKI_ERIA_BUN) and out and out[-1] == b2):
                 continue
             b = b2
             if b != TEIKI_TSUIKA and _teiki_suteru(b):
@@ -2672,7 +2730,7 @@ def _teiki(s: str, tk: bool) -> str:
     return "".join(out)
 
 
-def _teiki_gyou(r: list, tk: bool) -> list | None:
+def _teiki_gyou(r: list, tk: bool, headers: list | None = None) -> list | None:
     """表の1行。定期の記事で、決めていない作業・ごみの処分の行は外す（None）。見守りは直す"""
     if not tk:
         return r
@@ -2685,17 +2743,21 @@ def _teiki_gyou(r: list, tk: bool) -> list | None:
             and not (_TEIKI_MADA.search(moji) and not _TEIKI_KATAI.search(moji))):
         return None
     # 室内の見回り・確認を別料金と書いた行（マスに分かれていても、行をつなげて見る）・割引の行
-    if _TEIKI_SHITSUNAI_MIRU.search(moji) and _TEIKI_BETSU.search(moji) and not _TEIKI_SHITSUNAI_OK.search(moji):
+    if _teiki_shitsunai_betsu(moji):
         return None
     if _TEIKI_WARIBIKI.search(moji):
         return None
     shu = _TEIKI_9900.search(moji) and _TEIKI_SHU.search(moji) and not _TEIKI_SHU_OK.search(moji)
     shiharai = bool(r) and isinstance(r[0], str) and re.search(r"支払|決済|お会計", r[0])
+    # 列の見出しに他社（シルバー・センター・業者など）がある列は触らない。フッ軽の列が分かれば、その列だけ（2回目の別の目）
+    mi = [h if isinstance(h, str) else "" for h in (headers or [])]
+    jisha_retsu = {i for i, h in enumerate(mi) if re.search(r"フッ軽|当社|弊社", h)}
+    tanin_retsu = {i for i, h in enumerate(mi) if _TEIKI_SHIHARAI_TANIN.search(h) or re.search(r"ホームセンター|メーカー|他社", h)}
     hiyou = _TEIKI_HIYOU.search(moji)
 
     def masu(i: int, x: str) -> str:
         if (shiharai and i > 0 and len(set(_TEIKI_SHIHARAI_SHUDAN.findall(x))) >= 2
-                and not _TEIKI_SHIHARAI_TANIN.search(x)):
+                and not _TEIKI_SHIHARAI_TANIN.search(x) and i not in tanin_retsu and (not jisha_retsu or i in jisha_retsu)):
             return TEIKI_SHIHARAI_MASU      # 支払い方法のマスは、定期の払い方に（先頭が支払いの行・フッ軽のマスだけ）
         if hiyou and _TEIKI_HITSUYOU_MASU.fullmatch(x.strip()):
             return "ご希望に応じて事前にお見積もりします"
@@ -2761,7 +2823,7 @@ def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
         if isinstance(c.get("rows"), list):
             rows = []
             for r in c["rows"]:
-                r2 = _teiki_gyou(r, tk) if isinstance(r, list) else r
+                r2 = _teiki_gyou(r, tk, c.get("headers") if isinstance(c.get("headers"), list) else None) if isinstance(r, list) else r
                 if r2 != r:
                     kawatta = True
                 if r2 is not None:
