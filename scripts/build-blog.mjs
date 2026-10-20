@@ -442,6 +442,18 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .toc li{font-size:14.5px;line-height:1.9}
 .toc a{color:var(--ink-700);text-decoration:none;border-bottom:1px solid var(--hairline)}
 .toc a:hover{color:var(--accent)}
+.douga{display:flex;gap:16px;align-items:flex-start;margin:30px 0 22px;padding:14px;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r)}
+.douga-play,.douga iframe{flex:0 0 auto;width:min(200px,42vw);aspect-ratio:9/16;border:0;border-radius:var(--r);overflow:hidden;background:#111}
+.douga-play{position:relative;padding:0;cursor:pointer;display:block}
+.douga-play img{width:100%;height:100%;object-fit:cover;display:block}
+.douga-maru{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,0,0,.62)}
+.douga-maru::after{content:'';position:absolute;left:22px;top:17px;border-style:solid;border-width:11px 0 11px 18px;border-color:transparent transparent transparent #fff}
+.douga-play:hover .douga-maru,.douga-play:focus-visible .douga-maru{background:#c4302b}
+.douga-text{min-width:0;font-size:14.5px;line-height:1.8}
+.douga-text>b{display:block;font-size:13px;color:var(--accent);margin-bottom:4px}
+.douga-text p{margin:0 0 8px}
+.douga-name{font-weight:700;color:var(--ink-900,inherit)}
+.douga-yt a{color:var(--accent)}
 .note{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:18px 20px;margin:0 0 26px}
 .note>strong,.note>b{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}.note p strong,.note p b{color:var(--ink-900);font-weight:700}
 .note p{margin:0;font-size:14.5px;color:var(--ink-600)}
@@ -537,6 +549,84 @@ footer.site a:hover{color:#fff}
 `;
 
 // Google アナリティクス（GA4）。トップ（index.html）と同じ測定ID・同じ書き方（2026-10-19）。
+// ── 記事に差し込む YouTube のショート動画（2026-10-20）──
+// 元は content/douga.json（ネタ帳から ~/.fukkaru/douga/kiji_douga.py で写す。id は blog.py が RSS で埋める）。
+// **記事のファイルには書かない。**組み立てるときに差し込むので、書き直し（kakinaoshi）が消すこともない。
+// 1ページに1本だけ。kiji に名前がある記事が先、次に「題名に area と kotoba の言葉がある記事」（新しい記事にも自動で入る）。
+// 置き場所は LINE の案内（cta）のすぐ上。読み終えた人に「動画でも」→「LINEで相談」と続ける。
+// 軽くするため、最初は絵だけ。押したときに初めて YouTube を読み込む。押した数は GA4 の douga_saisei で数える
+const DOUGA_FILE = path.join(ROOT, 'content', 'douga.json');
+const DOUGA = (() => {
+  try {
+    return (JSON.parse(fs.readFileSync(DOUGA_FILE, 'utf8')).douga || []).filter(
+      (v) => v && /^[A-Za-z0-9_-]{11}$/.test(v.youtube || '')
+    );
+  } catch {
+    return [];
+  }
+})();
+
+function dougaFor(doc, { jidou = true } = {}) {
+  const meishi = DOUGA.find((v) => (v.kiji || []).includes(doc.slug));
+  if (meishi) return meishi;
+  if (!jidou) return null;
+  const t = String(doc.title || '');
+  return (
+    DOUGA.find(
+      (v) => (v.kotoba || []).length && (!v.area || t.includes(v.area)) && v.kotoba.some((k) => k && t.includes(k))
+    ) || null
+  );
+}
+
+function dougaName(v) {
+  // YouTube の題名から「#Shorts」と（くらしの豆知識）を外して、見出しに使う
+  return String(v.title || v.topic).replace(/\s*#Shorts\s*$/i, '').replace(/（くらしの豆知識）$/, '').split('｜')[0];
+}
+
+function renderDouga(v, slug) {
+  const id = esc(v.youtube);
+  const name = dougaName(v);
+  return `
+  <aside class="douga" aria-label="関連する動画">
+    <button type="button" class="douga-play" data-yt="${id}" data-no="${esc(v.no || '')}" data-kiji="${esc(slug)}" aria-label="動画を再生する：${esc(name)}">
+      <img src="https://i.ytimg.com/vi/${id}/maxresdefault.jpg" onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/${id}/hqdefault.jpg'" alt="" loading="lazy" decoding="async" width="405" height="720">
+      <span class="douga-maru" aria-hidden="true"></span>
+    </button>
+    <div class="douga-text">
+      <b>動画でも見られます</b>
+      <p class="douga-name">${esc(name)}</p>
+      ${v.setsumei ? `<p>${esc(v.setsumei)}</p>` : ''}
+      <p class="douga-yt"><a href="https://www.youtube.com/shorts/${id}" target="_blank" rel="noopener">YouTubeで見る</a>（約1分のショート動画）</p>
+    </div>
+  </aside>`;
+}
+
+const DOUGA_SCRIPT = `<script>
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('.douga-play');if(!b||b.dataset.on)return;b.dataset.on='1';
+  var f=document.createElement('iframe');
+  f.src='https://www.youtube-nocookie.com/embed/'+b.dataset.yt+'?autoplay=1&playsinline=1&rel=0';
+  f.title=b.getAttribute('aria-label');f.allow='autoplay; encrypted-media; picture-in-picture';f.allowFullscreen=true;
+  b.replaceWith(f);
+  if(window.gtag)gtag('event','douga_saisei',{douga_id:b.dataset.yt,douga_no:b.dataset.no,kiji:b.dataset.kiji});
+});
+</script>`;
+
+function dougaLd(v, slug) {
+  const d = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: dougaName(v),
+    description: v.setsumei || dougaName(v),
+    thumbnailUrl: [`https://i.ytimg.com/vi/${v.youtube}/maxresdefault.jpg`, `https://i.ytimg.com/vi/${v.youtube}/hqdefault.jpg`],
+    uploadDate: v.uploadDate,
+    contentUrl: `https://www.youtube.com/shorts/${v.youtube}`,
+    embedUrl: `https://www.youtube.com/embed/${v.youtube}`,
+    publisher: { '@type': 'Organization', name: SITE_NAME },
+  };
+  return `<script type="application/ld+json">${JSON.stringify(d)}</script>`;
+}
+
 // 記事のページに入っていなかったので、記事ごとの読まれ方が GA4 に1つも出ていなかった（pagePath は「/」だけ）
 const GA4_TAG = `<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z092NPG2MW"></script>
@@ -658,9 +748,11 @@ function renderArticlePage(article, all = [], pillar = null) {
   const toc = renderToc(blocksWithIds);
   const firstH2 = blocksWithIds.findIndex((b) => b.type === 'h2');
   const firstP = firstH2 >= 0 ? firstH2 : blocksWithIds.findIndex((b) => b.type !== 'lead');
+  const douga = dougaFor(article);
+  const ctaAt = blocksWithIds.findIndex((b) => b.type === 'cta');
   const bodyBlocks = blocksWithIds
-    .map((b, i) => (i === firstP && toc ? toc + '\n' + renderBlock(b) : renderBlock(b)))
-    .join('\n');
+    .map((b, i) => (i === firstP && toc ? toc + '\n' : '') + (douga && i === ctaAt ? renderDouga(douga, article.slug) + '\n' : '') + renderBlock(b))
+    .join('\n') + (douga && ctaAt < 0 ? renderDouga(douga, article.slug) : '');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
   const heroBg = article.heroImage
@@ -690,7 +782,7 @@ function renderArticlePage(article, all = [], pillar = null) {
     description: article.metaDescription,
     canonical: articleUrl(article.slug),
     ogType: 'article',
-    extraHead: jsonLd(article),
+    extraHead: jsonLd(article) + (douga ? '\n' + dougaLd(douga, article.slug) + '\n' + DOUGA_SCRIPT : ''),
     // SNSに貼ったとき出る絵は、題を焼き込んだ ogImage を優先する。
     // 見出しの背景（heroImage）は題なしの絵なので、無ければそちらで代用する。
     ogImage: article.ogImage || article.heroImage
@@ -744,9 +836,11 @@ function renderPillarPage(pillar, articles) {
   const pb = withDekinaiSoudan(withIds(pillar.blocks));
   const ptoc = renderToc(pb);
   const pFirst = pb.findIndex((b) => b.type !== 'lead');
+  const douga = dougaFor(pillar, { jidou: false });
+  const pCta = pb.findIndex((b) => b.type === 'cta');
   const body = pb
-    .map((b, i) => (i === pFirst && ptoc ? ptoc + '\n' + renderBlock(b) : renderBlock(b)))
-    .join('\n');
+    .map((b, i) => (i === pFirst && ptoc ? ptoc + '\n' : '') + (douga && i === pCta ? renderDouga(douga, pillar.slug) + '\n' : '') + renderBlock(b))
+    .join('\n') + (douga && pCta < 0 ? renderDouga(douga, pillar.slug) : '');
   const heroBg = pillar.heroImage
     ? `<div class="hero-bg" style="background-image:url('${esc(pillar.heroImage)}')"></div>`
     : '';
@@ -773,7 +867,7 @@ function renderPillarPage(pillar, articles) {
     description: pillar.metaDescription,
     canonical: pageUrl(pillar.basePath || 'blog', pillar.slug),
     ogType: 'article',
-    extraHead: jsonLd(pillar),
+    extraHead: jsonLd(pillar) + (douga ? '\n' + dougaLd(douga, pillar.slug) + '\n' + DOUGA_SCRIPT : ''),
     ogImage: pillar.ogImage || pillar.heroImage ? `${SITE_URL}${pillar.ogImage || pillar.heroImage}` : '',
     bodyHtml,
   });

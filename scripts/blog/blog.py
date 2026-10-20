@@ -4471,6 +4471,16 @@ def main() -> int:
     try:
         # main は記事を書く前に最新にしてある（上の「書く前に」を参照）
         git("checkout", "-b", branch)
+        # 記事に差し込む YouTube の動画（2026-10-20）。新しく公開された動画の id を埋めて、記事と一緒に出す。
+        # **新しい記事の枝だけで埋める**（自動でマージされる）。書き直しの枝は数日待つので、入れるとぶつかる
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import douga_ids
+            if douga_ids.umeru():
+                git("add", "content/douga.json")
+                log("✓ 記事に差し込む動画の id を埋めました")
+        except Exception as e:      # 動画が埋まらなくても記事は止めない
+            log("… 動画の id は埋められませんでした（%s）" % e)
         # 前に失敗して置き去りになった記事があれば、これも一緒に拾う
         git("add", "content/articles")
         git("add", "public/blog")
