@@ -905,6 +905,8 @@ function readServiceGroups() {
       const link = (tail.match(/link:\s*'([^']+)'/) || [])[1] || '';
       services.push({ title: m[1], price: m[2], desc: m[3], link });
     }
+    // hidden: true の分類は一覧ページに出さない（金額の弁のためにデータは残す）
+    if (/hidden:\s*true/.test(g[0].slice(0, g[0].indexOf('services:')))) continue;
     if (services.length) groups.push({ title: g[2], note: g[3], services });
   }
   return groups;

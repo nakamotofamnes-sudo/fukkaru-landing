@@ -5,7 +5,10 @@ import { ChevronDown, MessageCircle } from 'lucide-react';
 // トップに全部を書くと重くなるうえ、トップの中身は JavaScript の中にあって
 // Google からは読めません。**詳しい話は静的なページ側に置きます。**
 type Service = { title: string; price: string; desc: string; popular?: boolean; link?: string };
-type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean };
+// hidden の分類は、画面（トップと /service/）には出さない。
+// 料金は記事の道具の金額の弁が読むので、行は消さずに残す（2026-10-20 中元さん
+// 「あそこにあると普通の依頼が来なくなる」。管理は専用サイトで案内する）。
+type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean; hidden?: boolean };
 
 const groups: Group[] = [
   {
@@ -13,6 +16,7 @@ const groups: Group[] = [
     title: '空き家・マンションの管理',
     note: '4市対応／訪問回数・作業場所・月額を最初に決定。共用部は指定範囲の年1回の床洗浄つき',
     defaultOpen: true,
+    hidden: true,
     services: [
       { title: '空き家・外まわりのお手入れ', price: '月額4,400円〜', desc: '税込・月1回。外まわり確認・玄関清掃・指定範囲の小さな草取り・写真報告', link: 'https://fuji.creo-sumai.jp/#vacant' },
       { title: '空き家・室内込みのお手入れ', price: '月額6,600円〜', desc: '税込・月1回。外まわりに加え、換気・通水・室内の目視確認', link: 'https://fuji.creo-sumai.jp/#vacant' },
@@ -137,7 +141,7 @@ const Services: React.FC = () => {
         </div>
 
         <div className="mt-12 grid items-start gap-5 lg:grid-cols-2">
-          {groups.map((group) => (
+          {groups.filter((group) => !group.hidden).map((group) => (
             <ServiceGroup key={group.id} group={group} />
           ))}
         </div>
