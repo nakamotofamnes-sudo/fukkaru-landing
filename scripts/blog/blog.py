@@ -1587,7 +1587,7 @@ DAIMEI_KOTOBA = (("不用品回収", "不用品回収を頼む前に"),)
 # AIは指示しても入れてくるので、こちらで外す（CLAUDE.md の17）。新しい記事だけ。書き直しは題名を変えない（_kotei が戻す）。
 # 外すのは、金額を含む かっこ（【】（）［］）・区切り（｜・／・ ）のあとの金額のかたまり・題名の終わりの金額だけ。
 # 金額のかたまり。数字の「,」で切らない（8,000円 を「000円」と読まない）
-_DAIMEI_KIN = (r"(?:約)?(?:[0-9０-９]{1,3}(?:[,，][0-9０-９]{3})+|[0-9０-９]+)(?:万)?円"
+_DAIMEI_KIN = (r"(?:約)?(?:[0-9０-９]{1,3}(?:[,，][0-9０-９]{3})+|[0-9０-９]+)(?:万)?円(?![玉割])"
                r"(?:[〜～~ー](?:(?:[0-9０-９]{1,3}(?:[,，][0-9０-９]{3})+|[0-9０-９]+)円)?)?"
                r"(?:\s*[/／]\s*(?:時間|回|月|台|件|点|㎡|m2))?")
 _DAIMEI_KIN_RE = re.compile(_DAIMEI_KIN)
@@ -1605,6 +1605,8 @@ def daimei_kingaku_nuku(art: dict) -> bool:
     t = art.get("title")
     if not isinstance(t, str) or "円" not in t:
         return False
+    if len(_DAIMEI_KIN_RE.findall(t)) != 1:      # 金額が2つ以上（「8,000円〜と10,000円〜の違い」）は文の骨なので触らない
+        return False
     n = _DAIMEI_KAKKO_KIN.sub(" ", t)        # 途中のかっこは空白にする（「見回り【月額…】遠方」をくっつけない）
     n = re.sub(r"\s+(?=[？?！!、。｜|／/]|$)", "", n)
     n = _DAIMEI_KUGIRI_KIN.sub("", n)
@@ -1613,6 +1615,13 @@ def daimei_kingaku_nuku(art: dict) -> bool:
     n = re.sub(r"^[｜|／/・、,，：:\s]+", "", n)
     n = re.sub(r"\s{2,}", " ", n).strip()
     if n == t or len(n) < 10:
+        return False
+    # 外しきれない（金額が残る）・外した継ぎ目が壊れる（助詞や区切りで始まる所ができる）なら触らない。
+    # そのときは check がやり直させる（2026-10-22 別の目：「いくら？が目安です」「草刈り と の違い」を作っていた）
+    if _DAIMEI_KIN_RE.search(n):
+        return False
+    _KOWARE = r"(?:^|[？?！!、。｜|／/\s（(【「])(?:[がとのをにはもでやへ]|[｜|／/、])"
+    if len(re.findall(_KOWARE, n)) > len(re.findall(_KOWARE, t)):
         return False
     art["title"] = n
     return True
