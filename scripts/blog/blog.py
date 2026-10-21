@@ -2509,12 +2509,12 @@ def _teiki_suteru(b: str) -> bool:
     b = unicodedata.normalize("NFKC", b)  # 判定だけ正規化。本文の文字は書き換えない。
     if re.fullmatch(r"(?:共用部の)?(?:月額に含む)?(?:床(?:の高圧)?洗浄|高圧洗浄)(?:の回数)?は[、,]?(?:無制限|毎回行うわけ)ではありません[。.]?", b):
         return False  # 作業を約束していない、限定だけの説明。
-    if "洗浄" in b and not re.search(r"[?？]$", b.strip()):
+    if ("洗浄" in b or "定期清掃" in b) and not re.search(r"[?？]$", b.strip()):
         # 「追加は別」の一言で、固定回数・無制限・架空の月額が通らないよう先に見る。
         unlimited = r"無制限|何度でも|好きなだけ|回数を問わず|回数制限なし"
         if re.search(unlimited, b) and not re.search(r"(?:無制限|何度でも|好きなだけ)[^。]{0,8}(?:ではありません|ではなく|できません)", b):
             return True
-        for fixed in re.finditer(r"年(?:に|間)?[0-9一二三四五六七八九十]+(?:回|度)", b):
+        for fixed in re.finditer(r"年(?:に|間)?[0-9一二三四五六七八九十]+(?:[〜～~－−-][0-9一二三四五六七八九十]+)?(?:回|度)", b):
             tail = b[fixed.end():fixed.end()+14]
             if not re.match(r"(?:の(?:床の?)?(?:高圧)?洗浄)?(?:に)?(?:固定|限定)(?:しません|していません|せず)|ではありません|ではなく", tail):
                 return True
@@ -2665,6 +2665,48 @@ def teiki_naosu(art: dict, blocks: list) -> tuple[list, int]:
         out.append(c if kawatta else b)
         n += int(kawatta)
     return out, n
+
+
+# 共用部の記事は、新しい契約条件を必ず案内する（10/22、本物AIの試作が一般論だけになったため）。
+# 空き家だけの記事や単発の洗浄記事には足さない。既存の正しい案内がそろっていれば何もしない。
+def teiki_yuka_annai(art: dict) -> int:
+    meta = " ".join(str(art.get(k) or "") for k in ("title", "metaDescription"))
+    keywords = art.get("keywords")
+    if isinstance(keywords, list):
+        meta += " " + " ".join(map(str, keywords))
+    blocks = art.get("blocks")
+    if not isinstance(blocks, list) or not re.search(r"共用部|巡回清掃", meta):
+        return 0
+    periodic = re.search(r"月額|定期|巡回清掃|月[12１２一二]回", meta)
+    if re.search(r"単発|一度だけ|一回だけ|1回だけ|1回のみ|一回のみ", meta) and not periodic:
+        return 0
+    if not periodic and not re.search(r"(?:5,?500|9,?900)円", meta):
+        return 0
+    n = 0
+    # 5,500/9,900円は定期の月額。床洗浄1回の値段と読める題名・概要にはしない。
+    for key in ("title", "metaDescription"):
+        value = art.get(key)
+        if not isinstance(value, str):
+            continue
+        def monthly(match):
+            return match.group() if "月額" in value[max(0, match.start()-5):match.start()] else "月額" + match.group()
+        value = re.sub(r"料金目安(?=(?:5,?500|9,?900)円)", "定期清掃は", value)
+        new = re.sub(r"(?:5,?500|9,?900)円", monthly, value)
+        if new != art[key]:
+            art[key] = new; n += 1
+    flat = json.dumps(blocks, ensure_ascii=False)
+    required = [r"(?:訪問|毎回).*床.*(?:状態|汚れ)", r"時期.*写真|写真.*時期",
+                r"範囲[と・]回数|範囲.*回数", r"始める前|開始前|契約前", r"金額.*先", r"ご了承|承諾|了承"]
+    if all(re.search(pattern, flat) for pattern in required):
+        return n
+    guide = [
+        {"type": "h3", "text": "共用部の定期清掃と、汚れに合わせた床洗浄"},
+        {"type": "p", "text": "月1回は月額5,500円〜、月2回は月額9,900円〜（税込）が目安です。訪問のたびに床の状態を確認し、高圧洗浄が必要な時期を写真でご相談します。"},
+        {"type": "p", "text": "共用部の月額に含む床洗浄の範囲と回数は、始める前に決めます。追加が必要な場合は金額を先にお伝えし、ご了承後に行います。"},
+    ]
+    pos = next((i for i, block in enumerate(blocks) if isinstance(block, dict) and block.get("type") == "cta"), len(blocks))
+    blocks[pos:pos] = guide
+    return n + 1
 
 
 # ── 「できません」の言い切りをやわらげる（2026-09-14・中元さん「なるべく濁して相談につなぐ」）──
@@ -3001,6 +3043,7 @@ def seikei(art: dict) -> int:
         art["blocks"] = atarashii
     # **うんていの記事は、専門店への案内を必ず入れます**（2026-09-24 中元さんの指示）
     naoshita += untei_annai(art)
+    naoshita += teiki_yuka_annai(art)
     return naoshita
 
 

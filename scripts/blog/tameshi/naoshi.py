@@ -1338,5 +1338,26 @@ kazoeru('定期の記事の表：「まだ使える」が無い引き取り・�
         [str(r) for r in ([['空き家に残った家財', '古物商許可があるので引き取ります']], [['共用部のごみ', '放置されたものを回収']]) if _rows(r)])
 onaji('定期の記事：その1文だけの小見出し・段落は外す', [x['text'] for x in _h3], ['写真でご報告します。'])
 
+# 本物AIの10/22試作に出た、年回数の幅を使った一般論も残さない。
+kazoeru('共用部の洗浄：固定年回数の幅も外す', [t for t in (
+    '共用部は春や秋に年1〜2回の定期洗浄を実施するのが一般的です。',
+    '例えば、春や秋の、比較的穏やかな気候の時期に、年1〜2回の定期清掃として実施するのが一般的です。',
+    '共用部の床洗浄は一般的に年に1～2回をおすすめしています。',
+) if _tn(t)])
+_yuka = {'title': '富士市の共用部床洗浄、いつやる？料金目安5,500円〜', 'metaDescription': '料金目安5,500円〜を解説。', 'keywords': ['共用部 床洗浄'], 'blocks': [{'type': 'p', 'text': '汚れに合わせてご相談ください。'}, {'type': 'cta', 'heading': '相談する'}]}
+m.teiki_yuka_annai(_yuka)
+_yuka_text = str(_yuka)
+kazoeru('共用部記事：月額・事前合意・写真相談・追加承諾を必ず案内', [t for t in ('月額5,500円〜', '月額9,900円〜', '床の状態', '時期を写真', '範囲と回数', '始める前', '金額を先', 'ご了承後') if t not in _yuka_text])
+onaji('共用部記事：案内を2回足さない', m.teiki_yuka_annai(_yuka), 0)
+for a in (_TK, _FUTSU, _AKIYA_KUSA):
+    onaji('共用部以外の記事には床洗浄の案内を足さない：'+a['title'], m.teiki_yuka_annai(dict(a, blocks=[])), 0)
+
+for title in ('富士市で共用部を高圧洗浄、1回だけ頼むとき', '共用部の高圧洗浄を単発で頼むには', '共用部の床の汚れを落とすには'):
+    onaji('単発/一般の共用部洗浄には定期案内を足さない：'+title, m.teiki_yuka_annai({'title':title,'metaDescription':'','keywords':['共用部 高圧洗浄'],'blocks':[]}), 0)
+for title in ('富士市のアパート共用部の定期清掃 5,500円', '富士市の共用部床洗浄、料金5,500円（税込）〜'):
+    a = {'title':title,'metaDescription':'','keywords':[],'blocks':[]}
+    m.teiki_yuka_annai(a)
+    kazoeru('月額明示：'+title, [] if '月額5,500円' in a['title'] else [a['title']])
+
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)
