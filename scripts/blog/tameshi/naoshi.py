@@ -1359,5 +1359,24 @@ for title in ('富士市のアパート共用部の定期清掃 5,500円', '富�
     m.teiki_yuka_annai(a)
     kazoeru('月額明示：'+title, [] if '月額5,500円' in a['title'] else [a['title']])
 
+# ── 題名から金額を外す（2026-10-22 中元さん「タイトルに何円〜は広告すぎる」）──
+for mae, ato in (
+    ('富士市で荷造り・荷解き、どこに頼む？便利屋・専門業者・量販店の使い分け【料金目安8,000円〜/時間】', '富士市で荷造り・荷解き、どこに頼む？便利屋・専門業者・量販店の使い分け'),
+    ('【富士市】ニトリ家具組立はいくら？料金目安8,000円〜プロに依頼', '【富士市】ニトリ家具組立はいくら？プロに依頼'),
+    ('富士市の空き家見回り【月額4,400円〜】遠方の実家も安心', '富士市の空き家見回り 遠方の実家も安心'),
+    ('富士市の家具組立 8,000円〜｜IKEA・ニトリを代行', '富士市の家具組立｜IKEA・ニトリを代行'),
+    ('富士宮市で物置組立を依頼？自分でやるのと比較！料金15,000円～', '富士宮市で物置組立を依頼？自分でやるのと比較！'),
+):
+    a = {'title': mae}; m.daimei_kingaku_nuku(a)
+    kazoeru('題名の金額を外す：'+mae, [] if a['title'] == ato else [a['title']])
+# 触らない（金額が無い・途中の金額は形が読めないので check がやり直させる・数字の「,」で切らない）
+for t in ('富士市の粗大ごみ、いくら？集積所・持込・依頼で料金比較', '10円玉で落ちる汚れ？富士市の高圧洗浄のコツ',
+          '富士宮市で家具組立は8,000円〜！面倒な作業はプロにお任せ', '富士市で物置組立はどこに頼む？設置・解体15,000円〜失敗しない選び方'):
+    a = {'title': t}
+    onaji('題名の金額を外さない：'+t, m.daimei_kingaku_nuku(a), False)
+kazoeru('途中の金額は check がやり直させる', [] if any('題名に金額' in x for x in m.check({'slug':'tameshi-daimei','title':'富士宮市で家具組立は8,000円〜！面倒な作業はプロにお任せ','metaDescription':'x','keywords':['x'],'category':'家具組立','blocks':[{'type':'p','text':'x'}]}, [], 1, 4)) else ['鳴らない'])
+kazoeru('最後の回は見送る', [] if not any('題名に金額' in x for x in m.check({'slug':'tameshi-daimei','title':'富士宮市で家具組立は8,000円〜！面倒な作業はプロにお任せ','metaDescription':'x','keywords':['x'],'category':'家具組立','blocks':[{'type':'p','text':'x'}]}, [], 4, 4)) else ['鳴った'])
+kazoeru('書き直しは見ない', [] if not any('題名に金額' in x for x in m.check({'slug':'tameshi-daimei','title':'富士宮市で家具組立は8,000円〜！','metaDescription':'x','keywords':['x'],'category':'家具組立','blocks':[{'type':'p','text':'x'}]}, [], 1, 4, kakinaoshi=True)) else ['鳴った'])
+
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)
