@@ -117,23 +117,23 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </p>
               
               {/* SNS Links */}
-              <div className="flex flex-wrap items-center gap-5">
-                <a href="https://youtube.com/@fukkaru_fuji-benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="YouTube">
+              <div className="-mx-3 flex flex-wrap items-center">
+                <a href="https://youtube.com/@fukkaru_fuji-benriya" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="YouTube">
                   <Youtube size={20} />
                 </a>
-                <a href="https://tiktok.com/@fukkaru_fuji?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="TikTok">
+                <a href="https://tiktok.com/@fukkaru_fuji?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="TikTok">
                   <Music2 size={20} />
                 </a>
-                <a href="https://instagram.com/fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="Instagram">
+                <a href="https://instagram.com/fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="Instagram">
                   <Instagram size={20} />
                 </a>
-                <a href="https://threads.net/@fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="Threads">
+                <a href="https://threads.net/@fukkaru.fuji.benriya" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="Threads">
                   <AtSign size={20} />
                 </a>
-                <a href="https://lin.ee/qXlO1gC" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="LINE">
+                <a href="https://lin.ee/qXlO1gC" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="LINE">
                   <MessageCircle size={20} />
                 </a>
-                <a href="https://note.com/fukkaru_co_jp" target="_blank" rel="noopener noreferrer" className="text-white/65 transition-colors hover:text-white" title="note">
+                <a href="https://note.com/fukkaru_co_jp" target="_blank" rel="noopener noreferrer" className="p-3 text-white/65 transition-colors hover:text-white" title="note">
                   <FileText size={20} />
                 </a>
               </div>
@@ -167,10 +167,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex flex-col items-center justify-between gap-5 pt-8 text-[13px] text-white/60 md:flex-row">
-            <div className="flex flex-wrap justify-center gap-6">
-              <button onClick={() => openModal('operator')} className="transition-colors hover:text-white">運営者情報</button>
-              <button onClick={() => openModal('privacy')} className="transition-colors hover:text-white">プライバシーポリシー</button>
-              <button onClick={() => openModal('cookie')} className="transition-colors hover:text-white">クッキーポリシー</button>
+            <div className="flex flex-wrap justify-center gap-x-6">
+              <button onClick={() => openModal('operator')} className="py-2.5 transition-colors hover:text-white">運営者情報</button>
+              <button onClick={() => openModal('privacy')} className="py-2.5 transition-colors hover:text-white">プライバシーポリシー</button>
+              <button onClick={() => openModal('cookie')} className="py-2.5 transition-colors hover:text-white">クッキーポリシー</button>
             </div>
             <div className="text-center md:text-right">
               &copy; {new Date().getFullYear()} フッ軽合同会社. All Rights Reserved.

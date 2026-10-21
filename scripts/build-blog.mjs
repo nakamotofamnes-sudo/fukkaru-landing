@@ -353,7 +353,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
 .page{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .cta-bar{flex:0 0 auto;background:var(--ink-900,#0f172a);color:#fff;
   padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-  box-shadow:0 -1px 0 rgba(0,0,0,.08)}
+  border-top:1px solid rgba(255,255,255,.08)}
 .cta-bar .wrap{display:flex;gap:10px;align-items:center;max-width:760px;margin:0 auto}
 .cta-bar p{flex:1 1 auto;margin:0;font-size:13px;line-height:1.5;color:rgba(255,255,255,.82)}
 .cta-bar a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
@@ -486,7 +486,7 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .ba-pair>div{position:relative}
 .ba-pair img{width:100%;height:auto;border-radius:8px;display:block}
 .ba-pair span{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;letter-spacing:.04em;
-  background:rgba(15,23,42,.82);color:#fff;padding:3px 8px;border-radius:5px}
+  background:rgba(15,23,42,.82);color:#fff;padding:3px 8px;border-radius:var(--r)}
 .ba figcaption{font-size:13px;color:var(--ink-500);margin-top:8px}
 @media (max-width:560px){.ba-pair{grid-template-columns:1fr;gap:8px}}
 .photo{margin:22px 0}
@@ -525,7 +525,7 @@ footer.site a:hover{color:#fff}
 .svc-nav{margin:0 0 8px;padding:16px 18px;border:1px solid var(--line, #e5e7eb);border-radius:8px}
 .svc-nav h2{border:0;padding:0;margin:0 0 10px;font-size:14px;color:var(--ink-500);font-weight:500}
 .svc-nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 10px}
-.svc-nav a{display:inline-block;padding:6px 12px;border:1px solid var(--line, #e5e7eb);border-radius:999px;
+.svc-nav a{display:inline-block;padding:6px 12px;border:1px solid var(--line, #e5e7eb);border-radius:var(--r);
   font-size:13.5px;color:var(--ink-900);text-decoration:none}
 .svc-nav a:hover{border-color:var(--ink-900)}
 .index-list{list-style:none;margin:0;padding:0}
@@ -660,7 +660,8 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">
 ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <meta name="theme-color" content="#F8FAFC">
 <style>${PAGE_CSS}</style>
 ${extraHead || ''}
