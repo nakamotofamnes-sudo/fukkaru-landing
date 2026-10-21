@@ -454,6 +454,10 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .douga-text p{margin:0 0 8px}
 .douga-name{font-weight:700;color:var(--ink-900,inherit)}
 .douga-yt a{color:var(--accent)}
+.douga-jisha{margin:22px 0 26px}
+.douga-jisha video{display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r);background:#111;border:1px solid var(--hairline)}
+.douga-jisha figcaption{font-size:13.5px;line-height:1.7;color:var(--ink-500);margin-top:8px}
+.douga-jisha figcaption b{color:var(--ink-900,inherit)}
 .note{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:18px 20px;margin:0 0 26px}
 .note>strong,.note>b{display:block;margin-bottom:6px;font-size:13px;color:var(--accent);letter-spacing:.02em}.note p strong,.note p b{color:var(--ink-900);font-weight:700}
 .note p{margin:0;font-size:14.5px;color:var(--ink-600)}
@@ -565,6 +569,37 @@ const DOUGA = (() => {
     return [];
   }
 })();
+
+// ── HP に置いた動画（YouTube に上げていない動画）を、決めた記事にだけ差し込む（2026-10-21）──
+// 元は content/douga_jisha.json。kiji の記事で、ato の言葉を含む見出しのすぐ下に入れる（無ければ LINE の案内の上）。
+// 中元さん「空き家の記事に第1版の動画を良い箇所に添付しといて」「記事上のみで良いです」
+// 軽くするため preload="none"（押すまで読みこまない）。押した数は GA4 の douga_jisha_saisei で数える
+const JISHA_FILE = path.join(ROOT, 'content', 'douga_jisha.json');
+const JISHA = (() => {
+  try {
+    return (JSON.parse(fs.readFileSync(JISHA_FILE, 'utf8')).douga || []).filter(
+      (v) => v && /^\/douga\/[a-z0-9-]+\.mp4$/.test(v.mp4 || '') && fs.existsSync(path.join(ROOT, 'public', v.mp4))
+    );
+  } catch {
+    return [];
+  }
+})();
+function jishaFor(doc) {
+  return JISHA.find((v) => (v.kiji || []).includes(doc.slug)) || null;
+}
+function jishaAt(blocks, v) {
+  const i = blocks.findIndex((b) => (b.type === 'h2' || b.type === 'h3') && v.ato && String(b.text || '').includes(v.ato));
+  return i >= 0 ? i : -1;
+}
+function renderJisha(v, slug) {
+  return `
+  <figure class="douga-jisha">
+    <video controls playsinline preload="none" poster="${esc(v.poster || '')}" data-kiji="${esc(slug)}" aria-label="${esc(v.title || '動画')}" onplay="if(!this.dataset.on){this.dataset.on='1';window.gtag&&gtag('event','douga_jisha_saisei',{kiji:this.dataset.kiji,douga:'${esc(v.mp4)}'})}">
+      <source src="${esc(v.mp4)}" type="video/mp4">
+    </video>
+    <figcaption><b>${esc(v.title || '')}</b>${v.setsumei ? `　${esc(v.setsumei)}` : ''}</figcaption>
+  </figure>`;
+}
 
 function dougaFor(doc, { jidou = true } = {}) {
   const meishi = DOUGA.find((v) => (v.kiji || []).includes(doc.slug));
@@ -751,8 +786,10 @@ function renderArticlePage(article, all = [], pillar = null) {
   const firstP = firstH2 >= 0 ? firstH2 : blocksWithIds.findIndex((b) => b.type !== 'lead');
   const douga = dougaFor(article);
   const ctaAt = blocksWithIds.findIndex((b) => b.type === 'cta');
+  const jisha = jishaFor(article);
+  const jishaI = jisha ? jishaAt(blocksWithIds, jisha) : -1;
   const bodyBlocks = blocksWithIds
-    .map((b, i) => (i === firstP && toc ? toc + '\n' : '') + (douga && i === ctaAt ? renderDouga(douga, article.slug) + '\n' : '') + renderBlock(b))
+    .map((b, i) => (i === firstP && toc ? toc + '\n' : '') + (douga && i === ctaAt ? renderDouga(douga, article.slug) + '\n' : '') + (jisha && jishaI < 0 && i === ctaAt ? renderJisha(jisha, article.slug) + '\n' : '') + renderBlock(b) + (jisha && i === jishaI ? '\n' + renderJisha(jisha, article.slug) : ''))
     .join('\n') + (douga && ctaAt < 0 ? renderDouga(douga, article.slug) : '');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
