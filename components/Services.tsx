@@ -14,14 +14,14 @@ const groups: Group[] = [
   {
     id: 'regular-care',
     title: '空き家・マンションの管理',
-    note: '4市対応／訪問回数・作業場所・月額を最初に決定。共用部は指定範囲の年1回の床洗浄つき',
+    note: '4市対応／訪問回数・作業場所・月額を最初に決定。共用部は月額内の床洗浄の範囲・回数を開始前に決定',
     defaultOpen: true,
     hidden: true,
     services: [
       { title: '空き家・外まわりのお手入れ', price: '月額4,400円〜', desc: '税込・月1回。外まわり確認・玄関清掃・指定範囲の小さな草取り・写真報告', link: 'https://fuji.creo-sumai.jp/#vacant' },
       { title: '空き家・室内込みのお手入れ', price: '月額6,600円〜', desc: '税込・月1回。外まわりに加え、換気・通水・室内の目視確認', link: 'https://fuji.creo-sumai.jp/#vacant' },
-      { title: 'アパート・マンション共用部の清掃（月1回）', price: '月額5,500円〜', desc: '税込・指定範囲の年1回の床洗浄を含む。広さ・状態を確認して月額を決定', link: 'https://fuji.creo-sumai.jp/#apartment' },
-      { title: 'アパート・マンション共用部の清掃（月2回）', price: '月額9,900円〜', desc: '税込・指定範囲の年1回の床洗浄を含む。広さ・状態を確認して月額を決定', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: 'アパート・マンション共用部の清掃（月1回）', price: '月額5,500円〜', desc: '税込・合意した範囲と回数の床洗浄を含む。実施時期は汚れを見て写真で相談', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: 'アパート・マンション共用部の清掃（月2回）', price: '月額9,900円〜', desc: '税込・合意した範囲と回数の床洗浄を含む。実施時期は汚れを見て写真で相談', link: 'https://fuji.creo-sumai.jp/#apartment' },
     ],
   },
   {

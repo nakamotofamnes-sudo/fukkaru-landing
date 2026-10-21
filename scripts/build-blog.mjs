@@ -19,7 +19,7 @@ const SITE_URL = 'https://fukkaru.creo-sumai.jp';
 // 1本は4日で登録された。古い住所は firebase.json の redirects が新しい住所へ送る
 const SVC_PATH = '/blog/service/';
 const SITE_NAME = 'フッ軽（ふっかる）';
-const LINE_URL = 'https://lin.ee/qXlO1gC';
+const LINE_URL = 'https://lin.ee/Bh5gFU6';
 
 function esc(s) {
   return String(s ?? '')
@@ -190,7 +190,7 @@ function midashi(block, tag) {
   return t;
 }
 
-function renderBlock(block) {
+function renderBlock(block, regularCare = false) {
   if (block.type === 'soudan') return renderSoudan();
   if (block.type === 'photo') return renderPhoto(block);
   if (block.type === 'ba') return renderBA(block);
@@ -222,7 +222,7 @@ function renderBlock(block) {
     case 'note':
       return `<div class="note"><strong>${inline(block.title || 'メモ')}</strong><p>${inlineBr(block.text)}</p></div>`;
     case 'cta':
-      return renderCta(block);
+      return renderCta(block, regularCare);
     case 'faq': {
       const items = block.items
         .map(
@@ -265,7 +265,7 @@ function renderSteps(block) {
   return `<ol class="steps">\n      ${items}\n    </ol>`;
 }
 
-function renderCta(block) {
+function renderCta(block, regularCare = false) {
   const heading = block?.heading || '見積もりは無料です。まずはお気軽にご相談ください。';
   const sub = block?.sub || '富士市・富士宮市・静岡県内、山梨県、神奈川県海老名市以西まで対応しています。';
   return `
@@ -274,8 +274,8 @@ function renderCta(block) {
     <p class="cta-sub">${inline(sub)}</p>
     ${block?.dekinai ? '<p class="cta-sub">頼めるか迷った物も、写真を送ってください。どれに当たるかお答えします。</p>' : ''}
     <div class="cta-buttons">
-      <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">公式LINEで相談する（登録＋成約で最大3,000円割引）</a>
-      <a class="btn btn-outline" href="${SVC_PATH}">料金とサービス一覧を見る</a>
+      <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">${regularCare ? '公式LINEで定期のお手入れを相談する' : '公式LINEで相談する（登録＋成約で最大3,000円割引）'}</a>
+      <a class="btn btn-outline" href="${regularCare ? 'https://fuji.creo-sumai.jp/' : SVC_PATH}">${regularCare ? '定期のお手入れの内容・料金を見る' : '料金とサービス一覧を見る'}</a>
     </div>
   </div>`;
 }
@@ -780,6 +780,7 @@ function renderArticlePage(article, all = [], pillar = null) {
   // 目次は導入のあと、最初の h2 の直前（2026-09-14）。
   // 以前は lead の直後で、導入（結論・料金の目安・分かること）より先に目次が出ていた。
   // h2 が無い記事は、これまでどおり lead の直後
+  const regularCare = /見回り|見守り|巡回清掃|共用部|月額/.test([article.title, article.metaDescription, ...(article.keywords || [])].join(' '));
   const blocksWithIds = withDekinaiSoudan(withIds(article.blocks));
   const toc = renderToc(blocksWithIds);
   const firstH2 = blocksWithIds.findIndex((b) => b.type === 'h2');
@@ -789,7 +790,7 @@ function renderArticlePage(article, all = [], pillar = null) {
   const jisha = jishaFor(article);
   const jishaI = jisha ? jishaAt(blocksWithIds, jisha) : -1;
   const bodyBlocks = blocksWithIds
-    .map((b, i) => (i === firstP && toc ? toc + '\n' : '') + (douga && i === ctaAt ? renderDouga(douga, article.slug) + '\n' : '') + (jisha && jishaI < 0 && i === ctaAt ? renderJisha(jisha, article.slug) + '\n' : '') + renderBlock(b) + (jisha && i === jishaI ? '\n' + renderJisha(jisha, article.slug) : ''))
+    .map((b, i) => (i === firstP && toc ? toc + '\n' : '') + (douga && i === ctaAt ? renderDouga(douga, article.slug) + '\n' : '') + (jisha && jishaI < 0 && i === ctaAt ? renderJisha(jisha, article.slug) + '\n' : '') + renderBlock(b, regularCare) + (jisha && i === jishaI ? '\n' + renderJisha(jisha, article.slug) : ''))
     .join('\n') + (douga && ctaAt < 0 ? renderDouga(douga, article.slug) : '');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
