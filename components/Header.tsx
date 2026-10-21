@@ -154,9 +154,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
               <Phone size={18} />
               0545-78-3704 に電話する
             </a>
-            <div className="flex items-center gap-5 pt-2">
+            <div className="-mx-3 flex items-center pt-2">
               {socials.map(({ label, href, Icon }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="text-ink-500 hover:text-ink-900">
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="p-3 text-ink-500 hover:text-ink-900">
                   <Icon size={20} />
                 </a>
               ))}

@@ -1,13 +1,10 @@
 import React from 'react';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
-// content/articles/*.json をビルド時に読み込む。
+// 最新3本は vite.config.ts の blogTeaser() がビルド時に選んで渡す。
 // ブログ本体は scripts/build-blog.mjs が静的HTMLとして別に生成しているが、
 // トップページからの入口が無いと誰にも見つけてもらえないので、ここで最新3本を見せる。
-const modules = import.meta.glob('../content/articles/*.json', { eager: true }) as Record<
-  string,
-  { default?: Article } & Article
->;
+import latest from 'virtual:blog-teaser';
 
 type Article = {
   slug: string;
@@ -17,11 +14,7 @@ type Article = {
   publishDate?: string;
 };
 
-const articles: Article[] = Object.values(modules)
-  .map((m) => (m.default ?? m) as Article)
-  .filter((a) => a && a.slug && a.title)
-  .sort((a, b) => String(b.publishDate ?? '').localeCompare(String(a.publishDate ?? '')))
-  .slice(0, 3);
+const articles: Article[] = latest;
 
 const BlogTeaser: React.FC = () => {
   if (articles.length === 0) return null;
