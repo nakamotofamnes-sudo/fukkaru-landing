@@ -1,70 +1,53 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-// フッ軽の紹介動画（横長・約37秒）。お知らせのすぐ下で、音なしで自動にくり返し流します。
-// 中元さん（2026-10-17）「YouTubeで投稿後にYouTubeでできたのを指定した場所でループ再生させてください。
-// 動画のインプレッションが増えればいい」→ HPに動画ファイルを置かず、YouTube の動画を埋め込む。
-// HPを重くしないために：
-// - 画面に近づくまで YouTube の部品を読み込まない（最初は止まった1枚の絵だけ）
-// - youtube-nocookie（プライバシー強化モード）は使わない：YouTube 側の数字につなげたいため
-// - 「動きを減らす」設定の方には自動で流さない（YouTube の再生ボタンで見られる）
-const VIDEO_ID = '5hCWQzLqzos';   // 2026-10-17 23:11 に上げた横長の広告動画（試作4）
-const POSTER = '/douga/fukkaru-koukoku-poster.jpg';
+// フッ軽の紹介動画「今日も、現場へ。」（横長・第2世代）。お知らせのすぐ下で、音なしでくり返し流します。
+// 2026-10-22 中元さん「今日も現場への動画に書き換え。ループ再生で重くならないように」
+// → YouTube の埋め込みをやめ、HPに軽い動画（1280x720・約2MB）を置く。
+const SRC = '/douga/kyoumo-genba-1022.mp4';
+const POSTER = '/douga/kyoumo-genba-poster.jpg';
 
-const KoukokuDouga: React.FC = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [mieta, setMieta] = useState(false);
-  const [ugokiHerasu, setUgokiHerasu] = useState(false);
-
+// 画面に入ったときだけ読み込んで、音なしでくり返し流す。画面の外では止める（重くしない）。
+// 「動きを減らす」設定の方には止まった絵だけ（再生ボタンで見られる）。
+function useLoopVideo() {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [yomu, setYomu] = useState(false);
+  const [ugokiHerasu] = useState(
+    () => typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false),
+  );
   useEffect(() => {
-    setUgokiHerasu(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+    const herasu = ugokiHerasu;
     const el = ref.current;
-    if (!el || !('IntersectionObserver' in window)) {
-      setMieta(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setMieta(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: '300px 0px' },
-    );
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      const mieru = entries.some((e) => e.isIntersecting);
+      if (mieru) { setYomu(true); if (!herasu) el.play().catch(() => {}); }
+      else el.pause();
+    }, { rootMargin: '200px 0px', threshold: 0 });
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [ugokiHerasu]);
+  return { ref, yomu, ugokiHerasu };
+}
 
-  // 自動でくり返す：autoplay（音なしのときだけ許される）＋ loop（playlist に同じ動画を入れるとくり返す）
-  const params = new URLSearchParams({
-    autoplay: ugokiHerasu ? '0' : '1',
-    mute: '1',
-    loop: '1',
-    playlist: VIDEO_ID,
-    playsinline: '1',
-    rel: '0',
-    modestbranding: '1',
-  });
-
+const KoukokuDouga: React.FC = () => {
+  const { ref, yomu, ugokiHerasu } = useLoopVideo();
   return (
     <section className="section-tight border-b border-hairline bg-canvas" aria-labelledby="koukoku-douga">
       <div className="shell">
-        <h2 id="koukoku-douga" className="sr-only">
-          フッ軽の紹介動画
-        </h2>
-        <div ref={ref} className="relative aspect-video w-full overflow-hidden rounded border border-hairline bg-surface">
-          {mieta ? (
-            <iframe
-              className="absolute inset-0 h-full w-full"
-              src={`https://www.youtube.com/embed/${VIDEO_ID}?${params.toString()}`}
-              title="フッ軽の紹介動画（YouTube）"
-              allow="autoplay; encrypted-media; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          ) : (
-            <img src={POSTER} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-          )}
+        <h2 id="koukoku-douga" className="sr-only">フッ軽の紹介動画</h2>
+        <div className="relative aspect-video w-full overflow-hidden rounded border border-hairline bg-surface">
+          <video
+            ref={ref}
+            className="absolute inset-0 h-full w-full object-cover"
+            src={yomu ? SRC : undefined}
+            poster={POSTER}
+            muted
+            loop
+            playsInline
+            preload="none"
+            controls={ugokiHerasu}
+            aria-label="フッ軽の紹介動画「今日も、現場へ。」"
+          />
         </div>
       </div>
     </section>
