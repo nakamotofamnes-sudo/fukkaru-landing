@@ -836,7 +836,12 @@ function renderArticlePage(article, all = [], pillar = null) {
 // 枝葉の記事は、1本ずつでは大きい語に届かない。
 // 話題の中心になる1枚を置き、そこへ全記事から繋いで束にする。
 // 記事一覧の部分は**毎回作り直す**ので、記事が増えても柱が古くならない。
+// articleMatch：題名に含む言葉で束ねる（2026-10-23 アンカー固定）。
+// 物置の記事のうち「アンカー」の記事だけを、物置の柱ではなくこちらへ。
+const matchesPillar = (p, a) => !!p.articleMatch && (a.title || '').includes(p.articleMatch);
+
 function pillarArticles(pillar, articles) {
+  if (pillar.articleMatch) return articles.filter((a) => matchesPillar(pillar, a));
   const only = pillar.articleCategories;
   return only && only.length
     ? articles.filter((a) => only.includes(a.category))
@@ -1242,7 +1247,8 @@ function main() {
         .map((f) => JSON.parse(fs.readFileSync(path.join(PILLAR_DIR, f), 'utf8')))
     : [];
   const pillarFor = (a) =>
-    pillars.find((p) => (p.articleCategories || []).includes(a.category)) || null;
+    pillars.find((p) => matchesPillar(p, a))
+    || pillars.find((p) => (p.articleCategories || []).includes(a.category)) || null;
 
   fs.mkdirSync(BLOG_OUT_DIR, { recursive: true });
 

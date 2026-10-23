@@ -68,7 +68,7 @@ const groups: Group[] = [
     note: '物置の設置・解体、買い物の代行',
     services: [
       { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true , link: '/blog/monooki/' },
-      { title: '物置のアンカー固定', price: '10,000円〜', desc: '土・アスファルト・コンクリート。アンカーだけのご依頼も承ります', link: '/blog/fuji-monooki-anchor-kotei-taifu/' },
+      { title: '物置のアンカー固定', price: '10,000円〜', desc: '土・アスファルト・コンクリート。アンカーだけのご依頼も承ります', link: '/blog/monooki-anchor/' },
       { title: 'まだ使える物置の引き取り', price: '8,000円〜', desc: 'サイズにより変わります', link: '/blog/fuji-monooki-hikiteri-ryokin-benriya/' },
       { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも', link: '/blog/kaimono/' },
     ],
