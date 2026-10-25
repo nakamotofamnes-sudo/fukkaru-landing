@@ -1442,6 +1442,8 @@ KYOKA_NAOSHI = (
     (r"(もの(?:だけ)?を(?:まとめて)?)処分(?:する|して)(、?といった(?:ご依頼|ご相談))", r"\1片付ける\2"),
     (r"片付け(?:や|・)処分(?=だけでなく|に加えて|はもちろん)", "片付け"),
     (r"費用を(?:ゼロ|０|0)に(?:することも)?(?:できます|できる場合があります)", "費用を抑えられる場合があります"),
+    # 「相殺」は、1文だけの段落・箇条書きだと外す直しが効かない（空になるので外さない）。言い切らない形に言い換える（2026-10-25 3回目）
+    (r"((?:処分|片付け|作業|運搬)?(?:費用|料金))(?:を|から|と)?相殺(?:することが)?(?:でき(?=る|ます)|され(?=る|ます))", r"\1が下が"),
     (r"費用を(?:ゼロ|０|0)に(?=$|[」』！!？?、。\s])", "費用を抑える"),
     # 見出し「処分作業について」「草の処分について」（2026-09-15 の10時の記事）。見出しは文全体が1つなので ^…$
     (r"^(.*?)処分(?:作業|方法)?について$", r"\1出し方について"),
@@ -2138,12 +2140,18 @@ _KEITORA_KZ = re.compile(r"片付け|片づけ|残置物|不用品|処分|回収
 
 
 def _keitora_katazuke(b: str) -> bool:
-    if not _KEITORA_KATAZUKE.search(b) or _KEITORA_OK.search(b):
+    if not _KEITORA_KATAZUKE.search(b):
         return False
+    if _KEITORA_OK.search(b):
+        # 持ち込みの言葉だけで、作業で出た草・枝の話が無く、お客様の不用品の話なら外す（別の目 10/25 2回目：
+        # 「軽トラック1台分の不用品を持ち込むと8,000円〜」。8,000円〜はフッ軽が作業で出した草・枝を持ち込む額）
+        return bool(not re.search(r"刈|草|枝|剪定|伐採", b) and re.search(r"不用品|残置物|家財|遺品", b))
     return bool(_KEITORA_KZ.search(b) or not _KEITORA_OK_HIROI.search(b))
 
 
 # お金の約束（2026-10-25 2回目：「処分費用を相殺したり、場合によってはプラスの収入になることも」）。買取の額は品物を見て決まる
+# 市・ほかの会社の説明・打ち消しの「相殺」「無料」は残す（別の目 10/25 2回目）
+_KANE_YAKUSOKU_OK = re.compile(r"ありません|できません|他社|会社もあ|業者|市の|自治体")
 _KANE_YAKUSOKU = re.compile(r"プラスの?収入|収入になる|お金が(?:戻|入って)|黒字に|実質(?:無料|[0０]円|ゼロ)|"
                             r"費用(?:が|は)?(?:ゼロ|[0０]円)(?:に|で)|売却益|利益が出|(?:処分|運搬|片付け|作業)?(?:費用|料金)[^。]{0,6}相殺")
 
@@ -2165,7 +2173,7 @@ def _kyoka(s: str) -> str:
     bun = re.split(r"(?<=[。！？])", s)
     nokosu = [b for b in bun
               if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b) or kaishu_yakusoku(b)
-                      or _REI_KINGAKU.search(b) or _KANE_YAKUSOKU.search(b)
+                      or _REI_KINGAKU.search(b) or (_KANE_YAKUSOKU.search(b) and not _KANE_YAKUSOKU_OK.search(b))
                       or _keitora_katazuke(b))]
     if len(nokosu) != len(bun) and "".join(nokosu).strip():
         s = "".join(nokosu)
@@ -3048,7 +3056,8 @@ def katazuke_katachi_tasu(art: dict) -> int:
     blocks = art.get("blocks")
     if not isinstance(blocks, list):
         return 0
-    if _SHOBUN_KATACHI.search(json.dumps(blocks, ensure_ascii=False)):
+    # 「回収業者と契約する前に…」のような注意の文だけでは、形があることにしない（別の目 10/25 2回目）
+    if re.search(r"許可を持つ[^。、]{0,6}業者と[^。]{0,10}一緒に片付け|一緒に片付けます", json.dumps(blocks, ensure_ascii=False)):
         return 0                      # もう書いてある
     annai = {"type": "note", "title": _KATAZUKE_MIDASHI, "text": _SHOBUN_TASU_MADA + _HANNYU_KAWARI}
     for i, b in enumerate(blocks):    # 締めのひと押し（cta）の直前に置く
