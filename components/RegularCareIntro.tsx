@@ -30,6 +30,7 @@ const RegularCareIntro: React.FC = () => (
         <a href="https://fuji.creo-sumai.jp/" className="btn btn-primary inline-flex items-center gap-2">詳しい内容・料金を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
         <a href="https://lin.ee/Bh5gFU6" target="_blank" rel="noopener noreferrer" className="btn btn-line inline-flex items-center gap-2"><MessageCircle size={17} aria-hidden="true" />LINEで無料相談する</a>
       </div>
+      <p className="mt-3 text-[13px] leading-[1.8] text-ink-500">LINEを使っていない方は、<a href={`mailto:nakamoto.famnes@gmail.com?subject=${encodeURIComponent('空き家・建物の管理の相談')}`} className="inline-block text-ink-900 underline underline-offset-4">こちらからメールでご相談ください</a></p>
       <p className="mt-4 text-[12px] leading-[1.8] text-ink-500">相談・見積もりにご納得いただいてから、お支払い方法をご案内します。新しい定期サービスに12か月の契約縛りはありません。</p>
     </div>
   </section>
