@@ -1431,6 +1431,8 @@ ZANCHI_NAOSU += [
     ('まだ使えるものは買い取り、処分費用を相殺できる場合があります。', 'まだ使えるものは買い取り、処分費用が下がる場合があります。'),
     ('買取が成立した場合は、作業料金から相殺されることもあります。', '買取が成立した場合は、作業料金が下がることもあります。'),
 ]
+ZANCHI_NAOSU += [(x + _E, _E) for x in ['遺品整理士が在籍しているので安心です。', 'フッ軽は遺品整理士の資格を持っています。', '遺品整理士の資格を持つ代表がお伺いします。']]
+ZANCHI_NOKOSU += [x + _E for x in ['遺品整理士の資格があるかを確かめましょう。', '遺品整理士とは、民間の資格です。', 'フッ軽は遺品整理士の資格は持っていませんが、片付けをお手伝いします。']]
 kazoeru('残置物：直す文 %d' % len(ZANCHI_NAOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a, w in ZANCHI_NAOSU if m._kyoka(a) != w])
 kazoeru('残置物：残す文 %d' % len(ZANCHI_NOKOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a in ZANCHI_NOKOSU if m._kyoka(a) != a])
 ZANCHI_KAISHU = [
