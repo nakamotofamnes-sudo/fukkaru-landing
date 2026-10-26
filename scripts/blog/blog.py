@@ -137,6 +137,9 @@ FACTS = """
   （2026-09-14 に足した。書いたあとに機械でも外す → _ryokin_tsukuri）
 ・無料と書いてよいのは2つだけ：**LINEで写真を送るお見積り（地域を問わず）**と、
   **出張費（富士市・富士宮市・静岡市・沼津市）**（2026-09-03 決定）
+・**静岡県東部のほかの市町（三島市・裾野市・御殿場市・長泉町・清水町・函南町・伊豆の国市・伊豆市・熱海市・伊東市・小山町）にも伺う**
+  （2026-10-26 中元さん「東部全体」「熱海の依頼が意外と多い」）。**出張費は無料と書かない。「出張費はお見積りでお伝えします」と書く。**
+  定期の見回り・巡回清掃は4市だけ。この市町のごみの出し方・施設は確かめていないので、市の決まりを書かない（「出し方は市のページでご確認ください」まで）
 ・作業で出た草は、**富士市では**フッ軽が事業として新環境クリーンセンターに持ち込める。
   **お客様の料金は「軽トラック1車 8,000円〜」**（2026-09-21 中元さん指定）。
   記事では「ご自分で出す（無料）／フッ軽が持ち込む（軽トラック1車 8,000円〜）から選べます」と書く。
@@ -1439,7 +1442,11 @@ KYOKA_NAOSHI = (
     # 「費用をゼロにできます」→ 言い切らない形。題名・見出しの「費用をゼロに」→「費用を抑える」
     # 2026-10-25 2回目の試し運転：「仕分け、運び出し、搬出、そして処分まで、一連の作業を代行いたします」
     # 「ご自身で片付けられないものだけをまとめて処分する、といったご依頼もお受けしています」「片付けや処分だけでなく…幅広く対応」
-    (r"、?(?:そして)?処分まで、?(?:一連の作業を|すべて|まとめて)?(?:代行|対応|お引き受け)(?:いたします|します)",
+    # 10/26：「整理・搬出・処分まで、最初から最後まで責任を持って対応します」（間に20字まで入る形・前の「・」も外す）
+    # 別の目 10/26：市・業者の説明と「から処分まで」には当てない（「受付からまで」と壊れた）
+    (r"(から)処分まで、?(?:(?!市|施設|自治体|行政|業者|他社|メーカー)[^。]){0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
+     r"\1搬出まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます"),
+    (r"(?<!から)[、・]?(?:そして)?処分まで、?(?:(?!市|施設|自治体|行政|業者|他社|メーカー)[^。]){0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
      "まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます"),
     (r"(もの(?:だけ)?を(?:まとめて)?)処分(?:する|して)(、?といった(?:ご依頼|ご相談))", r"\1片付ける\2"),
     (r"片付け(?:や|・)処分(?=だけでなく|に加えて|はもちろん)", "片付け"),
@@ -3076,6 +3083,69 @@ def katazuke_katachi_tasu(art: dict) -> int:
     return 1
 
 
+# 定期の見回り・巡回清掃は4市だけ（2026-10-26）。東部のほかの市町の記事で、AIが「庭の手入れは月額4,400円〜」と書いた（伊東市の試し運転）。
+# 事実の欄に書いても書くので、題名がその市町の記事では、月額・定期の見回りの文と表の行を外す
+_TOUBU_HOKA = re.compile(r"三島|裾野|御殿場|長泉|清水町|函南|伊豆|熱海|伊東|小山町|下田|河津")
+_TOUBU_TEIKI = re.compile(r"月額|定期の見回り|巡回清掃|定期のお手入れ|定期管理")
+
+
+def toubu_teiki_nuku(art: dict) -> int:
+    """4市以外の東部の記事から、定期（月額）の案内を外す。外した数を返す"""
+    if not _TOUBU_HOKA.search(str(art.get("title", ""))):
+        return 0
+    md = art.get("metaDescription")
+    if isinstance(md, str) and _TOUBU_TEIKI.search(md):
+        art["metaDescription"] = ("".join(x for x in re.split(r"(?<=[。！？])", md) if not _TOUBU_TEIKI.search(x))
+                                  or str(art.get("title", "")))      # 全部が月額の話なら題名にする（別の目 10/26）
+    blocks = art.get("blocks")
+    if not isinstance(blocks, list):
+        return 0
+    n = 0
+    def dame(x):
+        # 出張費を無料と言う文も外す（無料は4市だけ。4市の名前がある文は残す）
+        return bool(_TOUBU_TEIKI.search(x) or (re.search(r"出張費", x) and re.search(r"無料|かかりません|0円", x)
+                                               and not (re.search(r"富士市|富士宮市|沼津市|静岡市", x) and not _TOUBU_HOKA.search(x))))
+
+    def bun_nuku(t):
+        nonlocal n
+        if not isinstance(t, str) or not dame(t):
+            return t
+        bun = re.split(r"(?<=[。！？])", t)
+        nokosu = [x for x in bun if not dame(x)]
+        n += len(bun) - len(nokosu)
+        return "".join(nokosu)
+    out = []
+    for b in blocks:
+        if not isinstance(b, dict):
+            out.append(b); continue
+        c = dict(b)
+        for k in ("text", "title"):
+            if k in c:
+                c[k] = bun_nuku(c[k])
+        if isinstance(c.get("items"), list):
+            i0 = c["items"]
+            # よくある質問は items に {q, a} が並ぶ。月額の話の組は丸ごと外す
+            c["items"] = [x for x in (bun_nuku(i) for i in i0
+                                      if not (isinstance(i, dict) and dame(str(i.get("q", "")) + str(i.get("a", "")))))
+                          if not (isinstance(x, str) and not x.strip())]
+            n += sum(1 for i in i0 if isinstance(i, dict) and dame(str(i.get("q", "")) + str(i.get("a", ""))))
+        if isinstance(c.get("rows"), list):
+            r0 = c["rows"]
+            # 行はセルをつないで見る（「出張費」「無料」が別のセルでも拾う）
+            c["rows"] = [r for r in r0 if not (isinstance(r, list) and dame("｜".join(str(x) for x in r)))]
+            n += len(r0) - len(c["rows"])
+        if c.get("type") == "cta" and _TOUBU_TEIKI.search(str(b.get("text", "")) + str(b.get("label", ""))):
+            n += 1
+            continue              # ボタンが定期の案内なら、ボタンごと外す
+        kara = (c.get("type") in ("p", "lead", "note", "h2", "h3", "heading", "cta") and "text" in c and not str(c.get("text", "")).strip()) or \
+               (c.get("type") in ("ul", "ol", "faq") and isinstance(c.get("items"), list) and not c.get("items")) or (c.get("type") == "table" and not c.get("rows"))
+        if not kara:
+            out.append(c)
+    if n:
+        art["blocks"] = out
+    return n
+
+
 def untei_annai(art: dict) -> int:
     """うんていの記事に、専門店への案内を入れる。入れたら1を返す"""
     if "うんてい" not in str(art.get("title", "")):
@@ -3187,6 +3257,7 @@ def seikei(art: dict) -> int:
     naoshita += untei_annai(art)
     naoshita += teiki_yuka_annai(art)
     naoshita += katazuke_katachi_tasu(art)
+    naoshita += toubu_teiki_nuku(art)
     return naoshita
 
 
