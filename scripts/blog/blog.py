@@ -1443,7 +1443,8 @@ KYOKA_NAOSHI = (
     # 2026-10-25 2回目の試し運転：「仕分け、運び出し、搬出、そして処分まで、一連の作業を代行いたします」
     # 「ご自身で片付けられないものだけをまとめて処分する、といったご依頼もお受けしています」「片付けや処分だけでなく…幅広く対応」
     # 10/26：「整理・搬出・処分まで、最初から最後まで責任を持って対応します」（間に20字まで入る形・前の「・」も外す）
-    (r"[、・]?(?:そして)?処分まで、?[^。]{0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
+    # 別の目 10/26：市・業者の説明と「から処分まで」には当てない（「受付からまで」と壊れた）
+    (r"(?<!から)[、・]?(?:そして)?処分まで、?(?:(?!市|施設|自治体|行政|業者|他社|メーカー)[^。]){0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
      "まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます"),
     (r"(もの(?:だけ)?を(?:まとめて)?)処分(?:する|して)(、?といった(?:ご依頼|ご相談))", r"\1片付ける\2"),
     (r"片付け(?:や|・)処分(?=だけでなく|に加えて|はもちろん)", "片付け"),
@@ -3082,7 +3083,7 @@ def katazuke_katachi_tasu(art: dict) -> int:
 
 # 定期の見回り・巡回清掃は4市だけ（2026-10-26）。東部のほかの市町の記事で、AIが「庭の手入れは月額4,400円〜」と書いた（伊東市の試し運転）。
 # 事実の欄に書いても書くので、題名がその市町の記事では、月額・定期の見回りの文と表の行を外す
-_TOUBU_HOKA = re.compile(r"三島|裾野|御殿場|長泉|清水町|函南|伊豆の国|伊豆市|熱海|伊東|小山町")
+_TOUBU_HOKA = re.compile(r"三島|裾野|御殿場|長泉|清水町|函南|伊豆|熱海|伊東|小山町|下田|河津")
 _TOUBU_TEIKI = re.compile(r"月額|定期の見回り|巡回清掃|定期のお手入れ|定期管理")
 
 
@@ -3092,17 +3093,23 @@ def toubu_teiki_nuku(art: dict) -> int:
         return 0
     md = art.get("metaDescription")
     if isinstance(md, str) and _TOUBU_TEIKI.search(md):
-        art["metaDescription"] = "".join(x for x in re.split(r"(?<=[。！？])", md) if not _TOUBU_TEIKI.search(x)) or md
+        art["metaDescription"] = ("".join(x for x in re.split(r"(?<=[。！？])", md) if not _TOUBU_TEIKI.search(x))
+                                  or str(art.get("title", "")))      # 全部が月額の話なら題名にする（別の目 10/26）
     blocks = art.get("blocks")
     if not isinstance(blocks, list):
         return 0
     n = 0
+    def dame(x):
+        # 出張費を無料と言う文も外す（無料は4市だけ。4市の名前がある文は残す）
+        return bool(_TOUBU_TEIKI.search(x) or (re.search(r"出張費", x) and re.search(r"無料|かかりません|0円", x)
+                                               and not re.search(r"富士市|富士宮市|沼津市|静岡市", x)))
+
     def bun_nuku(t):
         nonlocal n
-        if not isinstance(t, str) or not _TOUBU_TEIKI.search(t):
+        if not isinstance(t, str) or not dame(t):
             return t
         bun = re.split(r"(?<=[。！？])", t)
-        nokosu = [x for x in bun if not _TOUBU_TEIKI.search(x)]
+        nokosu = [x for x in bun if not dame(x)]
         n += len(bun) - len(nokosu)
         return "".join(nokosu)
     out = []
@@ -3117,14 +3124,17 @@ def toubu_teiki_nuku(art: dict) -> int:
             i0 = c["items"]
             # よくある質問は items に {q, a} が並ぶ。月額の話の組は丸ごと外す
             c["items"] = [x for x in (bun_nuku(i) for i in i0
-                                      if not (isinstance(i, dict) and _TOUBU_TEIKI.search(str(i.get("q", "")) + str(i.get("a", "")))))
+                                      if not (isinstance(i, dict) and dame(str(i.get("q", "")) + str(i.get("a", "")))))
                           if not (isinstance(x, str) and not x.strip())]
-            n += sum(1 for i in i0 if isinstance(i, dict) and _TOUBU_TEIKI.search(str(i.get("q", "")) + str(i.get("a", ""))))
+            n += sum(1 for i in i0 if isinstance(i, dict) and dame(str(i.get("q", "")) + str(i.get("a", ""))))
         if isinstance(c.get("rows"), list):
             r0 = c["rows"]
-            c["rows"] = [r for r in r0 if not (isinstance(r, list) and any(isinstance(x, str) and _TOUBU_TEIKI.search(x) for x in r))]
+            c["rows"] = [r for r in r0 if not (isinstance(r, list) and any(isinstance(x, str) and dame(x) for x in r))]
             n += len(r0) - len(c["rows"])
-        kara = (c.get("type") in ("p", "lead", "note") and not str(c.get("text", "")).strip()) or \
+        if c.get("type") == "cta" and _TOUBU_TEIKI.search(str(b.get("text", "")) + str(b.get("label", ""))):
+            n += 1
+            continue              # ボタンが定期の案内なら、ボタンごと外す
+        kara = (c.get("type") in ("p", "lead", "note", "h2", "h3", "heading", "cta") and "text" in c and not str(c.get("text", "")).strip()) or \
                (c.get("type") in ("ul", "ol", "faq") and isinstance(c.get("items"), list) and not c.get("items")) or (c.get("type") == "table" and not c.get("rows"))
         if not kara:
             out.append(c)
