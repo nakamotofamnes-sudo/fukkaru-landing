@@ -1435,7 +1435,8 @@ ZANCHI_NAOSU += [(x + _E, _E) for x in ['遺品整理士が在籍しているの
 ZANCHI_NOKOSU += [x + _E for x in ['遺品整理士の資格があるかを確かめましょう。', '遺品整理士とは、民間の資格です。', 'フッ軽は遺品整理士の資格は持っていませんが、片付けをお手伝いします。']]
 ZANCHI_NAOSU += [('フッ軽合同会社なら、家財の整理・搬出・処分まで、最初から最後まで責任を持って対応します。', 'フッ軽合同会社なら、家財の整理・搬出まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。')]
 ZANCHI_NOKOSU += ['市の施設は、受付から処分まで、すべて市が対応しません。']
-ZANCHI_NOKOSU += ['市の施設は、受付から処分まで、すべて市が対応します。', '遺品の仕分けから処分まで、ご家族の立ち会いのもと、丁寧に対応します。', '買取、運搬、処分まで、業者が対応します。']
+ZANCHI_NOKOSU += ['市の施設は、受付から処分まで、すべて市が対応します。', '買取、運搬、処分まで、業者が対応します。']
+ZANCHI_NAOSU += [('遺品の仕分けから処分まで、丁寧に対応します。', '遺品の仕分けから搬出まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます。')]
 kazoeru('残置物：直す文 %d' % len(ZANCHI_NAOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a, w in ZANCHI_NAOSU if m._kyoka(a) != w])
 kazoeru('残置物：残す文 %d' % len(ZANCHI_NOKOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a in ZANCHI_NOKOSU if m._kyoka(a) != a])
 ZANCHI_KAISHU = [
@@ -1477,6 +1478,10 @@ m.toubu_teiki_nuku(_c)
 kazoeru('東部：見出し・ボタン・説明文・出張費無料', [] if (_c['metaDescription'] == '熱海市の別荘' and [b['type'] for b in _c['blocks']] == ['p', 'p']
     and _c['blocks'][0]['text'] == '片付けます。' and '富士市' in _c['blocks'][1]['text']) else [str(_c)])
 onaji('伊豆の別荘も東部', m.toubu_teiki_nuku({'title': '伊豆の別荘の管理', 'blocks': [{'type': 'p', 'text': 'まず相談。月額4,400円〜です。'}]}), 1)
+
+_d = {'title': '三島市の物置', 'blocks': [{'type': 'p', 'text': 'まず相談。富士市・沼津市・三島市は出張費無料です。'}, {'type': 'table', 'headers': ['項目', '料金'], 'rows': [['出張費', '無料'], ['設置', '15,000円〜']]}]}
+m.toubu_teiki_nuku(_d)
+kazoeru('東部：4市と東部の市が並ぶ無料・表の行', [] if (_d['blocks'][0]['text'] == 'まず相談。' and _d['blocks'][1]['rows'] == [['設置', '15,000円〜']]) else [str(_d)])
 
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)

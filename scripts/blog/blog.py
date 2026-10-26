@@ -1444,6 +1444,8 @@ KYOKA_NAOSHI = (
     # 「ご自身で片付けられないものだけをまとめて処分する、といったご依頼もお受けしています」「片付けや処分だけでなく…幅広く対応」
     # 10/26：「整理・搬出・処分まで、最初から最後まで責任を持って対応します」（間に20字まで入る形・前の「・」も外す）
     # 別の目 10/26：市・業者の説明と「から処分まで」には当てない（「受付からまで」と壊れた）
+    (r"(から)処分まで、?(?:(?!市|施設|自治体|行政|業者|他社|メーカー)[^。]){0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
+     r"\1搬出まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます"),
     (r"(?<!から)[、・]?(?:そして)?処分まで、?(?:(?!市|施設|自治体|行政|業者|他社|メーカー)[^。]){0,20}?(?:代行|対応|お引き受け)(?:いたします|します)",
      "まで行います。ごみとして出すぶんは、一般廃棄物の許可を持つ回収業者と一緒に片付けます"),
     (r"(もの(?:だけ)?を(?:まとめて)?)処分(?:する|して)(、?といった(?:ご依頼|ご相談))", r"\1片付ける\2"),
@@ -3102,7 +3104,7 @@ def toubu_teiki_nuku(art: dict) -> int:
     def dame(x):
         # 出張費を無料と言う文も外す（無料は4市だけ。4市の名前がある文は残す）
         return bool(_TOUBU_TEIKI.search(x) or (re.search(r"出張費", x) and re.search(r"無料|かかりません|0円", x)
-                                               and not re.search(r"富士市|富士宮市|沼津市|静岡市", x)))
+                                               and not (re.search(r"富士市|富士宮市|沼津市|静岡市", x) and not _TOUBU_HOKA.search(x))))
 
     def bun_nuku(t):
         nonlocal n
@@ -3129,7 +3131,8 @@ def toubu_teiki_nuku(art: dict) -> int:
             n += sum(1 for i in i0 if isinstance(i, dict) and dame(str(i.get("q", "")) + str(i.get("a", ""))))
         if isinstance(c.get("rows"), list):
             r0 = c["rows"]
-            c["rows"] = [r for r in r0 if not (isinstance(r, list) and any(isinstance(x, str) and dame(x) for x in r))]
+            # 行はセルをつないで見る（「出張費」「無料」が別のセルでも拾う）
+            c["rows"] = [r for r in r0 if not (isinstance(r, list) and dame("｜".join(str(x) for x in r)))]
             n += len(r0) - len(c["rows"])
         if c.get("type") == "cta" and _TOUBU_TEIKI.search(str(b.get("text", "")) + str(b.get("label", ""))):
             n += 1
