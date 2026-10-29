@@ -21,6 +21,87 @@ const SVC_PATH = '/blog/service/';
 const SITE_NAME = 'フッ軽（ふっかる）';
 const LINE_URL = 'https://lin.ee/Bh5gFU6';
 
+// ── 中元さんのキャラ（2026-10-29）──
+// 中元さん「シンプルすぎて味気ない。新聞みたい」。仕事ごとに、作業着の代表のキャラが見出しに立つ。
+// 絵は動画と同じ切り抜き（本人のキャラは使ってよい・10/20 中元さん）。public/blog/kyara/ に
+// scripts/make-kyara.mjs で作る。大きさは content/kyara.json（どの姿も同じ縮尺。しゃがむ姿は小さく出る）。
+// **新しい分類が増えたら、ここに1行足す。**無ければ正面の立ち姿（front）になる。
+const KYARA_SIZE = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'kyara.json'), 'utf8')); } catch { return {}; }
+})();
+const KYARA_BY_CATEGORY = {
+  '家具組立': 'repair',
+  '庭まわり': 'kusakari',
+  '草刈り': 'kusakari',
+  '物置': 'kougu',
+  '不用品の運搬': 'hirou',
+  '空き家・マンション管理': 'bin',
+  '荷造り・荷解き': 'hikkoshi',
+  '家具移動・模様替え': 'hikkoshi',
+  '家具の運搬': 'hikkoshi',
+  '掃除': 'hirou',
+  '買い物代行': 'walk',
+  '会社のこと': 'greet',
+  '水まわりの軽作業': 'senjo',
+};
+// まとめのページ（柱）は、分類より中身に合う姿を選ぶ
+const KYARA_BY_PILLAR = {
+  'fuji-gomi-dashikata': 'point',
+  'fuji-unpan-kaitori-guide': 'hikkoshi',
+  akiya: 'bin',
+  'kagu-kumitate': 'repair',
+  kaimono: 'walk',
+  kusakari: 'kusakari',
+  'monooki-anchor': 'impact',
+  monooki: 'kougu',
+  senjo: 'senjo',
+};
+// 絵は飾りなので alt は空（読み上げで「画像」と言わせない）。縦横を書いて、読み込みで画面が動かないようにする。
+// --kh は絵の縦の大きさ。見出しでは半分の大きさで出す（細かい画面でもぼやけない）
+function kyaraImg(name, cls, { small = false, eager = false } = {}) {
+  const s = KYARA_SIZE[name];
+  if (!s) return '';
+  const [w, h] = small ? s.s : s.l;
+  const src = small ? `/blog/kyara/s/${name}.webp` : `/blog/kyara/${name}.webp`;
+  return `<img class="${cls}" src="${src}" alt="" width="${w}" height="${h}" style="--kh:${h}"${eager ? '' : ' loading="lazy"'} decoding="async">`;
+}
+function kyaraForCategory(category) {
+  return KYARA_BY_CATEGORY[category] || 'front';
+}
+
+// 見出し（記事・まとめ・料金・一覧・404 で共通）。文言はそれぞれの呼び出し元が渡す。
+// キャラは右下に立たせ、足を見出しの下の線にそろえる。
+function renderHero({ cat, title, meta, bg = '', kyara = '', wide = false }) {
+  const heroBg = bg ? `\n  <div class="hero-bg" style="background-image:url('${esc(bg)}')"></div>` : '';
+  const k = kyara ? kyaraImg(kyara, 'hero-kyara', { eager: true }) : '';
+  return `
+<div class="hero${k ? ' has-kyara' : ''}">${heroBg}
+  <div class="wrap${wide ? ' wide' : ''} hero-grid">
+    <div class="hero-text">
+      <span class="cat">${cat}</span>
+      <h1>${title}</h1>
+      <div class="meta">${meta}</div>
+    </div>
+    ${k}
+  </div>
+</div>`;
+}
+
+// 記事の終わりに置く「伺う人」。記事はAIがまとめているので「書いた人」とは書かない。
+// 文はHP（トップの代表あいさつ・/blog/service/）に載っているものだけを使う
+function renderDaihyo() {
+  return `
+  <aside class="daihyo" aria-label="お伺いする人">
+    ${kyaraImg('greet', 'daihyo-kyara')}
+    <div class="daihyo-text">
+      <p class="daihyo-name">フッ軽合同会社 代表 <b>中元 晋平</b></p>
+      <p class="daihyo-msg">ご相談から作業当日まで、代表が最初から最後まで担当します。</p>
+      <ul class="daihyo-shikaku"><li>宅地建物取引士</li><li>FP2級</li><li>運行管理者（貨物）</li><li>古物商許可</li></ul>
+      <a class="daihyo-link" href="/#founder">代表のごあいさつを読む</a>
+    </div>
+  </aside>`;
+}
+
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -226,7 +307,7 @@ function renderBlock(block, regularCare = false) {
     case 'faq': {
       const items = block.items
         .map(
-          (qa) => `<div class="faq-item"><p class="faq-q">Q. ${inline(qa.q)}</p><p class="faq-a">A. ${inlineBr(qa.a)}</p>${qa.soudan ? `<a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">写真を送って聞いてみる</a>` : ''}</div>`
+          (qa) => `<div class="faq-item"><p class="faq-q"><span class="qa">Q.</span> ${inline(qa.q)}</p><p class="faq-a"><span class="qa">A.</span> ${inlineBr(qa.a)}</p>${qa.soudan ? `<a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">写真を送って聞いてみる</a>` : ''}</div>`
         )
         .join('');
       return `<div class="faq">${items}</div>`;
@@ -268,11 +349,15 @@ function renderSteps(block) {
 function renderCta(block, regularCare = false) {
   const heading = block?.heading || '見積もりは無料です。まずはお気軽にご相談ください。';
   const sub = block?.sub || '富士市・富士宮市・静岡県内、山梨県、神奈川県海老名市以西まで対応しています。';
+  // 見積もりの紙を持つキャラを横に立たせる（2026-10-29）。文言はこれまでと同じ
   return `
-  <div class="cta-box">
+  <div class="cta-box has-kyara">
+    <div class="cta-text">
     <p class="cta-heading">${inline(heading)}</p>
     <p class="cta-sub">${inline(sub)}</p>
     ${block?.dekinai ? '<p class="cta-sub">頼めるか迷った物も、写真を送ってください。どれに当たるかお答えします。</p>' : ''}
+    </div>
+    ${kyaraImg('mitsumori', 'cta-kyara')}
     <div class="cta-buttons">
       <a class="btn btn-line" href="${LINE_URL}" target="_blank" rel="noopener">${regularCare ? '公式LINEで定期のお手入れを相談する' : '公式LINEで相談する（登録＋成約で最大3,000円割引）'}</a>
       <a class="btn btn-outline" href="${regularCare ? 'https://fuji.creo-sumai.jp/' : SVC_PATH}">${regularCare ? '定期のお手入れの内容・料金を見る' : '料金とサービス一覧を見る'}</a>
@@ -385,31 +470,59 @@ h1,h2,h3,h4{color:var(--ink-900);letter-spacing:-0.02em;line-height:1.4}
 /* ヘッダー */
 header.site{background:var(--surface);border-bottom:1px solid var(--hairline);position:sticky;top:0;z-index:10}
 header.site .wrap{max-width:960px;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
-.brand{font-weight:700;color:var(--ink-900);text-decoration:none;font-size:17px;letter-spacing:-0.02em}
+.brand{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink-900);text-decoration:none;font-size:17px;letter-spacing:-0.02em}
+.brand-logo{display:block;width:28px;height:28px;border-radius:var(--r)}
 .brand span{color:var(--ink-500);font-weight:400;font-size:13px;margin-left:6px}
 .backlink{font-size:13px;color:var(--ink-500);text-decoration:none}
 .backlink:hover{color:var(--ink-900)}
 
 /* 記事の見出し */
 .hero{background:var(--ink-900);color:#fff;padding:56px 0 48px;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.28}
+/* 2026-10-29：写真を少しだけ見えるように（.28→.36）。真っ白な写真の上でも、白い字が 5:1・小さな日付が 4.5:1 を切らない所まで */
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.36}
 .hero .wrap{max-width:720px;position:relative;z-index:1}
-.hero .cat{display:inline-block;border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:500;letter-spacing:.04em;padding:4px 10px;border-radius:var(--r);margin-bottom:16px}
+.hero .wrap.wide{max-width:1000px}
+.hero .cat{display:inline-block;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.35);color:#fff;font-size:12px;font-weight:500;letter-spacing:.04em;padding:4px 10px;border-radius:var(--r);margin-bottom:16px}
 .hero h1{font-size:clamp(24px,4.2vw,34px);line-height:1.45;margin:0 0 16px;font-weight:700;color:#fff}
-.hero .meta{font-size:12.5px;color:rgba(255,255,255,.6)}
+.hero .meta{font-size:12.5px;color:rgba(255,255,255,.9)}
+/* キャラの立つ見出し（2026-10-29）。足を見出しの下の線にそろえるため、下の余白は字の側に持たせる */
+.hero.has-kyara{padding-bottom:0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:end}
+.hero.has-kyara .hero-text{padding-bottom:48px}
+.hero-kyara{display:block;width:auto;max-width:none;height:calc(var(--kh) * .5px);border-radius:0}
+/* 広い画面では、字の左端を本文の左端にそろえ、キャラは本文の右の外に立たせる（字の幅を削らない） */
+@media (min-width:1040px){
+  .hero.has-kyara .wrap:not(.wide){max-width:none}
+  .hero.has-kyara .wrap:not(.wide).hero-grid{grid-template-columns:1fr minmax(0,680px) 1fr}
+  .hero.has-kyara .wrap:not(.wide) .hero-text{grid-column:2}
+  .hero.has-kyara .wrap:not(.wide) .hero-kyara{grid-column:3;justify-self:start}
+}
+/* スマホは字の下に、右寄せで小さく立たせる（字に重ねない） */
+@media (max-width:560px){
+  .hero-grid{grid-template-columns:minmax(0,1fr)}
+  .hero.has-kyara .hero-text{padding-bottom:0}
+  .hero-kyara{justify-self:end;height:calc(var(--kh) * .24px);margin-top:4px}
+}
 
 /* 本文 */
 main{background:var(--surface);border-bottom:1px solid var(--hairline);padding:48px 0 16px}
 main .wrap{font-size:16px}
-.lead{font-size:16.5px;color:var(--ink-600);border-left:2px solid var(--accent);padding:2px 0 2px 18px;margin:0 0 34px}
-h2{font-size:22px;font-weight:700;margin:48px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--hairline)}
+/* 2026-10-29：導入は線で囲まず、字を一段大きく濃くする（見出しの線と見分けるため） */
+.lead{font-size:17px;line-height:1.9;color:var(--ink-900);margin:0 0 34px}
+h2{font-size:22px;font-weight:700;margin:48px 0 18px}
 h3{font-size:17px;font-weight:700;margin:32px 0 12px}
+/* 本文の見出しは、灰色の帯と琥珀の線で区切る（2026-10-29「新聞みたい」への直し）。
+   一覧・関連記事・まとめの札の見出しには効かせないため、本文の直下（>）だけ */
+main .wrap>h2{font-size:21px;line-height:1.5;margin:56px 0 20px;padding:12px 16px;background:var(--canvas);border-left:4px solid var(--accent);border-radius:0 var(--r) var(--r) 0}
+main .wrap>h3{padding-left:12px;border-left:3px solid var(--accent-line)}
 p{margin:0 0 18px}
 /* 段落と段落のあいだを広げる（2026-09-24 中元さんの指示）。
    参考にしたページ（manablog）を実測したら、**違いはここだけ**でした。
    文字16px・行間30px・1段落58字はほぼ同じで、**段落の下だけ60px**（こちらは18px）。
    クラスの無い段落＝本文だけを広げます（リード・メモ・FAQ・帯は今までどおり）。 */
-main .wrap p:not([class]){margin-bottom:36px}
+/* 2026-10-29：「本文の直下の段落」だけに狭めた（> を足した）。
+   空白（子孫）のままだと、相談の箱・動画の箱の中の段落にも 36px が付き、箱の中に大きな空きが出ていた（本番で実測） */
+main .wrap>p:not([class]){margin-bottom:36px}
 ul,ol{margin:0 0 20px;padding-left:1.4em}
 li{margin:0 0 10px}
 strong{color:var(--ink-900);font-weight:700}
@@ -463,17 +576,32 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .note p{margin:0;font-size:14.5px;color:var(--ink-600)}
 
 /* よくある質問 */
-.faq-item{border-top:1px solid var(--hairline);padding:18px 0}
-.faq-q{font-weight:600;color:var(--ink-900);margin:0 0 8px}
+/* 2026-10-29：線で区切るだけだった質問を、1問ずつの札にする。Q と A に色をつけて、流し読みでも拾えるように */
+.faq-item{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r);padding:16px 18px;margin:0 0 12px}
+.faq-q{font-weight:700;color:var(--ink-900);margin:0 0 8px}
 .faq-a{margin:0;color:var(--ink-600);font-size:15px}
+.qa{font-weight:700;color:var(--accent)}
+.faq-a .qa{color:var(--ink-500)}
 
 /* 相談への誘い */
 .soudan{border:1px solid var(--hairline);border-left:3px solid var(--accent);border-radius:var(--r);padding:14px 16px;margin:16px 0 28px}
 .soudan p{margin:0 0 8px;font-size:14.5px;color:var(--ink-600)}
 .soudan-link{display:inline-block;font-size:14.5px;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:6px 0}
-.cta-box{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:28px 24px;margin:40px 0}
+/* 2026-10-29：相談の箱だけ、淡い琥珀の面にする（目立たせるのはページで1か所＝ここ）。
+   見積もりの紙を持つキャラを右に立たせ、足を箱の下の線にそろえる */
+.cta-box{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r);padding:28px 24px;margin:44px 0}
+.cta-box.has-kyara{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"text kyara" "btns kyara";column-gap:20px;align-items:end}
+.cta-text{grid-area:text}
+.cta-box.has-kyara .cta-buttons{grid-area:btns}
+.cta-kyara{grid-area:kyara;display:block;width:auto;max-width:none;height:calc(var(--kh) * .44px);border-radius:0;margin-bottom:-29px}
 .cta-heading{font-size:17px;font-weight:700;color:var(--ink-900);margin:0 0 8px;letter-spacing:-0.02em}
-.cta-sub{font-size:13.5px;color:var(--ink-500);margin:0 0 20px}
+/* 淡い琥珀の上では ink-500 が 4.5:1 を切るので、一段濃く */
+.cta-sub{font-size:13.5px;color:var(--ink-600);margin:0 0 20px}
+@media (max-width:560px){
+  .cta-box{padding:22px 18px}
+  .cta-box.has-kyara{grid-template-areas:"text kyara" "btns btns";align-items:start}
+  .cta-kyara{height:calc(var(--kh) * .24px);margin:0}
+}
 .cta-buttons{display:flex;flex-direction:column;gap:10px;max-width:420px}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:var(--r);font-weight:600;text-decoration:none;font-size:14.5px;transition:background-color .15s,border-color .15s}
 .btn-line{background:var(--line-green);color:#fff}
@@ -511,11 +639,33 @@ th{background:var(--canvas);font-weight:600;color:var(--ink-900)}
 .to-pillar a{color:var(--ink-900);text-decoration:none;font-weight:600}
 .to-pillar a:hover{text-decoration:underline}
 .related-list{margin:0 0 28px}
-.related-list h2{font-size:16px;margin:0 0 10px;color:var(--ink-900)}
-.related-list ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.related-list li{line-height:1.6}
-.related-list a{color:var(--ink-900);text-decoration:none;border-bottom:1px solid var(--line, #e5e7eb)}
-.related-list a:hover{border-bottom-color:currentColor}
+.related-list h2{font-size:16px;margin:0 0 12px;color:var(--ink-900)}
+/* 2026-10-29：題名だけの行から、写真つきの札に。パソコンは2列・スマホは1列 */
+.related-list ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.related-list li{margin:0}
+.related-list a{display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;align-items:start;height:100%;padding:10px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r);color:var(--ink-900);text-decoration:none;font-size:14px;font-weight:600;line-height:1.6;transition:border-color .15s}
+.related-list a:hover{border-color:var(--accent)}
+.related-list a:hover .rel-title{color:var(--accent)}
+.rel-thumb{display:block;aspect-ratio:1200/630;border-radius:var(--r);overflow:hidden;background:var(--hairline)}
+.rel-thumb img{display:block;width:100%;height:100%;object-fit:cover;border-radius:0}
+@media (max-width:560px){.related-list ul{grid-template-columns:minmax(0,1fr)}}
+
+/* 伺う人（2026-10-29）。記事の終わりに、代表のキャラと資格。足を札の下の線にそろえる */
+.daihyo{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:20px;align-items:end;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r);padding:20px 22px 0;margin:0 0 28px}
+.daihyo-kyara{display:block;width:auto;max-width:none;height:calc(var(--kh) * .4px);border-radius:0}
+.daihyo-text{padding-bottom:20px;min-width:0}
+.daihyo-name{margin:0 0 6px;font-size:13px;color:var(--ink-500)}
+.daihyo-name b{font-size:17px;color:var(--ink-900);margin-left:2px}
+.daihyo-msg{margin:0 0 10px;font-size:14.5px;line-height:1.7;color:var(--ink-700)}
+.daihyo-shikaku{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.daihyo-shikaku li{margin:0;font-size:12px;line-height:1.6;padding:2px 8px;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);color:var(--ink-600)}
+.daihyo-link{display:inline-block;padding:4px 0;font-size:14px;font-weight:700;color:var(--ink-900);text-underline-offset:3px}
+.daihyo-link:hover{color:var(--accent)}
+@media (max-width:560px){
+  .daihyo{column-gap:14px;padding:16px 16px 0}
+  .daihyo-kyara{height:calc(var(--kh) * .28px)}
+  .daihyo-text{padding-bottom:16px}
+}
 
 /* フッター */
 footer.site{background:var(--ink-900);color:rgba(255,255,255,.6);padding:40px 0;font-size:13px;line-height:1.9}
@@ -532,21 +682,54 @@ footer.site a:hover{color:#fff}
 .svc-nav a{display:inline-block;padding:6px 12px;border:1px solid var(--line, #e5e7eb);border-radius:var(--r);
   font-size:13.5px;color:var(--ink-900);text-decoration:none}
 .svc-nav a:hover{border-color:var(--ink-900)}
-.index-list{list-style:none;margin:0;padding:0}
-.index-list li{border-top:1px solid var(--hairline)}
-.index-list li:last-child{border-bottom:1px solid var(--hairline)}
-.index-list a{text-decoration:none;color:var(--ink-700);display:grid;grid-template-columns:132px 1fr;
-  gap:18px;align-items:start;padding:24px 0;transition:opacity .15s}
-.index-thumb{display:block;border-radius:8px;overflow:hidden;background:var(--line, #e5e7eb);aspect-ratio:1200/630}
-.index-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.index-text{display:block;min-width:0}
+/* ── ブログ一覧（2026-10-29 作り直し）──
+   中元さん「シンプルすぎて味気ない。新聞みたい」。
+   ・仕事ごとのまとめ＝その仕事をしているキャラの札
+   ・いちばん新しい1本を大きく、残りは写真つきの札（パソコン3列・スマホは写真を左に置いた1列） */
+.wrap.wide{max-width:1000px}
+.svc-nav.tiles{border:0;padding:0;margin:0 0 44px}
+.svc-nav.tiles h2{font-size:15px;color:var(--ink-900);font-weight:700;margin:0 0 12px}
+.svc-nav.tiles ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+@media (min-width:900px){.svc-nav.tiles ul{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.svc-nav.tiles a{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;height:100%;min-height:140px;
+  padding:12px 8px 12px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r);
+  font-size:13.5px;font-weight:600;line-height:1.5;text-align:center;color:var(--ink-900);transition:border-color .15s;
+  word-break:keep-all;overflow-wrap:anywhere}
+.svc-nav.tiles a:hover{border-color:var(--accent);color:var(--accent)}
+.tile-kyara{display:block;width:auto;max-width:none;height:calc(var(--kh) * .54px);border-radius:0}
 @media (max-width:560px){
-  .index-list a{grid-template-columns:92px 1fr;gap:12px}
+  .svc-nav.tiles ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .svc-nav.tiles a{flex-direction:row;justify-content:flex-start;align-items:center;min-height:64px;padding:6px 10px;text-align:left;gap:10px;font-size:13px}
+  .tile-kyara{height:calc(var(--kh) * .34px)}
 }
+.index-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px 24px}
+.index-list li{margin:0}
+.index-list a{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:var(--ink-700)}
+.index-list .is-new{grid-column:1/-1}
+.index-list .is-new a{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:center;padding-bottom:36px;border-bottom:1px solid var(--hairline)}
+.index-list .is-new h2{font-size:24px;line-height:1.5}
+.index-list .is-new p{-webkit-line-clamp:4}
+.index-thumb{display:block;border-radius:var(--r);overflow:hidden;background:var(--hairline);aspect-ratio:1200/630}
+.index-thumb img{width:100%;height:100%;object-fit:cover;display:block;border-radius:0}
+.index-text{display:block;min-width:0}
+.index-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.index-cat{font-size:12px;font-weight:600;line-height:1.6;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r);padding:1px 8px}
 .index-list a:hover h2{color:var(--accent)}
-.index-list h2{border:0;margin:6px 0 8px;font-size:18px;padding:0;transition:color .15s}
-.index-list p{color:var(--ink-500);font-size:14px;margin:0}
+.index-list h2{border:0;margin:8px 0 6px;font-size:17px;line-height:1.55;padding:0;transition:color .15s}
+.index-list p{color:var(--ink-500);font-size:13.5px;line-height:1.75;margin:0;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .index-date{font-size:12px;color:var(--ink-500);font-variant-numeric:tabular-nums}
+@media (max-width:760px){
+  .index-list{grid-template-columns:minmax(0,1fr);gap:0}
+  .index-list li{border-top:1px solid var(--hairline)}
+  .index-list li:last-child{border-bottom:1px solid var(--hairline)}
+  .index-list a{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:start;padding:18px 0}
+  .index-list li.is-new{border-top:0}
+  .index-list .is-new a{grid-template-columns:minmax(0,1fr);gap:12px;padding:0 0 22px;border-bottom:0}
+  .index-list .is-new h2{font-size:20px}
+  .index-list h2{font-size:16px;margin:6px 0 4px}
+  .index-list p{-webkit-line-clamp:2}
+}
 
 @media(max-width:480px){.hero{padding:40px 0 32px}.wrap{padding:0 18px}main{padding:36px 0 12px}}
 @media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
@@ -705,7 +888,7 @@ ${extraHead || ''}
 <div class="page">
 <header class="site">
   <div class="wrap">
-    <a class="brand" href="/">フッ軽<span>ふっかる</span></a>
+    <a class="brand" href="/"><img class="brand-logo" src="/blog/kyara/logo.webp" alt="" width="28" height="28">フッ軽<span>ふっかる</span></a>
     <a class="backlink" href="/">← トップページへ</a>
   </div>
 </header>
@@ -764,8 +947,9 @@ function relatedArticles(article, all, max = 4) {
 function renderRelated(article, all) {
   const rel = relatedArticles(article, all);
   if (!rel.length) return '';
+  // 2026-10-29：題名だけの行から、写真つきの札に（読みたくなる見た目に）
   const items = rel
-    .map((a) => `<li><a href="/blog/${esc(a.slug)}/">${esc(a.title)}</a></li>`)
+    .map((a) => `<li><a href="/blog/${esc(a.slug)}/">${a.heroImage ? `<span class="rel-thumb"><img src="${esc(a.heroImage)}" alt="" loading="lazy"></span>` : ''}<span class="rel-title">${esc(a.title)}</span></a></li>`)
     .join('\n      ');
   return `
   <nav class="related-list" aria-label="関連する記事">
@@ -794,24 +978,21 @@ function renderArticlePage(article, all = [], pillar = null) {
     .join('\n') + (douga && ctaAt < 0 ? renderDouga(douga, article.slug) : '');
   const dateStr = article.publishDate;
   // 写真は別レイヤーに置いて薄くする。グラデーションの膜はかけない。
-  const heroBg = article.heroImage
-    ? `<div class="hero-bg" style="background-image:url('${esc(article.heroImage)}')"></div>`
-    : '';
-  const bodyHtml = `
-<div class="hero">
-  ${heroBg}
-  <div class="wrap">
-    <span class="cat">${esc(article.category || 'コラム')}</span>
-    <h1>${esc(article.title)}</h1>
-    <div class="meta">公開日: ${esc(dateStr)}${article.updatedDate && article.updatedDate !== dateStr ? ` ／ 更新日: ${esc(article.updatedDate)}` : ''}</div>
-  </div>
-</div>
+  // 2026-10-29：分類に合う姿のキャラを右下に立たせる
+  const bodyHtml = `${renderHero({
+    cat: esc(article.category || 'コラム'),
+    title: esc(article.title),
+    meta: `公開日: ${esc(dateStr)}${article.updatedDate && article.updatedDate !== dateStr ? ` ／ 更新日: ${esc(article.updatedDate)}` : ''}`,
+    bg: article.heroImage || '',
+    kyara: kyaraForCategory(article.category),
+  })}
 <main>
   <div class="wrap">
     ${bodyBlocks}
   </div>
 </main>
 <div class="article-footer wrap">
+  ${renderDaihyo()}
   ${pillar ? `<div class="to-pillar"><b>この地域のまとめ</b><a href="/${esc(pillar.basePath || 'blog')}/${esc(pillar.slug)}/">${esc(pillar.title)}</a></div>` : ''}
   ${renderRelated(article, all)}
   <p class="related"><a href="/blog/">← ブログ一覧へ戻る</a></p>
@@ -885,18 +1066,13 @@ function renderPillarPage(pillar, articles) {
   const body = pb
     .map((b, i) => (i === pFirst && ptoc ? ptoc + '\n' : '') + (douga && i === pCta ? renderDouga(douga, pillar.slug) + '\n' : '') + renderBlock(b))
     .join('\n') + (douga && pCta < 0 ? renderDouga(douga, pillar.slug) : '');
-  const heroBg = pillar.heroImage
-    ? `<div class="hero-bg" style="background-image:url('${esc(pillar.heroImage)}')"></div>`
-    : '';
-  const bodyHtml = `
-<div class="hero">
-  ${heroBg}
-  <div class="wrap">
-    <span class="cat">まとめ</span>
-    <h1>${esc(pillar.title)}</h1>
-    <div class="meta">更新日: ${esc(new Date().toISOString().slice(0, 10))}</div>
-  </div>
-</div>
+  const bodyHtml = `${renderHero({
+    cat: 'まとめ',
+    title: esc(pillar.title),
+    meta: `更新日: ${esc(new Date().toISOString().slice(0, 10))}`,
+    bg: pillar.heroImage || '',
+    kyara: KYARA_BY_PILLAR[pillar.slug] || kyaraForCategory((pillar.articleCategories || [])[0]),
+  })}
 <main>
   <div class="wrap">
     ${body}
@@ -904,6 +1080,7 @@ function renderPillarPage(pillar, articles) {
   </div>
 </main>
 <div class="article-footer wrap">
+  ${renderDaihyo()}
   <p class="related"><a href="/blog/">← ブログ一覧へ戻る</a></p>
 </div>`;
   return pageShell({
@@ -992,14 +1169,12 @@ function renderServiceIndex(groups, pillars) {
     </ul>
   </nav>` : '';
 
-  const bodyHtml = `
-<div class="hero">
-  <div class="wrap">
-    <span class="cat">サービス</span>
-    <h1>できることと料金｜富士市の便利屋フッ軽</h1>
-    <div class="meta">草むしり8,000円〜／家具の組み立て8,000円〜／物置の設置・解体15,000円〜／不用品の運搬・買取5,000円〜</div>
-  </div>
-</div>
+  const bodyHtml = `${renderHero({
+    cat: 'サービス',
+    title: 'できることと料金｜富士市の便利屋フッ軽',
+    meta: '草むしり8,000円〜／家具の組み立て8,000円〜／物置の設置・解体15,000円〜／不用品の運搬・買取5,000円〜',
+    kyara: 'mitsumori',
+  })}
 <main>
   <div class="wrap">
     <p class="lead">静岡県富士市の便利屋です。ご相談から作業当日まで、**代表が最初から最後まで担当します**。ここに載っていない作業も、できるかぎりお受けします。まずは「こんなこと頼める？」とお声がけください。</p>
@@ -1023,7 +1198,7 @@ function renderServiceIndex(groups, pillars) {
     <p>対応エリアは、静岡県全域・山梨県全域・神奈川県海老名市以西です。現地に伺う出張費は、富士市・富士宮市・静岡市・沼津市ならいただきません。</p>
     <p>損保ジャパンの保険に加入しています。万一のときは、まずご連絡ください。</p>
     <h2 id="faq">よくいただくご質問</h2>
-    <div class="faq">${SERVICE_FAQ.map(([q, a]) => `<div class="faq-item"><p class="faq-q">Q. ${esc(q)}</p><p class="faq-a">A. ${esc(a)}</p></div>`).join('')}</div>
+    <div class="faq">${SERVICE_FAQ.map(([q, a]) => `<div class="faq-item"><p class="faq-q"><span class="qa">Q.</span> ${esc(q)}</p><p class="faq-a"><span class="qa">A.</span> ${esc(a)}</p></div>`).join('')}</div>
     <div class="note"><b>手放したいものについて</b><p><b>まだ使えるものは引き取ります</b>（古物商許可）。ごみとして出すぶんは、<b>許可を持つ回収業者と一緒に</b>片付けます。フッ軽が間に入って段取りしますので、業者を別に探していただく必要はありません。ご自身で出される場合は、<b>自治体での出し方をご案内します</b>。迷ったらLINEでご相談ください。</p></div>
   </div>
 </main>
@@ -1049,35 +1224,43 @@ function renderServiceIndex(groups, pillars) {
 }
 
 function renderIndexPage(articles, pillars = []) {
+  // 2026-10-29：いちばん新しい1本を大きく、残りは写真つきの札を並べる（パソコンは3列・スマホは1列）。
+  // 札には分類を出す。上の4枚は画面に最初から見えるので、遅れて読み込ませない
   const items = articles
     .slice()
     .sort((a, b) => (a.publishDate < b.publishDate ? 1 : -1))
     .map(
-      (a) => `<li><a href="/blog/${esc(a.slug)}/">
-        ${a.heroImage ? `<span class="index-thumb"><img src="${esc(a.heroImage)}" alt="" loading="lazy"></span>` : '<span class="index-thumb"></span>'}
+      (a, i) => `<li${i === 0 ? ' class="is-new"' : ''}><a href="/blog/${esc(a.slug)}/">
+        ${a.heroImage ? `<span class="index-thumb"><img src="${esc(a.heroImage)}" alt=""${i < 4 ? '' : ' loading="lazy"'}></span>` : '<span class="index-thumb"></span>'}
         <span class="index-text">
-          <span class="index-date">${esc(a.publishDate)}</span>
+          <span class="index-meta"><span class="index-cat">${esc(a.category || 'コラム')}</span><span class="index-date">${esc(a.publishDate)}</span></span>
           <h2>${esc(a.title)}</h2>
           <p>${esc(a.metaDescription)}</p>
         </span>
       </a></li>`
     )
     .join('\n');
-  const bodyHtml = `
-<div class="hero">
-  <div class="wrap">
-    <span class="cat">BLOG</span>
-    <h1>フッ軽ブログ｜富士市の暮らしのお役立ち情報</h1>
-    <div class="meta">家具組立・物置設置・お片付けなど、暮らしのプロが実例と費用相場を解説します</div>
-  </div>
-</div>
+  // 仕事ごとのまとめは、その仕事をしているキャラの札にする。
+  // 札は幅が狭いので、折り返しは「・」のあとで（「移／設」のように言葉の途中で折れていた）。
+  // 「・」の無い名前は、最初の「の」のあとで（スマホで「物置のアンカー固／定」になっていた）
+  const oriKaeshi = (s) => (s.includes('・') ? s.replace(/・/g, '・<wbr>') : s.replace('の', 'の<wbr>'));
+  const tile = (href, label, kyara) =>
+    // 札の絵は1枚6KBほどで、一覧のすぐ上にあるので後回しにしない（遅らせると、スクロールしたとき空の札が一瞬見えた）
+    `<li><a href="${href}">${kyaraImg(kyara, 'tile-kyara', { small: true, eager: true })}<span>${oriKaeshi(label)}</span></a></li>`;
+  const bodyHtml = `${renderHero({
+    cat: 'BLOG',
+    title: 'フッ軽ブログ｜富士市の暮らしのお役立ち情報',
+    meta: '家具組立・物置設置・お片付けなど、暮らしのプロが実例と費用相場を解説します',
+    kyara: 'waving',
+    wide: true,
+  })}
 <main>
-  <div class="wrap">
-    ${pillars.length ? `<nav class="svc-nav" aria-label="仕事ごとのまとめ">
+  <div class="wrap wide">
+    ${pillars.length ? `<nav class="svc-nav tiles" aria-label="仕事ごとのまとめ">
       <h2>仕事ごとのまとめ</h2>
       <ul>
-        <li><a href="${SVC_PATH}">できることと料金</a></li>
-        ${pillars.map((p) => `<li><a href="/${esc(p.basePath || 'blog')}/${esc(p.slug)}/">${esc(p.navTitle || p.title.split('｜')[0])}</a></li>`).join('\n        ')}
+        ${tile(SVC_PATH, 'できることと料金', 'mitsumori')}
+        ${pillars.map((p) => tile(`/${esc(p.basePath || 'blog')}/${esc(p.slug)}/`, esc(p.navTitle || p.title.split('｜')[0]), KYARA_BY_PILLAR[p.slug] || kyaraForCategory((p.articleCategories || [])[0]))).join('\n        ')}
       </ul>
     </nav>` : ''}
     <ul class="index-list">
@@ -1099,14 +1282,12 @@ function renderIndexPage(articles, pillars = []) {
 // （ソフト404）。Google から見ると「どんなURLでも同じ中身を返すサイト」になる。
 // rewrites を外すと Firebase は dist/404.html を 404 で返すので、行き止まりにしない画面を置く
 function render404Page(pillars = []) {
-  const bodyHtml = `
-<div class="hero">
-  <div class="wrap">
-    <span class="cat">404</span>
-    <h1>ページが見つかりませんでした</h1>
-    <div class="meta">お探しのページは、移動したか、まだ無いページです</div>
-  </div>
-</div>
+  const bodyHtml = `${renderHero({
+    cat: '404',
+    title: 'ページが見つかりませんでした',
+    meta: 'お探しのページは、移動したか、まだ無いページです',
+    kyara: 'atama_kaku',
+  })}
 <main>
   <div class="wrap">
     <p>お手数ですが、下のどれかからお進みください。</p>
