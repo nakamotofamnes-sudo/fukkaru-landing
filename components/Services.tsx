@@ -98,8 +98,8 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
         />
       </button>
 
-      {isOpen && (
-        <dl id={panelId} className="rule-list border-t border-hairline">
+      {/* 閉じていても中身は置いておく（AIが読めるように）。画面では隠す */}
+      <dl id={panelId} hidden={!isOpen} className="rule-list border-t border-hairline">
           {group.services.map((s) => (
             <div key={s.title} className="flex flex-wrap items-baseline justify-between gap-x-4 px-5 py-4 sm:px-6">
               <dt className="min-w-0 flex-1 flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
@@ -124,7 +124,6 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
             </div>
           ))}
         </dl>
-      )}
     </div>
   );
 };
