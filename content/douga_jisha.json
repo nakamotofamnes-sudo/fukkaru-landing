@@ -1,0 +1,21 @@
+{
+  "_setsumei": [
+    "HP に置いた動画ファイル（YouTube に上げていない動画）を、決めた記事にだけ差し込む表（2026-10-21〜）。差し込むのは scripts/build-blog.mjs。記事のファイル（content/articles）は触らない。",
+    "中元さん（2026-10-21）「空き家の記事に第1版の動画を良い箇所に添付しといてくれませんか？これは記事上のみで良いです」→ YouTube などには出さず、この記事の上でだけ見せる。",
+    "kiji：差し込む記事の slug。ato：この言葉を含む見出し（h2・h3）のすぐ下に入れる（見つからなければ LINE の案内の上）。動画は public/douga/ に置く（軽くするため 1280x720 に縮めた）。",
+    "元の動画は fukkaru-automation の douga/kokoku（tsukuru_kokoku.py akiya）。字と金額は専用ページ fuji.creo-sumai.jp の控えから写したもの",
+    "2026-10-22 中元さん「ルール変更したので…記事に入れてある動画も変更しといてください」で動画を差し替えた（ルール：毎回、床を確認 → 必要な時期を写真で相談 → 月額内の範囲と回数は開始前に決定）"
+  ],
+  "douga": [
+    {
+      "kiji": [
+        "fuji-akiya-mihari-benriya-ryokin"
+      ],
+      "ato": "内容と料金",
+      "mp4": "/douga/akiya-teiki-oteire-1022.mp4",
+      "poster": "/douga/akiya-teiki-oteire-poster.jpg",
+      "title": "空き家・アパートの定期のお手入れ（30秒）",
+      "setsumei": "外まわり・室内込み・共用部の3つのプランと、ルール3つを30秒でまとめました。"
+    }
+  ]
+}

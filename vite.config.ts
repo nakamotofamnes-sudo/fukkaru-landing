@@ -29,8 +29,9 @@ function blogTeaser(): Plugin {
         .filter((a) => a && a.slug && a.title)
         .sort((a, b) => String(b.publishDate ?? '').localeCompare(String(a.publishDate ?? '')))
         .slice(0, 3)
-        .map(({ slug, title, metaDescription, category, publishDate }) => ({
-          slug, title, metaDescription, category, publishDate,
+        // heroImage（記事の見出しの写真）も渡す。トップのブログ欄を、ブログ一覧と同じ写真つきの札にするため（2026-10-29）
+        .map(({ slug, title, metaDescription, category, publishDate, heroImage }) => ({
+          slug, title, metaDescription, category, publishDate, heroImage,
         }));
       return `export default ${JSON.stringify(list)};`;
     },

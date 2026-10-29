@@ -18,31 +18,31 @@ import RegularCareIntro from '../components/RegularCareIntro';
 import CouponSlider from '../components/CouponSlider';
 import YouTubeVideos from '../components/YouTubeVideos';
 import BlogTeaser from '../components/BlogTeaser';
-import {
-  ArrowUpRight, ChevronDown, MessageSquare, ClipboardList, Wrench, Wallet, Check,
-} from 'lucide-react';
+import Kyara from '../components/Kyara';
+import { ArrowUpRight, ChevronDown, Check } from 'lucide-react';
 
 /* ------------------------------------------------------------------
    ご利用の流れ
    ------------------------------------------------------------------ */
+// 2026-10-29：線のアイコンを、その段階の中元さんのキャラに（あいさつ→見積もりの紙→電動ドライバー→OK）
 const steps = [
   {
-    icon: MessageSquare,
+    kyara: 'greet',
     title: 'LINEか電話でご相談',
     text: 'まずは「こんなこと頼める？」とお声がけください。最短で即日伺えます。',
   },
   {
-    icon: ClipboardList,
+    kyara: 'mitsumori',
     title: '無料でお見積り',
     text: '現地または写真で状況を確認し、はっきりした金額をご提示します。',
   },
   {
-    icon: Wrench,
+    kyara: 'impact',
     title: '作業',
     text: '経験豊富なスタッフが、丁寧かつ迅速に作業を行います。',
   },
   {
-    icon: Wallet,
+    kyara: 'ok',
     title: 'お支払い',
     text: '仕上がりをご確認いただいてからのお支払いです。現金・振り込み・クレジットカード・PayPay などに対応しています。',
   },
@@ -59,15 +59,17 @@ const Flow: React.FC = () => (
 
       <ol className="mt-12 grid gap-px overflow-hidden rounded border border-hairline bg-hairline md:grid-cols-4">
         {steps.map((step, i) => (
-          <li key={step.title} className="bg-surface p-6 sm:p-7">
-            <div className="flex items-center gap-3">
+          <li key={step.title} className="relative bg-surface p-6 sm:p-7">
+            {/* キャラの背は姿ごとに少し違うので、パソコンでは段の高さを決めて題名の高さを4つでそろえる。
+                スマホでは縦に長くならないよう、キャラを番号と題名の右に置き、字はキャラの幅だけ右を空ける */}
+            <div className="flex items-end justify-between gap-3 md:h-[104px]">
               <span className="text-[13px] font-semibold tabular-nums text-ink-500">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <step.icon size={18} className="text-ink-500" />
+              <Kyara name={step.kyara} className="absolute right-6 top-5 [--k:.2] sm:right-7 md:static md:[--k:.26]" />
             </div>
-            <h3 className="mt-4 text-[16px] font-semibold text-ink-900">{step.title}</h3>
-            <p className="mt-2 text-[13.5px] leading-[1.85] text-ink-500">{step.text}</p>
+            <h3 className="mt-4 pr-20 text-[16px] font-semibold text-ink-900 md:pr-0">{step.title}</h3>
+            <p className="mt-2 pr-20 text-[13.5px] leading-[1.85] text-ink-500 md:pr-0">{step.text}</p>
           </li>
         ))}
       </ol>
@@ -129,11 +131,10 @@ const Faq: React.FC = () => {
                       />
                     </button>
                   </dt>
-                  {isOpen && (
-                    <dd id={`faq-${idx}`} className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">
-                      {item.a}
-                    </dd>
-                  )}
+                  {/* 閉じていても答えは置いておく（AIが読めるように）。画面では隠す */}
+                  <dd id={`faq-${idx}`} hidden={!isOpen} className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">
+                    {item.a}
+                  </dd>
                 </div>
               );
             })}

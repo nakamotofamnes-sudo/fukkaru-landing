@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, MessageCircle } from 'lucide-react';
+import Kyara from './Kyara';
 
 // link を持つ項目は、作業ごとの詳細ページへ案内します（2026-09-04）。
 // トップに全部を書くと重くなるうえ、トップの中身は JavaScript の中にあって
@@ -14,14 +15,14 @@ const groups: Group[] = [
   {
     id: 'regular-care',
     title: '空き家・マンションの管理',
-    note: '4市対応／訪問回数・作業場所・月額を最初に決定。共用部は指定範囲の年1回の床洗浄つき',
+    note: '4市対応／訪問回数・作業場所・月額を最初に決定。共用部は月額内の床洗浄の範囲・回数を開始前に決定',
     defaultOpen: true,
     hidden: true,
     services: [
       { title: '空き家・外まわりのお手入れ', price: '月額4,400円〜', desc: '税込・月1回。外まわり確認・玄関清掃・指定範囲の小さな草取り・写真報告', link: 'https://fuji.creo-sumai.jp/#vacant' },
       { title: '空き家・室内込みのお手入れ', price: '月額6,600円〜', desc: '税込・月1回。外まわりに加え、換気・通水・室内の目視確認', link: 'https://fuji.creo-sumai.jp/#vacant' },
-      { title: 'アパート・マンション共用部の清掃（月1回）', price: '月額5,500円〜', desc: '税込・指定範囲の年1回の床洗浄を含む。広さ・状態を確認して月額を決定', link: 'https://fuji.creo-sumai.jp/#apartment' },
-      { title: 'アパート・マンション共用部の清掃（月2回）', price: '月額9,900円〜', desc: '税込・指定範囲の年1回の床洗浄を含む。広さ・状態を確認して月額を決定', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: 'アパート・マンション共用部の清掃（月1回）', price: '月額5,500円〜', desc: '税込・合意した範囲と回数の床洗浄を含む。実施時期は汚れを見て写真で相談', link: 'https://fuji.creo-sumai.jp/#apartment' },
+      { title: 'アパート・マンション共用部の清掃（月2回）', price: '月額9,900円〜', desc: '税込・合意した範囲と回数の床洗浄を含む。実施時期は汚れを見て写真で相談', link: 'https://fuji.creo-sumai.jp/#apartment' },
     ],
   },
   {
@@ -68,6 +69,7 @@ const groups: Group[] = [
     note: '物置の設置・解体、買い物の代行',
     services: [
       { title: '物置の設置・解体', price: '15,000円〜', desc: 'お庭のスペースを有効に使えます', popular: true , link: '/blog/monooki/' },
+      { title: '物置のアンカー固定', price: '10,000円〜', desc: '土・アスファルト・コンクリート。アンカーだけのご依頼も承ります', link: '/blog/monooki-anchor/' },
       { title: 'まだ使える物置の引き取り', price: '8,000円〜', desc: 'サイズにより変わります', link: '/blog/fuji-monooki-hikiteri-ryokin-benriya/' },
       { title: '買い物代行', price: '7,000円〜', desc: '重い物、遠方への買い出しも', link: '/blog/kaimono/' },
     ],
@@ -97,8 +99,8 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
         />
       </button>
 
-      {isOpen && (
-        <dl id={panelId} className="rule-list border-t border-hairline">
+      {/* 閉じていても中身は置いておく（AIが読めるように）。画面では隠す */}
+      <dl id={panelId} hidden={!isOpen} className="rule-list border-t border-hairline">
           {group.services.map((s) => (
             <div key={s.title} className="flex flex-wrap items-baseline justify-between gap-x-4 px-5 py-4 sm:px-6">
               <dt className="min-w-0 flex-1 flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
@@ -123,7 +125,6 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
             </div>
           ))}
         </dl>
-      )}
     </div>
   );
 };
@@ -146,13 +147,16 @@ const Services: React.FC = () => {
           ))}
         </div>
 
-        <div className="mt-6 card p-6 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+        {/* 2026-10-29：相談の箱を淡い琥珀にして、ボタンを指さす中元さんのキャラを立たせる（ブログの相談の箱と同じ形）。
+            キャラの足を箱の下の線にそろえるため、下の余白は字とボタンの側に持たせる。
+            淡い琥珀の上では ink-500 が 4.5:1 を切るので、説明の字は ink-600 に。文言はそのまま */}
+        <div className="mt-6 rounded border border-accent-line bg-accent-soft px-6 pt-6 sm:px-8 sm:pt-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="sm:pb-8">
               <h3 className="text-[17px] font-semibold tracking-tight text-ink-900">
                 お見積もり・ご相談は無料です
               </h3>
-              <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-500">
+              <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-600">
                 作業の内容や現場の状況によって、適切なプランと料金をご案内します。
                 まずは「こんなこと頼める？」とお声がけください。LINEで写真をお送りいただくお見積りは、エリアを問わず無料です。現地に伺う出張費も、富士市・富士宮市・静岡市・沼津市ならいただきません。{' '}
                 <a href="/blog/service/" className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2">
@@ -164,10 +168,13 @@ const Services: React.FC = () => {
                 礼儀正しく丁寧なスタッフが、皆様の暮らしを安全にサポートいたします。
               </p>
             </div>
-            <a href="#contact" className="btn btn-primary shrink-0">
-              <MessageCircle size={17} />
-              無料で相談する
-            </a>
+            <div className="flex shrink-0 items-end justify-between gap-3 sm:justify-end">
+              <a href="#contact" className="btn btn-primary mb-6 shrink-0 sm:mb-8">
+                <MessageCircle size={17} />
+                無料で相談する
+              </a>
+              <Kyara name="point" className="[--k:.24] sm:[--k:.28]" />
+            </div>
           </div>
         </div>
       </div>
