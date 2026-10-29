@@ -708,7 +708,6 @@ footer.site a:hover{color:#fff}
 .index-list .is-new{grid-column:1/-1}
 .index-list .is-new a{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:center;padding-bottom:36px;border-bottom:1px solid var(--hairline)}
 .index-list .is-new h2{font-size:24px;line-height:1.5}
-.index-list .is-new p{-webkit-line-clamp:4}
 .index-thumb{display:block;border-radius:var(--r);overflow:hidden;background:var(--hairline);aspect-ratio:1200/630}
 .index-thumb img{width:100%;height:100%;object-fit:cover;display:block;border-radius:0}
 .index-text{display:block;min-width:0}
@@ -716,8 +715,10 @@ footer.site a:hover{color:#fff}
 .index-cat{font-size:12px;font-weight:600;line-height:1.6;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r);padding:1px 8px}
 .index-list a:hover h2{color:var(--accent)}
 .index-list h2{border:0;margin:8px 0 6px;font-size:17px;line-height:1.55;padding:0;transition:color .15s}
-.index-list p{color:var(--ink-500);font-size:13.5px;line-height:1.75;margin:0;
-  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+/* 説明文は切らない（2026-10-29）。行数で切ると「一般廃棄物の許可を…」のように、
+   許可を持つのが回収業者だと分かる所が隠れ、フッ軽が許可を持つように読めた（別の目が見つけた）。
+   「最大3,000円割引」のような約束も、切れると見えなくなる */
+.index-list p{color:var(--ink-500);font-size:13.5px;line-height:1.75;margin:0}
 .index-date{font-size:12px;color:var(--ink-500);font-variant-numeric:tabular-nums}
 @media (max-width:760px){
   .index-list{grid-template-columns:minmax(0,1fr);gap:0}
@@ -728,7 +729,6 @@ footer.site a:hover{color:#fff}
   .index-list .is-new a{grid-template-columns:minmax(0,1fr);gap:12px;padding:0 0 22px;border-bottom:0}
   .index-list .is-new h2{font-size:20px}
   .index-list h2{font-size:16px;margin:6px 0 4px}
-  .index-list p{-webkit-line-clamp:2}
 }
 
 @media(max-width:480px){.hero{padding:40px 0 32px}.wrap{padding:0 18px}main{padding:36px 0 12px}}

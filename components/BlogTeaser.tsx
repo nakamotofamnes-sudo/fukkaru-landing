@@ -53,13 +53,14 @@ const BlogTeaser: React.FC = () => {
                 />
               )}
               <div className="flex flex-1 flex-col p-6">
-              {a.category && <span className="chip chip-accent w-fit">{a.category}</span>}
+              {/* 分類の印は灰色のまま（トップでは琥珀の印＝「人気」「キャンペーン」なので、意味を混ぜない） */}
+              {a.category && <span className="chip w-fit">{a.category}</span>}
               <h3 className="mt-3 flex items-start justify-between gap-2 text-[16px] font-semibold leading-[1.6] text-ink-900">
                 <span>{a.title}</span>
                 <ArrowUpRight size={16} className="mt-1 shrink-0 text-ink-500 transition-colors group-hover:text-ink-900" />
               </h3>
               {a.metaDescription && (
-                <p className="mt-2.5 line-clamp-3 text-[13px] leading-[1.8] text-ink-500">{a.metaDescription}</p>
+                <p className="mt-2.5 text-[13px] leading-[1.8] text-ink-500">{a.metaDescription}</p>
               )}
               {a.publishDate && (
                 <time className="mt-4 text-[12px] tabular-nums text-ink-500">{a.publishDate}</time>
