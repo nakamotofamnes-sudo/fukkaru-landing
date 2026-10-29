@@ -129,11 +129,10 @@ const Faq: React.FC = () => {
                       />
                     </button>
                   </dt>
-                  {isOpen && (
-                    <dd id={`faq-${idx}`} className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">
-                      {item.a}
-                    </dd>
-                  )}
+                  {/* 閉じていても答えは置いておく（AIが読めるように）。画面では隠す */}
+                  <dd id={`faq-${idx}`} hidden={!isOpen} className="-mt-1 pb-5 pr-10 text-[14px] leading-[1.9] text-ink-500">
+                    {item.a}
+                  </dd>
                 </div>
               );
             })}
