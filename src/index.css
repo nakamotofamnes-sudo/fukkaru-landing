@@ -152,6 +152,18 @@
   .rule-list > * + * {
     @apply border-t border-hairline;
   }
+
+  /* --- 中元さんのキャラ（2026-10-29）---------------------------
+     動画と同じ切り抜き（public/kyara/）。どの姿も同じ縮尺で作ってあるので、
+     高さは「絵の縦の大きさ（--kh）× 倍率（--k）」で決める。しゃがむ姿は小さく出る。
+     飾りなので alt は空。角丸はかけない。ブログ（scripts/build-blog.mjs）も同じ絵を使う */
+  .kyara {
+    display: block;
+    width: auto;
+    max-width: none;
+    border-radius: 0;
+    height: calc(var(--kh) * var(--k, 0.5) * 1px);
+  }
 }
 
 @layer utilities {

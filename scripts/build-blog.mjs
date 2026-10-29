@@ -23,7 +23,7 @@ const LINE_URL = 'https://lin.ee/Bh5gFU6';
 
 // ── 中元さんのキャラ（2026-10-29）──
 // 中元さん「シンプルすぎて味気ない。新聞みたい」。仕事ごとに、作業着の代表のキャラが見出しに立つ。
-// 絵は動画と同じ切り抜き（本人のキャラは使ってよい・10/20 中元さん）。public/blog/kyara/ に
+// 絵は動画と同じ切り抜き（本人のキャラは使ってよい・10/20 中元さん）。public/kyara/ に
 // scripts/make-kyara.mjs で作る。大きさは content/kyara.json（どの姿も同じ縮尺。しゃがむ姿は小さく出る）。
 // **新しい分類が増えたら、ここに1行足す。**無ければ正面の立ち姿（front）になる。
 const KYARA_SIZE = (() => {
@@ -62,7 +62,7 @@ function kyaraImg(name, cls, { small = false, eager = false } = {}) {
   const s = KYARA_SIZE[name];
   if (!s) return '';
   const [w, h] = small ? s.s : s.l;
-  const src = small ? `/blog/kyara/s/${name}.webp` : `/blog/kyara/${name}.webp`;
+  const src = small ? `/kyara/s/${name}.webp` : `/kyara/${name}.webp`;
   return `<img class="${cls}" src="${src}" alt="" width="${w}" height="${h}" style="--kh:${h}"${eager ? '' : ' loading="lazy"'} decoding="async">`;
 }
 function kyaraForCategory(category) {
@@ -888,7 +888,7 @@ ${extraHead || ''}
 <div class="page">
 <header class="site">
   <div class="wrap">
-    <a class="brand" href="/"><img class="brand-logo" src="/blog/kyara/logo.webp" alt="" width="28" height="28">フッ軽<span>ふっかる</span></a>
+    <a class="brand" href="/"><img class="brand-logo" src="/kyara/logo.webp" alt="" width="28" height="28">フッ軽<span>ふっかる</span></a>
     <a class="backlink" href="/">← トップページへ</a>
   </div>
 </header>
