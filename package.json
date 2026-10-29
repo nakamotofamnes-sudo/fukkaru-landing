@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/build-blog.mjs && node scripts/shrink-images.mjs",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr --emptyOutDir && node scripts/prerender-top.mjs && node scripts/build-blog.mjs && node scripts/shrink-images.mjs",
     "build:blog": "node scripts/build-blog.mjs",
     "preview": "vite preview"
   },
