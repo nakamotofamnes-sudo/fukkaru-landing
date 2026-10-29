@@ -1,10 +1,13 @@
 import React from 'react';
 import { Phone, MessageCircle, Mail } from 'lucide-react';
+import Kyara from './Kyara';
 
 const Contact: React.FC = () => {
   return (
     <section id="contact" className="section border-t border-hairline bg-ink-900">
       <div className="shell">
+        {/* 2026-10-29：手を振る中元さんのキャラを、見出しの右に（スマホは字の下に右寄せで） */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
         <div className="max-w-2xl">
           <span className="mb-3 inline-block text-[12px] font-semibold uppercase tracking-[0.08em] text-accent-line">
             Contact
@@ -15,6 +18,8 @@ const Contact: React.FC = () => {
             ご高齢の方にも分かりやすく、ゆっくり丁寧にお見積もりをご説明します。
             離れて暮らすご家族からの代理相談も歓迎です。
           </p>
+        </div>
+        <Kyara name="waving" className="shrink-0 self-end [--k:.24] sm:[--k:.36]" />
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">

@@ -5,6 +5,7 @@ declare module 'virtual:blog-teaser' {
     metaDescription?: string;
     category?: string;
     publishDate?: string;
+    heroImage?: string;
   }[];
   export default list;
 }

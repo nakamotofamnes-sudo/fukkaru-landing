@@ -1,24 +1,24 @@
 import React from 'react';
-import { Sprout, Warehouse, Hammer, Droplets } from 'lucide-react';
+import Kyara from './Kyara';
 
 const problems = [
   {
-    icon: Sprout,
+    kyara: 'kusakari',
     title: '庭の草むしり、草刈り',
     text: '昔は自分でやっていたけれど、最近はすぐに疲れてしまって、つい後回しになる。',
   },
   {
-    icon: Warehouse,
+    kyara: 'kougu',
     title: '物置の設置・解体・移動',
     text: '説明書どおりに組めるか不安。古い物置を片づけたいが、自分では動かせない。',
   },
   {
-    icon: Hammer,
+    kyara: 'repair',
     title: '家具の組み立て・解体・移動',
     text: '箱から出したものの、途中で手が止まった。重い家具を運ぶのは腰を痛めそうで怖い。',
   },
   {
-    icon: Droplets,
+    kyara: 'senjo',
     title: '家の外回りの汚れ、側溝の掃除',
     text: '見て見ぬふりをしている。高いところや無理な体勢での作業は、けがが怖い。',
   },
@@ -39,10 +39,13 @@ const Problems: React.FC = () => {
 
         <div className="mt-12 grid gap-px overflow-hidden rounded border border-hairline bg-hairline sm:grid-cols-2">
           {problems.map((item) => (
-            <div key={item.title} className="bg-surface p-6 sm:p-7">
-              <item.icon size={22} className="text-ink-500" />
-              <h3 className="mt-4 text-[16px] font-semibold text-ink-900">{item.title}</h3>
-              <p className="mt-2 text-[14px] leading-[1.85] text-ink-500">{item.text}</p>
+            // 2026-10-29：線のアイコンを、その仕事をしている中元さんのキャラに。足を枠の下の線にそろえる
+            <div key={item.title} className="flex items-end gap-4 bg-surface px-6 pt-6 sm:px-7 sm:pt-7">
+              <div className="min-w-0 flex-1 pb-6 sm:pb-7">
+                <h3 className="text-[16px] font-semibold text-ink-900">{item.title}</h3>
+                <p className="mt-2 text-[14px] leading-[1.85] text-ink-500">{item.text}</p>
+              </div>
+              <Kyara name={item.kyara} className="shrink-0 [--k:.25] sm:[--k:.3]" />
             </div>
           ))}
         </div>
