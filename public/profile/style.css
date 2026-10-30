@@ -173,3 +173,6 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 #business .scene-cap{background:var(--ink)}
 /* 印刷するときは、動きの途中の形を残さない */
 @media print{.mo-on .mo-group [data-mo],.mo-on .mo-group .mo-line-i,.mo-on .mo-group .orange-dot,.mo-wait *{opacity:1!important;transform:none!important;clip-path:none!important}.scene-cap,.preloader,.pre-iris,.circuit-toggle{display:none!important}}
+
+/* ホームページ制作の専用ページへの入口 */
+.biz-card .web-service-link{margin-top:16px;font-size:11px;line-height:1.7;color:#f1ede4}
