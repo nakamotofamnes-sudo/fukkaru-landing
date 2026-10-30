@@ -1341,6 +1341,7 @@ function buildSitemap(articles, pillars = []) {
     // 代表のプロフィール（2026-09-22 追加）。
     // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
     { loc: `${SITE_URL}/profile.html`, priority: '0.6', lastmod: saishin },
+    { loc: `${SITE_URL}/web.html`, priority: '0.7', lastmod: '2026-10-31' },
     ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9', lastmod: hiduke(p) })),
     ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: hiduke(a) })),
   ];
