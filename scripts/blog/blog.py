@@ -473,8 +473,13 @@ CURSOR = (Path(os.environ["FUKKARU_CURSOR"]) if os.environ.get("FUKKARU_CURSOR")
                 else HOME / ".fukkaru" / "狙い_いまの位置.txt"))
 
 
-def read_targets() -> list[tuple[str, str]]:
-    """狙いの一覧（`~/.fukkaru/狙い.txt`）を読む。無ければ空を返す"""
+# 狙う検索語（ロングテール）。狙い.txt の3つ目の欄「サービス:地域:検索語」（2026-11-06 中元さん「ロングテールでお客に刺さるネタをキーワード狙う」）
+NERAI_GO = ""
+
+
+def read_targets() -> list[tuple]:
+    """狙いの一覧（`~/.fukkaru/狙い.txt`）を読む。無ければ空を返す。
+    1行は「サービス:地域」か「サービス:地域:狙う検索語」（検索語があるときは (サービス, 地域, 検索語)）"""
     if not TARGETS.exists():
         return []
     out: list[tuple[str, str]] = []
@@ -483,9 +488,10 @@ def read_targets() -> list[tuple[str, str]]:
         if not line or line.startswith("#") or ":" not in line:
             continue
         svc, _, area = line.partition(":")
-        svc, area = svc.strip(), area.strip()
+        area, _, go = area.partition(":")
+        svc, area, go = svc.strip(), area.strip(), go.strip()
         if svc and area:
-            out.append((svc, area))
+            out.append((svc, area, go) if go else (svc, area))
     return out
 
 
@@ -521,9 +527,11 @@ def pick_target(done: list[dict]) -> tuple[str, str]:
     同じ行を何度も書けば、そこに記事が集まる。中元さんが自分で変えられる。
     """
     # 環境変数で1回だけ上書きできる（例：FUKKARU_BLOG_TARGET="不用品の運搬:富士市"）
+    global NERAI_GO
     want = (os.environ.get("FUKKARU_BLOG_TARGET") or "").strip()
     if want:
-        parts = want.split(":", 1)
+        parts = want.split(":", 2)
+        NERAI_GO = parts[2].strip() if len(parts) > 2 else ""
         return parts[0].strip(), (parts[1].strip() if len(parts) > 1 else AREAS[0])
 
     targets = read_targets()
@@ -536,7 +544,9 @@ def pick_target(done: list[dict]) -> tuple[str, str]:
             i = 0
         # **進めるのは記事が書けたあと**（advance_target）。
         # ここで進めると、失敗した日に狙いが1つ飛ぶ（2026-09-02に実際に飛んだ）
-        return targets[i % len(targets)]
+        t = targets[i % len(targets)]
+        NERAI_GO = t[2] if len(t) > 2 else ""
+        return t[0], t[1]
 
     # 一覧が無いときだけ、昔どおり薄いところを選ぶ
     blob = json.dumps(done, ensure_ascii=False)
@@ -727,6 +737,19 @@ p の中に「**太字だけの行**」や「・」「*」「1.」で始まる�
 """
 
 
+def nerai_go_bun() -> str:
+    """狙う検索語（ロングテール）があるときだけ、頼み文に足す段落"""
+    if not NERAI_GO:
+        return ""
+    return f"""
+**狙う検索語：「{NERAI_GO}」**（調べる人は少ないが、本気で頼みたい人が打つ長い言葉です）
+・この言葉で調べた人が、**いま置かれている場面**を1つ思い描いて、その人の疑問に冒頭で答える
+・タイトルか説明文のどちらかに、この言葉の中心の語を自然な語順で入れる（言葉をそのまま並べない）
+・h2 の1つと、よくある質問の1つを、この言葉で調べる人の疑問にする
+・この言葉に合わない一般論で字数を埋めない
+"""
+
+
 def build_prompt(done: list[dict], service: str, area: str,
                  ng: list[str] | None = None) -> str:
     angle = ANGLES[len(done) % len(ANGLES)]
@@ -761,7 +784,7 @@ def build_prompt(done: list[dict], service: str, area: str,
 **今回の狙い：「{service}」×「{area}」で検索する人に届く記事。**
 タイトル・説明文・見出し・本文に、この2語とその言い換えを自然に入れてください。
 ただし詰め込みすぎて読みにくくしないこと。読みやすさが最優先です。
-
+{nerai_go_bun()}
 会社の前提：
 {FACTS}
 {RULES}
