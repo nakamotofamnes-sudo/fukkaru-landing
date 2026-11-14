@@ -1,0 +1,50 @@
+name: HP制作の記事を書く（1日1本）
+
+# 2026-11-15〜。中元さんの決定（2026-11-14）：HP制作の記事を毎日1本・文章だけ。
+# フッ軽本体のブログ（blog.yml の10時・13時・16時）とは別。重ならない11時に動く。
+# 書く道具：scripts/web/web_kiji.py ／ 狙う言葉：scripts/web/狙い.txt（尽きたら書かずに止まる）
+on:
+  schedule:
+    - cron: '0 2 * * *'      # 毎日 11:00（日本時間）
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry なら記事を書くだけ（PRは作らない）。live でPRを作る'
+        type: choice
+        options: [dry, live]
+        default: dry
+
+concurrency:
+  group: web-kiji
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BLOG_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 誰がコミットするか決める
+        run: |
+          git config user.name  "フッ軽の自動投稿"
+          git config user.email "nakamoto.famnes@gmail.com"
+      - name: 弁の試し（効くことと、効きすぎないこと）
+        run: python3 scripts/web/tameshi.py
+      - name: 記事を書く
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_PAT: ${{ secrets.BLOG_PAT }}
+          FUKKARU_REPO: ${{ github.workspace }}
+          FUKKARU_WEB_MODE: ${{ (inputs.mode == 'dry' && 'dry') || 'on' }}
+          # **はじめの2週間（2026-11-28 まで）は自動でマージしない。**読んでから人がマージする。
+          # よければ '1' にすると、書いたその場で公開する
+          FUKKARU_WEB_AUTOMERGE: '0'
+        run: python3 scripts/web/web_kiji.py

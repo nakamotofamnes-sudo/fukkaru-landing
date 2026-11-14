@@ -6,6 +6,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// HP制作の記事（/web/ の下・2026-11-15〜）は別のファイルで作る
+import { buildWeb, webSitemapEntries } from './build-web.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -1342,7 +1344,8 @@ function buildSitemap(articles, pillars = []) {
     // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
     { loc: `${SITE_URL}/profile.html`, priority: '0.6', lastmod: saishin },
     { loc: `${SITE_URL}/web.html`, priority: '0.7', lastmod: '2026-10-31' },
-    { loc: `${SITE_URL}/web/benriya-homepage.html`, priority: '0.6', lastmod: '2026-11-14' },
+    // HP制作の記事と一覧 /web/（手作りの benriya-homepage.html も含む）。build-web.mjs が数える
+    ...webSitemapEntries(),
     ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9', lastmod: hiduke(p) })),
     ...articles.map((a) => ({ loc: articleUrl(a.slug), priority: '0.7', lastmod: hiduke(a) })),
   ];
@@ -1462,6 +1465,8 @@ function main() {
 
   fs.writeFileSync(path.join(DIST_DIR, '404.html'), render404Page(pillars), 'utf8');
   console.log('[build-blog] 生成: /404.html（無いURLのときに Firebase が404で返す画面）');
+
+  buildWeb();
 
   const linked = injectBlogLinks(articles, pillars);
 
