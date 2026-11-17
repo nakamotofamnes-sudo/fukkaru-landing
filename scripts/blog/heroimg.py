@@ -17,6 +17,7 @@ Canva は対話セッションからしか操作できないので、毎日ひ�
 """
 from __future__ import annotations
 
+import re
 import base64
 import json
 import os
@@ -103,7 +104,8 @@ def wrap(text: str, f: ImageFont.FreeTypeFont, width: int) -> list[str]:
             cur = ""
             continue
         trial = cur + ch
-        if d.textlength(trial, font=f) <= width:
+        # 行の頭に「？」「、」などを置かない（11/17、「いくら」の次の行が「？」で始まった）
+        if d.textlength(trial, font=f) <= width or (cur and ch in "？?！!、。）」』・ー"):
             cur = trial
         else:
             lines.append(cur)
@@ -131,8 +133,14 @@ def make_hero(out_path: Path, title: str, category: str = "",
         light.save(bg_only, "JPEG", quality=88, optimize=True)
 
         # SNS用は文字を載せるので、ぼかして強めに暗くする
-        base = photo.filter(ImageFilter.GaussianBlur(2))
-        veil = Image.new("RGBA", (W, H), (*NAVY_D, 190))
+        # 幕は左だけ濃く、右へ薄く（11/17 中元さん「ダサくないか」）。
+        # 前は全体を一様に暗くしていたので、写真がほとんど見えなかった。字のある左だけ暗くする
+        base = photo
+        veil = Image.new("RGBA", (W, H))
+        vd = ImageDraw.Draw(veil)
+        for x in range(W):
+            k = min(1.0, max(0.0, (x - W * 0.30) / (W * 0.55)))
+            vd.line([x, 0, x, H], fill=(*NAVY_D, int(215 - 170 * (k * k * (3 - 2 * k)))))
         base = Image.alpha_composite(base.convert("RGBA"), veil).convert("RGB")
     else:
         base = gradient()
@@ -140,13 +148,15 @@ def make_hero(out_path: Path, title: str, category: str = "",
 
     d = ImageDraw.Draw(base)
 
-    # 左端の橙の縦線。カードと同じ目印
-    d.rectangle([0, 0, 10, H], fill=ORANGE)
+    # 左端の橙の縦線と、題の下の橙の線は 11/17 にやめた（中元さん「ダサくないか」）。
+    # 差し色は、分類の札1つだけにする
 
     # 題。長ければ字を小さくして、4行に収める
     for size in (58, 52, 46, 40, 36):
         f = font(size, bold=True)
-        lines = wrap(title, f, W - PAD * 2)
+        # 字は幕の濃い左だけに置く。「？」のあとで行を変えると、問いと答えが分かれて読みやすい
+        t2 = re.sub(r"([？?！!｜])\s*(?=.)", r"\1\n", title)
+        lines = wrap(t2, f, int(W * 0.64))
         if len(lines) <= 4:
             break
     lines = lines[:4]
@@ -154,23 +164,20 @@ def make_hero(out_path: Path, title: str, category: str = "",
     # 中身のかたまりを縦の真ん中に置く（下が空いて間延びしないように）
     line_h = int(size * 1.42)
     cat_h = 68 if category else 0
-    block_h = cat_h + line_h * len(lines) + 26      # 26 は下の橙の線のぶん
+    block_h = cat_h + line_h * len(lines)
     y = max(PAD, (H - 60 - block_h) // 2)
 
     if category:
         fc = font(24, bold=True)
         tw = d.textlength(category, font=fc)
-        d.rounded_rectangle([PAD, y, PAD + tw + 34, y + 44], radius=22,
-                            outline=PALE, width=2)
-        d.text((PAD + 17, y + 8), category, font=fc, fill=PALE)
+        d.rounded_rectangle([PAD, y, PAD + tw + 32, y + 44], radius=8, fill=ORANGE)
+        d.text((PAD + 16, y + 7), category, font=fc, fill=WHITE)
         y += cat_h
 
     for line in lines:
         d.text((PAD, y), line, font=f, fill=WHITE)
         y += line_h
 
-    # 題の下に橙の短い線。カードと同じ目印
-    d.rectangle([PAD, y + 10, PAD + 120, y + 16], fill=ORANGE)
 
     # 下に社名
     f = font(26, bold=False)
