@@ -27,8 +27,14 @@ const sections = ['home', 'about', 'business', 'contact'].map($);
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
-// スマホのアドレスバーが伸縮しても、CSSと同じ安定した高さ（100lvh）を使う。
-let width = canvas.clientWidth, height = probe.clientHeight || innerHeight, mobile = width <= 760;
+// 画面の大きさ。スマホは、アドレスバーが伸縮しても変わらない高さ（100lvh）。
+// パソコンの形（幅761px〜。スマホを横にしたときも）は、前と同じく板の見た目の高さ（fixed・100%）
+function viewSize() {
+  const w = canvas.clientWidth;
+  if (w > 760) { track.style.top = track.style.height = canvas.style.height = ''; return [w, canvas.clientHeight]; }
+  return [w, probe.clientHeight || innerHeight];
+}
+let [width, height] = viewSize(), mobile = width <= 760;
 // 板の高さ。パソコンは画面と同じ。スマホは場面ごとに placeCanvas が決める
 let canvasH = height;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
@@ -293,7 +299,7 @@ async function start() {
     pointerY = event.clientY / height - .5;
   }, { passive: true });
   addEventListener('resize', () => {
-    const nextWidth = canvas.clientWidth, nextHeight = probe.clientHeight || innerHeight;
+    const [nextWidth, nextHeight] = viewSize();
     if (width === nextWidth && height === nextHeight) return;
     width = nextWidth; height = nextHeight; mobile = width <= 760;
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));

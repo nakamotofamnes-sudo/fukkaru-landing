@@ -49,17 +49,28 @@
     event.currentTarget.hidden = true;
   });
   const nav = [...document.querySelectorAll('[data-nav]')];
-  // 場面の印（data-stage）は上の帯の色を、active は下のナビの光る所を決める。2つを分ける（2026-11-19）。
-  // MY STORY（#story）と進め方（.process）は地が明るい。前は印に入っていなかったので、紺・墨の帯とうすい色のロゴが、明るい地に重なっていた
+  // 場面の印は3つ（2026-11-19）。MY STORY（#story）と進め方（.process）は地が明るいのに、前は印に入っていなかったので、
+  // 紺・墨の帯とうすい色のロゴが、明るい地にずっと重なっていた。
+  //   data-stage … 下のナビの色。場面の上端が画面の42%を越えたら切り替える（前と同じ）
+  //   data-band  … 画面の上にあるもの（上の帯・動きを止める）の色。次の場面が帯の下まで来たら切り替える。
+  //                紺の場面だけは42%のまま（3Dの地が先に紺へ変わっていくため）
+  //   active     … ナビで光らせる所（MY STORY は ABOUT、進め方は SERVICE のまま）
   const stages = [['home', 'home'], ['about', 'about'], ['story', 'about'], ['business', 'business'], ['process', 'business'], ['contact', 'contact']]
     .map(([id, navId]) => ({ el: document.getElementById(id) || document.querySelector('.' + id), stage: id, navId }))
     .filter(s => s.el);
+  const header = document.querySelector('.site-header');
   let scheduled = false;
   function update() {
     scheduled = false;
-    let stage = 'home', active = 'home';
-    for (const s of stages) if (s.el.getBoundingClientRect().top < innerHeight * .42) { stage = s.stage; active = s.navId; }
+    const mid = innerHeight * .42, under = header ? header.offsetHeight : 0;
+    let stage = 'home', band = 'home', active = 'home';
+    for (const s of stages) {
+      const top = s.el.getBoundingClientRect().top;
+      if (top < mid) { stage = s.stage; active = s.navId; }
+      if (top < (s.stage === 'about' ? mid : under)) band = s.stage;
+    }
     document.body.dataset.stage = stage;
+    document.body.dataset.band = band;
     nav.forEach(link => { if (link.dataset.nav === active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); });
   }
   addEventListener('scroll', () => { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } }, { passive: true });
