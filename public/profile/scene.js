@@ -16,7 +16,8 @@ const sections = ['home', 'about', 'business', 'contact'].map($);
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
-let width = innerWidth, height = innerHeight, mobile = width <= 760;
+// スマホのアドレスバーが伸縮しても、CSSと同じ安定した描画領域を使う。
+let width = canvas.clientWidth, height = canvas.clientHeight, mobile = width <= 760;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
 let lastStage = '', frame = 0, elapsed = 0, lastTime = 0;
 let pointerX = 0, pointerY = 0, easedX = 0, easedY = 0;
@@ -279,7 +280,9 @@ async function start() {
     pointerY = event.clientY / height - .5;
   }, { passive: true });
   addEventListener('resize', () => {
-    width = innerWidth; height = innerHeight; mobile = width <= 760;
+    const nextWidth = canvas.clientWidth, nextHeight = canvas.clientHeight;
+    if (width === nextWidth && height === nextHeight) return;
+    width = nextWidth; height = nextHeight; mobile = width <= 760;
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -323,9 +326,9 @@ async function start() {
     const sceneHidden = aboutBottom < 0 && contactTop > height;
     let view;
     if (mobile) {
-      view = inAbout ? [0, 1.55, 7.8, 0, .95, 0] : contactProgress > 0
-        ? [2.2, 2.6, 7.7, 0, .68, 0]
-        : [3.5, 3.3, 8.7, 0, .7, 0];
+      // 境目を往復しても視点が飛ばないよう、場面の色と一緒になめらかにつなぐ。
+      view = mix([3.5, 3.3, 8.7, 0, .7, 0], [0, 1.55, 7.8, 0, .95, 0], dark);
+      if (contactProgress > 0) view = mix(view, [2.2, 2.6, 7.7, 0, .68, 0], contactProgress);
     } else {
       view = mix([5.0, 3.0, 6.3, 0, .85, 0], [2.7, 2.1, 6.0, 0, .9, 0], smooth(heroProgress));
       const aboutView = [Math.sin((aboutProgress - .5) * .22) * 5.9, 1.65, 5.9, 0, 1.0, 0];
@@ -344,10 +347,9 @@ async function start() {
     const offsetX = mobile ? 0 : -.23 * width * (1 - dark);
     let offsetY = 0;
     if (mobile) {
-      // Keep the workbench below the copy. The contact scene follows its section.
-      offsetY = inAbout ? height / 2 - (aboutTop + 275) : contactProgress > 0
-        ? -(layout.contact.top - y + 955 - height / 2)
-        : -height * .20;
+      // 本文の下に置く位置も、視点と同じ割合でつなぐ。
+      offsetY = THREE.MathUtils.lerp(-height * .20, height / 2 - (aboutTop + 275), dark);
+      if (contactProgress > 0) offsetY = THREE.MathUtils.lerp(offsetY, height / 2 - (contactTop + 955), contactProgress);
     }
     camera.setViewOffset(width, height, offsetX, offsetY, width, height);
     scene.background.copy(cream).lerp(navy, dark);
