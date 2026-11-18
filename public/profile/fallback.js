@@ -49,13 +49,17 @@
     event.currentTarget.hidden = true;
   });
   const nav = [...document.querySelectorAll('[data-nav]')];
-  const sections = ['home', 'about', 'business', 'contact'].map(id => document.getElementById(id));
+  // 場面の印（data-stage）は上の帯の色を、active は下のナビの光る所を決める。2つを分ける（2026-11-19）。
+  // MY STORY（#story）と進め方（.process）は地が明るい。前は印に入っていなかったので、紺・墨の帯とうすい色のロゴが、明るい地に重なっていた
+  const stages = [['home', 'home'], ['about', 'about'], ['story', 'about'], ['business', 'business'], ['process', 'business'], ['contact', 'contact']]
+    .map(([id, navId]) => ({ el: document.getElementById(id) || document.querySelector('.' + id), stage: id, navId }))
+    .filter(s => s.el);
   let scheduled = false;
   function update() {
     scheduled = false;
-    let active = 'home';
-    for (const section of sections) if (section.getBoundingClientRect().top < innerHeight * .42) active = section.id;
-    document.body.dataset.stage = active;
+    let stage = 'home', active = 'home';
+    for (const s of stages) if (s.el.getBoundingClientRect().top < innerHeight * .42) { stage = s.stage; active = s.navId; }
+    document.body.dataset.stage = stage;
     nav.forEach(link => { if (link.dataset.nav === active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); });
   }
   addEventListener('scroll', () => { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } }, { passive: true });

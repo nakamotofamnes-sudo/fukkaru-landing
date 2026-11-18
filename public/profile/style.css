@@ -130,7 +130,7 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 .c-node.is-hit .ping{animation:cPing .95s var(--ease-out)}
 .c-node.is-hit .core{stroke:var(--orange);fill:var(--orange)}
 @keyframes cPing{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(4.8)}}
-.c-label{font:600 10px/1 var(--font);letter-spacing:.22em;fill:#a9ab9f;paint-order:stroke;stroke:var(--ink);stroke-width:14px;stroke-linejoin:round;dominant-baseline:middle;opacity:0;transition:opacity .6s ease 1.8s}
+.c-label{font:600 10px/1 var(--font);letter-spacing:.22em;fill:#a9ab9f;paint-order:stroke;stroke:var(--ink);stroke-width:14px;stroke-linejoin:round;dominant-baseline:central;opacity:0;transition:opacity .6s ease 1.8s}
 .circuit.is-drawn .c-stems path,.circuit.is-drawn .c-tail,.circuit.is-drawn .c-head,.circuit.is-drawn .c-label{opacity:1}
 .circuit.is-drawn .c-node .core{transform:none}
 .circuit.is-static .c-tail{display:none}
@@ -177,3 +177,7 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 
 /* ホームページ制作の専用ページへの入口 */
 .biz-card .web-service-link{margin-top:16px;font-size:11px;line-height:1.7;color:#f1ede4}
+/* スマホでは3Dの板をページに乗せる（2026-11-19）。入れ物の中で sticky にし、場面ごとの置き場所と高さは scene.js の placeCanvas が決める */
+#scene-track{display:contents}
+.scene-vh{position:fixed;top:0;left:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none}
+@media(max-width:760px){#scene-track{display:block;position:absolute;top:0;left:0;width:100%;height:100vh;height:100lvh;z-index:0;pointer-events:none}#scene-track>#scene{position:sticky;inset:auto;top:0;left:0;height:100vh;height:100lvh}}

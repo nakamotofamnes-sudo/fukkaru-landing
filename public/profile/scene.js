@@ -12,12 +12,25 @@ const mix = (a, b, t) => a.map((v, i) => THREE.MathUtils.lerp(v, b[i], t));
 const assets = new URL('./', import.meta.url);
 const media = matchMedia('(prefers-reduced-motion: reduce)');
 const canvas = $('scene');
+// スマホでは、3Dの板をページに乗せて、本文と一緒にスマホに動かしてもらう（2026-11-19）。
+// 画面に固定した板の中身を毎コマずらす形だと、指ですべらせている間、本文と1コマずつずれて揺れて見えた。
+// 板は入れ物（track）の中で sticky にする。入れ物の範囲では画面に止まり、出たら本文と一緒に流れる。
+const track = document.createElement('div');
+track.id = 'scene-track';
+canvas.before(track);
+track.append(canvas);
+// 画面の高さ（アドレスバーが隠れたときの高さ＝100lvh）。板の高さとは別に測る
+const probe = document.createElement('div');
+probe.className = 'scene-vh';
+document.body.append(probe);
 const sections = ['home', 'about', 'business', 'contact'].map($);
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
-// スマホのアドレスバーが伸縮しても、CSSと同じ安定した描画領域を使う。
-let width = canvas.clientWidth, height = canvas.clientHeight, mobile = width <= 760;
+// スマホのアドレスバーが伸縮しても、CSSと同じ安定した高さ（100lvh）を使う。
+let width = canvas.clientWidth, height = probe.clientHeight || innerHeight, mobile = width <= 760;
+// 板の高さ。パソコンは画面と同じ。スマホは場面ごとに placeCanvas が決める
+let canvasH = height;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
 let lastStage = '', frame = 0, elapsed = 0, lastTime = 0;
 let pointerX = 0, pointerY = 0, easedX = 0, easedY = 0;
@@ -39,7 +52,7 @@ if (renderer) start();
 
 async function start() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
-  renderer.setSize(width, height, false);
+  renderer.setSize(width, canvasH, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.localClippingEnabled = true;
@@ -280,13 +293,13 @@ async function start() {
     pointerY = event.clientY / height - .5;
   }, { passive: true });
   addEventListener('resize', () => {
-    const nextWidth = canvas.clientWidth, nextHeight = canvas.clientHeight;
+    const nextWidth = canvas.clientWidth, nextHeight = probe.clientHeight || innerHeight;
     if (width === nextWidth && height === nextHeight) return;
     width = nextWidth; height = nextHeight; mobile = width <= 760;
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
-    renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    placed = '';   // 板の置き場所と大きさを、次のコマで決め直す
     measure();
   });
   const observer = new ResizeObserver(measure);
@@ -296,6 +309,38 @@ async function start() {
       const rect = section.getBoundingClientRect();
       layout[section.id] = { top: scrollY + rect.top, height: rect.height };
     }
+  }
+
+  // 板の置き場所（スマホだけ）。毎コマ呼ぶが、値が変わったときだけ書き込む。
+  // 人物は、板の上から LOOK（画面の高さの7割）の所に描く。板の中での位置は、スクロールしても動かさない。
+  //   紺の場面まで：入れ物はページの頭から。はじめは画面に止まり、紺の場面の上から275pxに人物が来たら、本文と一緒に流れだす
+  //   ご相談の場面：人物を、場面の上から955pxに置いたまま流れる
+  // 275・955 は、前の形（毎コマずらしていたとき）の人物の位置と同じ。560 は style.css の紺の窓（上から 480〜560px で不透明になる）
+  let placed = '';
+  function placeCanvas(y) {
+    let mode = 'fixed', top = 0, trackH = 0, h = height;
+    if (mobile && layout.about && layout.contact) {
+      const look = height * .7, aboutEnd = layout.about.top + layout.about.height;
+      if (y + height / 2 < (aboutEnd + layout.contact.top) / 2) {
+        mode = 'about';
+        h = Math.ceil(Math.max(height, look + 560 - 275 + 16));   // 流れだしたあとも、紺の窓の下まで板でふさぐ
+        trackH = Math.round(layout.about.top + 275 - look) + h;
+      } else {
+        mode = 'contact';
+        top = Math.round(layout.contact.top + 955 - look);
+        h = Math.ceil(Math.max(height, layout.contact.top + layout.contact.height - top + 2));   // 場面の下まで（その下は地の色のフッター）
+        trackH = h;
+      }
+    }
+    const key = `${mode}|${top}|${trackH}|${h}|${width}`;
+    if (key !== placed) {
+      placed = key;
+      if (mode === 'fixed') track.style.top = track.style.height = canvas.style.height = '';
+      else { track.style.top = top + 'px'; track.style.height = trackH + 'px'; canvas.style.height = h + 'px'; }
+      canvasH = h;
+      renderer.setSize(width, canvasH, false);
+    }
+    return mode;
   }
 
   function tick(time) {
@@ -324,11 +369,14 @@ async function start() {
     document.documentElement.style.setProperty('--hero-opacity', 1 - enterAbout);
     const inAbout = dark > .12;
     const sceneHidden = aboutBottom < 0 && contactTop > height;
+    const place = placeCanvas(y);
     let view;
     if (mobile) {
       // 境目を往復しても視点が飛ばないよう、場面の色と一緒になめらかにつなぐ。
-      view = mix([3.5, 3.3, 8.7, 0, .7, 0], [0, 1.55, 7.8, 0, .95, 0], dark);
-      if (contactProgress > 0) view = mix(view, [2.2, 2.6, 7.7, 0, .68, 0], contactProgress);
+      // ご相談の場面は、板がそこへ移ってから見える。人物が見える所では、もう視点を動かさない
+      view = place === 'contact'
+        ? [2.2, 2.6, 7.7, 0, .68, 0]
+        : mix([3.5, 3.3, 8.7, 0, .7, 0], [0, 1.55, 7.8, 0, .95, 0], dark);
     } else {
       view = mix([5.0, 3.0, 6.3, 0, .85, 0], [2.7, 2.1, 6.0, 0, .9, 0], smooth(heroProgress));
       const aboutView = [Math.sin((aboutProgress - .5) * .22) * 5.9, 1.65, 5.9, 0, 1.0, 0];
@@ -345,13 +393,9 @@ async function start() {
     camera.position.set(view[0] + easedX * .22, view[1] - easedY * .15, view[2]);
     camera.lookAt(view[3], view[4], view[5]);
     const offsetX = mobile ? 0 : -.23 * width * (1 - dark);
-    let offsetY = 0;
-    if (mobile) {
-      // 本文の下に置く位置も、視点と同じ割合でつなぐ。
-      offsetY = THREE.MathUtils.lerp(-height * .20, height / 2 - (aboutTop + 275), dark);
-      if (contactProgress > 0) offsetY = THREE.MathUtils.lerp(offsetY, height / 2 - (contactTop + 955), contactProgress);
-    }
-    camera.setViewOffset(width, height, offsetX, offsetY, width, height);
+    // スマホ：人物は、いつも板の上から高さの7割の所。本文との位置合わせは、板ごとページが動かす（placeCanvas）
+    const offsetY = mobile ? -height * .20 : 0;
+    camera.setViewOffset(width, height, offsetX, offsetY, width, canvasH);
     scene.background.copy(cream).lerp(navy, dark);
     scene.fog.color.copy(scene.background);
     canvas.style.visibility = sceneHidden ? 'hidden' : 'visible';
