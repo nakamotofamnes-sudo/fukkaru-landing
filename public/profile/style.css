@@ -181,9 +181,16 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 .biz-card .web-service-link{margin-top:16px;font-size:11px;line-height:1.7;color:#f1ede4}
 /* スマホでは3Dの板をページに乗せる（2026-11-19）。入れ物の中で sticky にし、場面ごとの置き場所と高さは scene.js の placeCanvas が決める */
 #scene-track{display:contents}
+.hero-frame{display:contents}
 .scene-vh{position:fixed;top:0;left:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none}
 /* 3Dが出ているときだけ。閉じた・落ちたとき（scene-ready が外れる）は入れ物を消し、ページの長さを押し広げない */
 @media(max-width:760px){.scene-ready #scene-track{display:block;position:absolute;top:0;left:0;width:100%;height:100vh;height:100lvh;z-index:0;pointer-events:none}.scene-ready #scene-track>#scene{display:block;position:sticky;inset:auto;top:0;left:0;height:100vh;height:100lvh}}
+/* 見出しと背景を同じ位置で流し始める。見出し・ボタンの配置には従来の画面高を使う。 */
+@media(max-width:760px){
+  .scene-ready .hero-sticky{height:var(--hero-pin-height,100svh);min-height:0}
+  .scene-ready .hero-sticky.hero-faded{visibility:hidden}
+  .scene-ready .hero-frame{display:block;position:relative;height:100svh;min-height:700px}
+}
 /* ナビの字の色は、ナビの地と同じ data-stage で決める（2026-11-19）。上の帯（data-band）から引き継ぐと、境目で字と地が同じ色になって読めない */
 .main-nav{color:var(--ink)}
 body[data-stage=about] .main-nav{color:#e7f6f8}

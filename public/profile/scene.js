@@ -24,12 +24,13 @@ const probe = document.createElement('div');
 probe.className = 'scene-vh';
 document.body.append(probe);
 const sections = ['home', 'about', 'business', 'contact'].map($);
+const heroPanel = sections[0].querySelector('.hero-sticky');
 // スマホの数（板の置き場所 placeCanvas と、紺の場面へ移る進み具合 enterAbout で、同じ数を使う）
 const LOOK = .7;          // 人物は、板の上から画面の高さの7割の所に描く
 const ABOUT_AT = 275;     // 紺の場面：人物を、場面の上から275pxに置く（ここに来たら板が本文と一緒に流れだす）
 const CONTACT_AT = 955;   // ご相談の場面：人物を、場面の上から955pxに置く
-const SETTLE = 90;        // 紺の場面へ移る動きは、板が流れだす90px手前で終える
-const LAG_MAX = 40;       // スマホでカメラ・色を遅らせるのは、最大40pxまで（SETTLE より小さくする）
+const SETTLE = 90;        // 紺への色の変化を、板が流れだす90px手前で終える
+const LAG_MAX = 40;       // スマホで色を遅らせるのは、最大40pxまで（SETTLE より小さくする）
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
@@ -51,7 +52,11 @@ let person, hologram, roomModel, office;
 let greetAt = 0, turnDone = 0, lookW = 0;
 // 幕開け：読み込み画面が閉じる瞬間に、引いた位置から寄っていく（motion.js が合図を出す）
 let introStart = -1, smoothY = scrollY;
-window.profileCameraIntro = () => { introStart = performance.now(); greetAt = introStart + 2900; };
+window.profileCameraIntro = () => {
+  const now = performance.now();
+  introStart = mobile ? -1 : now;
+  greetAt = now + 2900;
+};
 
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'default' });
@@ -349,6 +354,11 @@ async function start() {
       placed = key;
       if (mode === 'fixed') track.style.top = track.style.height = canvas.style.height = '';
       else { track.style.top = top + 'px'; track.style.height = trackH + 'px'; canvas.style.height = h + 'px'; }
+      if (mode === 'about') {
+        // 見出しの固定が解ける位置を、3Dの板と同じスクロール位置にする。
+        const releaseAt = trackH - h;
+        document.documentElement.style.setProperty('--hero-pin-height', (layout.home.height - releaseAt) + 'px');
+      }
       canvasH = h;
       renderer.setSize(width, canvasH, false);
     }
@@ -362,9 +372,8 @@ async function start() {
     const rawDt = (time - (lastTime || time)) / 1000;
     const dt = Math.min(rawDt, .04);
     lastTime = time;
-    // スクロールに、カメラと色が少し遅れてなめらかについてくる（かくかくしない）。
-    // スマホは、遅れを最大 LAG_MAX px までにする。板の置き場所はページが動かす（placeCanvas）ので、
-    // 遅れすぎると、板が流れだしたあとも板の中が動き続けて、本文とずれる（下の enterAbout）。
+    // スクロールに色が少し遅れてついてくる。パソコンではカメラも追いかける。
+    // スマホでは、板が流れだす前に紺への色の変化が終わるように遅れを制限する。
     // 置き場所と、見せる・隠すは、遅らせない本当の位置（scrollY）で決める（下の …R）
     // 追いかける速さは実際の経過時間で決める（描くのが遅い機械で、いつまでも追いつかないのを防ぐ）
     smoothY = paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
@@ -377,12 +386,8 @@ async function start() {
     const contactTop = layout.contact.top - y;
     const heroProgress = clamp(y / Math.max(1, layout.home.height - height));
     const aboutProgress = clamp(-aboutTop / Math.max(1, layout.about.height - height));
-    // 紺の場面へ移る進み具合（カメラの回り込み・部屋が縮んで消える・地の色・はじめの文字が消える）。
-    // スマホは、板（canvas）が画面に止まっているあいだに終える。板は、紺の場面の上端が「人物の位置 − ABOUT_AT」まで来たら
-    // ページと一緒に流れだす（placeCanvas）。その SETTLE px 手前で終わらせる。遅れは最大 LAG_MAX px なので、流れだすときには必ず終わっている。
-    // 流れているあいだ、板の中（人物・カメラ）は止まっていて、動かすのはページだけ（2026-11-19）。
-    // 前は、回り込みの最中に板が流れだし、部屋が下がってから急に上がって、行ったり来たりして見えた（画面収録）。
-    // #449 でカメラを遅らせてからは、流れだしたあとも1秒近く回り込みが続いていた
+    // スマホでは、板と見出しが流れだす前に紺への色の変化を終える。
+    // 最初の画面から紺の場面まで、カメラと部屋の位置は固定する。
     let enterAbout;
     if (mobile) {
       const end = height * LOOK - ABOUT_AT + SETTLE, start = end + height * .5;
@@ -392,27 +397,27 @@ async function start() {
     const contactProgress = smooth((height - contactTop) / height);
     const dark = enterAbout * (1 - exitAbout);
     document.documentElement.style.setProperty('--hero-opacity', 1 - enterAbout);
+    heroPanel.classList.toggle('hero-faded', mobile && enterAbout === 1);
     const inAbout = dark > .12;
     const aboutTopR = layout.about.top - scrollY, contactTopR = layout.contact.top - scrollY;
     const sceneHidden = aboutTopR + layout.about.height < 0 && contactTopR > height;
     const place = placeCanvas(scrollY);
     let view;
     if (mobile) {
-      // はじめ→紺の場面の回り込みは、板が止まっているあいだだけ（上の enterAbout）。場面の色と一緒になめらかにつなぐ。
-      // ご相談の場面は、板がそこへ移ってから見える。人物が見える所では、もう視点を動かさない
+      // 部屋と紺の場面を同じ視点で描く。ご相談の視点への切替は本文で板が隠れる位置で行う。
       view = place === 'contact'
         ? [2.2, 2.6, 7.7, 0, .68, 0]
-        : mix([3.5, 3.3, 8.7, 0, .7, 0], [0, 1.55, 7.8, 0, .95, 0], dark);
+        : [3.5, 3.3, 8.7, 0, .7, 0];
     } else {
       view = mix([5.0, 3.0, 6.3, 0, .85, 0], [2.7, 2.1, 6.0, 0, .9, 0], smooth(heroProgress));
       const aboutView = [Math.sin((aboutProgress - .5) * .22) * 5.9, 1.65, 5.9, 0, 1.0, 0];
       view = mix(view, aboutView, dark);
       if (contactProgress > 0) view = mix(view, [-2.8, 2.2, 6.5, 0, .8, 0], contactProgress);
     }
-    if (introStart >= 0) {
+    if (!mobile && introStart >= 0) {
       const t = clamp((time - introStart) / 2800), far = Math.pow(1 - t, 4);
       if (t >= 1) introStart = -1;
-      view = mix(view, mobile ? [view[0] + .6, view[1] + .9, view[2] + 2.6, view[3], view[4], view[5]] : [view[0] + 2.1, view[1] + 1.25, view[2] + 3.0, view[3], view[4] + .1, view[5]], far);
+      view = mix(view, [view[0] + 2.1, view[1] + 1.25, view[2] + 3.0, view[3], view[4] + .1, view[5]], far);
     }
     easedX = THREE.MathUtils.damp(easedX, paused || mobile ? 0 : pointerX, 3, dt);
     easedY = THREE.MathUtils.damp(easedY, paused || mobile ? 0 : pointerY, 3, dt);
@@ -426,8 +431,8 @@ async function start() {
     scene.fog.color.copy(scene.background);
     canvas.style.visibility = sceneHidden ? 'hidden' : 'visible';
     room.visible = dark < .88;
-    room.scale.setScalar(THREE.MathUtils.lerp(1, .88, dark));
-    room.position.y = -dark * .30;
+    room.scale.setScalar(mobile ? 1 : THREE.MathUtils.lerp(1, .88, dark));
+    room.position.y = mobile ? 0 : -dark * .30;
     scanner.visible = inAbout && (!mobile || aboutTopR > -420);
     avatar.visible = !mobile || !inAbout || aboutTopR > -420;
     ambient.intensity = THREE.MathUtils.lerp(2, 1.8, dark);
