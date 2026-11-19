@@ -130,7 +130,9 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 .c-node.is-hit .ping{animation:cPing .95s var(--ease-out)}
 .c-node.is-hit .core{stroke:var(--orange);fill:var(--orange)}
 @keyframes cPing{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(4.8)}}
-.c-label{font:600 10px/1 var(--font);letter-spacing:.22em;fill:#a9ab9f;paint-order:stroke;stroke:var(--ink);stroke-width:14px;stroke-linejoin:round;dominant-baseline:central;opacity:0;transition:opacity .6s ease 1.8s}
+.c-label{font:600 10px/1 var(--font);letter-spacing:.22em;fill:#a9ab9f;dominant-baseline:central;opacity:0;transition:opacity .6s ease 1.8s}
+/* 線を消すふちは、字とは別の1枚（後ろ）に付ける。字に直接付けると、Safari では次の字のふちが前の字を削る（2026-11-19） */
+.c-label-halo{fill:var(--ink);stroke:var(--ink);stroke-width:14px;stroke-linejoin:round}
 .circuit.is-drawn .c-stems path,.circuit.is-drawn .c-tail,.circuit.is-drawn .c-head,.circuit.is-drawn .c-label{opacity:1}
 .circuit.is-drawn .c-node .core{transform:none}
 .circuit.is-static .c-tail{display:none}

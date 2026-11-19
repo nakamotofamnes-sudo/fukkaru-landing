@@ -24,6 +24,12 @@ const probe = document.createElement('div');
 probe.className = 'scene-vh';
 document.body.append(probe);
 const sections = ['home', 'about', 'business', 'contact'].map($);
+// スマホの数（板の置き場所 placeCanvas と、紺の場面へ移る進み具合 enterAbout で、同じ数を使う）
+const LOOK = .7;          // 人物は、板の上から画面の高さの7割の所に描く
+const ABOUT_AT = 275;     // 紺の場面：人物を、場面の上から275pxに置く（ここに来たら板が本文と一緒に流れだす）
+const CONTACT_AT = 955;   // ご相談の場面：人物を、場面の上から955pxに置く
+const SETTLE = 90;        // 紺の場面へ移る動きは、板が流れだす90px手前で終える
+const LAG_MAX = 40;       // スマホでカメラ・色を遅らせるのは、最大40pxまで（SETTLE より小さくする）
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
@@ -319,21 +325,21 @@ async function start() {
 
   // 板の置き場所（スマホだけ）。毎コマ呼ぶが、値が変わったときだけ書き込む。
   // 人物は、板の上から LOOK（画面の高さの7割）の所に描く。板の中での位置は、スクロールしても動かさない。
-  //   紺の場面まで：入れ物はページの頭から。はじめは画面に止まり、紺の場面の上から275pxに人物が来たら、本文と一緒に流れだす
-  //   ご相談の場面：人物を、場面の上から955pxに置いたまま流れる
+  //   紺の場面まで：入れ物はページの頭から。はじめは画面に止まり、紺の場面の上から ABOUT_AT(275px) に人物が来たら、本文と一緒に流れだす
+  //   ご相談の場面：人物を、場面の上から CONTACT_AT(955px) に置いたまま流れる
   // 275・955 は、前の形（毎コマずらしていたとき）の人物の位置と同じ。560 は style.css の紺の窓（上から 480〜560px で不透明になる）
   let placed = '';
   function placeCanvas(y) {
     let mode = 'fixed', top = 0, trackH = 0, h = height;
     if (mobile && layout.about && layout.contact) {
-      const look = height * .7, aboutEnd = layout.about.top + layout.about.height;
+      const look = height * LOOK, aboutEnd = layout.about.top + layout.about.height;
       if (y + height / 2 < (aboutEnd + layout.contact.top) / 2) {
         mode = 'about';
-        h = Math.ceil(Math.max(height, look + 560 - 275 + 16));   // 流れだしたあとも、紺の窓の下まで板でふさぐ
-        trackH = Math.round(layout.about.top + 275 - look) + h;
+        h = Math.ceil(Math.max(height, look + 560 - ABOUT_AT + 16));   // 流れだしたあとも、紺の窓の下まで板でふさぐ
+        trackH = Math.round(layout.about.top + ABOUT_AT - look) + h;
       } else {
         mode = 'contact';
-        top = Math.round(layout.contact.top + 955 - look);
+        top = Math.round(layout.contact.top + CONTACT_AT - look);
         h = Math.ceil(Math.max(height, layout.contact.top + layout.contact.height - top + 2));   // 場面の下まで（その下は地の色のフッター）
         trackH = h;
       }
@@ -357,10 +363,12 @@ async function start() {
     const dt = Math.min(rawDt, .04);
     lastTime = time;
     // スクロールに、カメラと色が少し遅れてなめらかについてくる（かくかくしない）。
-    // スマホも同じ（2026-11-19）。板の置き場所はページが動かす（placeCanvas）ので、本文とずれない。
+    // スマホは、遅れを最大 LAG_MAX px までにする。板の置き場所はページが動かす（placeCanvas）ので、
+    // 遅れすぎると、板が流れだしたあとも板の中が動き続けて、本文とずれる（下の enterAbout）。
     // 置き場所と、見せる・隠すは、遅らせない本当の位置（scrollY）で決める（下の …R）
     // 追いかける速さは実際の経過時間で決める（描くのが遅い機械で、いつまでも追いつかないのを防ぐ）
     smoothY = paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
+    if (mobile) smoothY = clamp(smoothY, scrollY - LAG_MAX, scrollY + LAG_MAX);
     if (Math.abs(smoothY - scrollY) < .5) smoothY = scrollY;
     const y = smoothY;
     if (!layout.about) return;
@@ -369,7 +377,17 @@ async function start() {
     const contactTop = layout.contact.top - y;
     const heroProgress = clamp(y / Math.max(1, layout.home.height - height));
     const aboutProgress = clamp(-aboutTop / Math.max(1, layout.about.height - height));
-    const enterAbout = smooth((height * .72 - aboutTop) / Math.max(1, height * .72 - 115));
+    // 紺の場面へ移る進み具合（カメラの回り込み・部屋が縮んで消える・地の色・はじめの文字が消える）。
+    // スマホは、板（canvas）が画面に止まっているあいだに終える。板は、紺の場面の上端が「人物の位置 − ABOUT_AT」まで来たら
+    // ページと一緒に流れだす（placeCanvas）。その SETTLE px 手前で終わらせる。遅れは最大 LAG_MAX px なので、流れだすときには必ず終わっている。
+    // 流れているあいだ、板の中（人物・カメラ）は止まっていて、動かすのはページだけ（2026-11-19）。
+    // 前は、回り込みの最中に板が流れだし、部屋が下がってから急に上がって、行ったり来たりして見えた（画面収録）。
+    // #449 でカメラを遅らせてからは、流れだしたあとも1秒近く回り込みが続いていた
+    let enterAbout;
+    if (mobile) {
+      const end = height * LOOK - ABOUT_AT + SETTLE, start = end + height * .5;
+      enterAbout = smooth((start - aboutTop) / (start - end));
+    } else enterAbout = smooth((height * .72 - aboutTop) / Math.max(1, height * .72 - 115));
     const exitAbout = smooth((height * .65 - aboutBottom) / (height * .65));
     const contactProgress = smooth((height - contactTop) / height);
     const dark = enterAbout * (1 - exitAbout);
@@ -380,7 +398,7 @@ async function start() {
     const place = placeCanvas(scrollY);
     let view;
     if (mobile) {
-      // 境目を往復しても視点が飛ばないよう、場面の色と一緒になめらかにつなぐ。
+      // はじめ→紺の場面の回り込みは、板が止まっているあいだだけ（上の enterAbout）。場面の色と一緒になめらかにつなぐ。
       // ご相談の場面は、板がそこへ移ってから見える。人物が見える所では、もう視点を動かさない
       view = place === 'contact'
         ? [2.2, 2.6, 7.7, 0, .68, 0]
@@ -402,7 +420,7 @@ async function start() {
     camera.lookAt(view[3], view[4], view[5]);
     const offsetX = mobile ? 0 : -.23 * width * (1 - dark);
     // スマホ：人物は、いつも板の上から高さの7割の所。本文との位置合わせは、板ごとページが動かす（placeCanvas）
-    const offsetY = mobile ? -height * .20 : 0;
+    const offsetY = mobile ? -height * (LOOK - .5) : 0;
     camera.setViewOffset(width, height, offsetX, offsetY, width, canvasH);
     scene.background.copy(cream).lerp(navy, dark);
     scene.fog.color.copy(scene.background);
