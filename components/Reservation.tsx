@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarCheck, ArrowUpRight } from 'lucide-react';
+import { CalendarCheck, ArrowRight } from 'lucide-react';
 
 const getOptimizedImageUrl = (url: string) => {
   if (!url) return '';
@@ -24,27 +24,23 @@ const Reservation: React.FC = () => {
               <h2 className="text-[22px] font-bold leading-[1.45] tracking-tight text-ink-900 sm:text-[26px]">
                 電話が繋がりにくい時間でも、
                 <br />
-                Webから日時を選べます。
+                Webから見積もりの日時を選べます。
               </h2>
               <p className="mt-4 text-[14px] leading-[1.9] text-ink-500">
-                「早朝や深夜しか時間が取れない」「電話だと聞き間違いが不安」という方は、
-                カレンダーから空いている日時を選ぶだけで、訪問やお電話の相談枠を確保できます。
-                離れて暮らすご家族からの代理予約も、こちらから可能です。
+                作業の種類と、見に来てほしい日時を選ぶだけ。
+                中元が確かめて、LINEかお電話で確定のご連絡をします。
+                早朝や深夜でも、離れて暮らすご家族からの代理予約でも、こちらからどうぞ。
               </p>
 
               <div className="mt-8 flex items-center gap-3">
                 <CalendarCheck size={17} className="text-ink-500" />
-                <span className="text-[13px] text-ink-500">受付は24時間。Googleカレンダーの予約ページへ移動します</span>
+                <span className="text-[13px] text-ink-500">受付は24時間。明日から4週間先まで選べます</span>
               </div>
 
-              <a
-                href="https://calendar.app.google/uEAbmr2BFUyw87GL9"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary btn-lg mt-6 w-full sm:w-auto"
-              >
-                空き状況を見て予約する
-                <ArrowUpRight size={17} />
+              {/* 2026-11-19 中元さん「独自のフッ軽ばんで」。Google の予約ページから、フッ軽の予約のページへ */}
+              <a href="/yoyaku/" className="btn btn-primary btn-lg mt-6 w-full sm:w-auto">
+                空いている日時を見る
+                <ArrowRight size={17} />
               </a>
             </div>
 

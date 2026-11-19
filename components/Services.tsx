@@ -11,7 +11,8 @@ type Service = { title: string; price: string; desc: string; popular?: boolean; 
 // 「あそこにあると普通の依頼が来なくなる」。管理は専用サイトで案内する）。
 type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean; hidden?: boolean };
 
-const groups: Group[] = [
+// 見積もりの予約（/yoyaku/）も、作業の名前をここから読む（2026-11-19）。写しを作らないため export
+export const groups: Group[] = [
   {
     id: 'regular-care',
     title: '空き家・マンションの管理',

@@ -38,7 +38,7 @@ function blogTeaser(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), blogTeaser()],
   // './' に設定することで、現在地を基準にファイルを読み込みます。
   // これにより /sumasapo/ などのサブディレクトリでも確実に動作します。
@@ -51,5 +51,15 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // 入口は2つ：トップ（index.html）と見積もりの予約（yoyaku/index.html。2026-11-19）。
+    // トップの組み立て（--ssr src/entry-server.tsx）のときは、そちらの入口だけにする
+    rollupOptions: isSsrBuild
+      ? undefined
+      : {
+          input: {
+            main: resolve(__dirname, 'index.html'),
+            yoyaku: resolve(__dirname, 'yoyaku/index.html'),
+          },
+        },
   }
-});
+}));
