@@ -38,7 +38,7 @@ const StickyCallBar: React.FC = () => {
           <Phone size={17} />
           <span className="text-[14px] font-semibold">電話で相談</span>
         </span>
-        <span className="text-[11px] text-ink-500">8:00〜18:00</span>
+        <span className="text-[12px] text-ink-500">8:00〜18:00</span>
       </a>
 
       <a
@@ -49,7 +49,7 @@ const StickyCallBar: React.FC = () => {
           <MessageCircle size={17} />
           <span className="text-[14px] font-semibold">LINEで見積もり</span>
         </span>
-        <span className="text-[11px] text-white/75">写真を送るだけ・24時間受付</span>
+        <span className="text-[12px] text-white/75">写真を送るだけ・24時間受付</span>
       </a>
     </div>
   );

@@ -14,6 +14,8 @@
     '.kc label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px;color:#334155}' +
     '.kc .kc-row{display:flex;gap:8px;align-items:center}' +
     '.kc input,.kc select{font:inherit;font-size:16px;border:1px solid #CBD5E1;border-radius:8px;padding:10px 12px;background:#fff;color:#0f172a;width:100%;box-sizing:border-box}' +
+    // Safari は選ぶ欄（select）を自前の形で描き、余白の指定を無視する（高さ29pxになっていた。2026-11-19）。自前の形をやめて、矢印は絵で描く
+    '.kc select{-webkit-appearance:none;appearance:none;padding-right:40px;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23475569%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 12px center}' +
     '.kc .kc-row input{max-width:160px}.kc .kc-unit{display:flex;gap:6px}' +
     '.kc .kc-unit button{font:inherit;font-size:14px;border:1px solid #CBD5E1;border-radius:8px;padding:9px 14px;background:#fff;color:#334155;cursor:pointer}' +
     '.kc .kc-unit button[aria-pressed="true"]{border-color:#B45309;background:#FEF3C7;color:#78350F;font-weight:700}' +

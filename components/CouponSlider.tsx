@@ -41,13 +41,13 @@ const CouponSlider: React.FC = () => {
         <div>
           <span className="chip chip-accent">LINE限定</span>
           <h2 id="coupon-title" className="mt-3 text-[19px] font-bold tracking-tight text-ink-900">
-            合計で最大 3,000円 引きになります
+            合計で最大 <span className="whitespace-nowrap">3,000円</span> <span className="inline-block">引きになります</span>
           </h2>
         </div>
         <button
           onClick={close}
           aria-label="閉じる"
-          className="-mr-2 -mt-1 rounded p-2 text-ink-500 transition-colors hover:bg-canvas hover:text-ink-900"
+          className="-mr-[13px] -mt-[9px] rounded p-[13px] text-ink-500 transition-colors hover:bg-canvas hover:text-ink-900"
         >
           <X size={18} />
         </button>
@@ -78,7 +78,7 @@ const CouponSlider: React.FC = () => {
 
         <button
           onClick={close}
-          className="mt-3 w-full py-2 text-[13px] text-ink-500 transition-colors hover:text-ink-900"
+          className="mt-3 min-h-[44px] w-full py-2 text-[13px] text-ink-500 transition-colors hover:text-ink-900"
         >
           今はしない
         </button>

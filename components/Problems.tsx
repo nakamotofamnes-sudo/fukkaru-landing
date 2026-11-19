@@ -1,5 +1,6 @@
 import React from 'react';
 import Kyara from './Kyara';
+import Kugiri from './Kugiri';
 
 const problems = [
   {
@@ -31,7 +32,7 @@ const Problems: React.FC = () => {
       <div className="shell">
         <div className="max-w-2xl">
           <span className="eyebrow">Problems</span>
-          <h2 className="h-section">こんなお悩み、ありませんか</h2>
+          <h2 className="h-section"><Kugiri text="こんなお悩み、ありませんか" /></h2>
           <p className="lede">
             一軒家にお住まいの方、ご高齢のご家族がいる方から、いちばん多くいただくご相談です。
           </p>
@@ -42,7 +43,7 @@ const Problems: React.FC = () => {
             // 2026-10-29：線のアイコンを、その仕事をしている中元さんのキャラに。足を枠の下の線にそろえる
             <div key={item.title} className="flex items-end gap-4 bg-surface px-6 pt-6 sm:px-7 sm:pt-7">
               <div className="min-w-0 flex-1 pb-6 sm:pb-7">
-                <h3 className="text-[16px] font-semibold text-ink-900">{item.title}</h3>
+                <h3 className="text-[16px] font-semibold text-ink-900"><Kugiri text={item.title} /></h3>
                 <p className="mt-2 text-[14px] leading-[1.85] text-ink-500">{item.text}</p>
               </div>
               <Kyara name={item.kyara} className="shrink-0 [--k:.25] sm:[--k:.3]" />
@@ -52,7 +53,7 @@ const Problems: React.FC = () => {
 
         <div className="mt-6 rounded border border-hairline bg-surface p-6 sm:p-8">
           <p className="text-[17px] font-semibold tracking-tight text-ink-900 sm:text-[19px]">
-            無理をしてけがをする前に、プロにお任せください。
+            <Kugiri text="無理をしてけがをする前に、プロにお任せください。" />
           </p>
           <p className="mt-3 max-w-3xl text-[14px] leading-[1.9] text-ink-500">
             ご自身で重い物を動かして、腰や膝を痛める方は少なくありません。
