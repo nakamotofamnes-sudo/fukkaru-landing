@@ -53,7 +53,7 @@ const Problems: React.FC = () => {
 
         <div className="mt-6 rounded border border-hairline bg-surface p-6 sm:p-8">
           <p className="text-[17px] font-semibold tracking-tight text-ink-900 sm:text-[19px]">
-            無理をしてけがをする前に、プロにお任せください。
+            <Kugiri text="無理をしてけがをする前に、プロにお任せください。" />
           </p>
           <p className="mt-3 max-w-3xl text-[14px] leading-[1.9] text-ink-500">
             ご自身で重い物を動かして、腰や膝を痛める方は少なくありません。
