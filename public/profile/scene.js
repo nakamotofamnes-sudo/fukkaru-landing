@@ -12,38 +12,16 @@ const mix = (a, b, t) => a.map((v, i) => THREE.MathUtils.lerp(v, b[i], t));
 const assets = new URL('./', import.meta.url);
 const media = matchMedia('(prefers-reduced-motion: reduce)');
 const canvas = $('scene');
-// スマホでは、3Dの板をページに乗せて、本文と一緒にスマホに動かしてもらう（2026-11-19）。
-// 画面に固定した板の中身を毎コマずらす形だと、指ですべらせている間、本文と1コマずつずれて揺れて見えた。
-// 板は入れ物（track）の中で sticky にする。入れ物の範囲では画面に止まり、出たら本文と一緒に流れる。
-const track = document.createElement('div');
-track.id = 'scene-track';
-canvas.before(track);
-track.append(canvas);
-// 画面の高さ（アドレスバーが隠れたときの高さ＝100lvh）。板の高さとは別に測る
-const probe = document.createElement('div');
-probe.className = 'scene-vh';
-document.body.append(probe);
 const sections = ['home', 'about', 'business', 'contact'].map($);
-const heroPanel = sections[0].querySelector('.hero-sticky');
-// スマホの数（板の置き場所 placeCanvas と、紺の場面へ移る進み具合 enterAbout で、同じ数を使う）
-const LOOK = .7;          // 人物は、板の上から画面の高さの7割の所に描く
-const ABOUT_AT = 275;     // 紺の場面：人物を、場面の上から275pxに置く（ここに来たら板が本文と一緒に流れだす）
-const CONTACT_AT = 955;   // ご相談の場面：人物を、場面の上から955pxに置く
-const SETTLE = 90;        // 紺への色の変化を、板が流れだす90px手前で終える
-const LAG_MAX = 40;       // スマホで色を遅らせるのは、最大40pxまで（SETTLE より小さくする）
+const heroRoom = $('home').querySelector('.mobile-room');
+const contactRoom = $('contact').querySelector('.mobile-room');
+const scanFigure = $('about').querySelector('.mobile-scan');
 const count = $('scan-count'), bar = $('scan-bar');
 const revealItems = [...document.querySelectorAll('#about [data-r]')];
 let renderer, ready = false, paused = media.matches, failed = false;
-// 画面の大きさ。スマホは、アドレスバーが伸縮しても変わらない高さ（100lvh）。
-// パソコンの形（幅761px〜。スマホを横にしたときも）は、前と同じく板の見た目の高さ（fixed・100%）
-function viewSize() {
-  const w = canvas.clientWidth;
-  if (w > 760) { track.style.top = track.style.height = canvas.style.height = ''; return [w, canvas.clientHeight]; }
-  return [w, probe.clientHeight || innerHeight];
-}
-let [width, height] = viewSize(), mobile = width <= 760;
-// 板の高さ。パソコンは画面と同じ。スマホは場面ごとに placeCanvas が決める
-let canvasH = height;
+let width = document.documentElement.clientWidth, height = innerHeight;
+let mobile = matchMedia('(max-width: 760px)').matches;
+let renderWidth = 0, renderHeight = 0;
 let layout = {}, mixers = [], actionSets = [], activeAction = '';
 let lastStage = '', frame = 0, elapsed = 0, lastTime = 0;
 let pointerX = 0, pointerY = 0, easedX = 0, easedY = 0;
@@ -69,7 +47,7 @@ if (renderer) start();
 
 async function start() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
-  renderer.setSize(width, canvasH, false);
+  renderer.setSize(width, height, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.localClippingEnabled = true;
@@ -235,7 +213,7 @@ async function start() {
     ready = true;
     lastStage = 'home';
     document.body.classList.add('scene-ready');
-    if (!media.matches) document.body.classList.add('scan-reveal');
+    document.body.classList.toggle('scan-reveal', !mobile && !media.matches);
     window.profileLoaded?.();
     measure();
     document.fonts.ready.then(measure);
@@ -295,7 +273,11 @@ async function start() {
     else if (activeAction !== 'Wave' && activeAction !== 'Greet') play('Wave', true);
   }));
   $('motion-toggle').addEventListener('click', () => { paused = !paused; updateMotionButton(); });
-  media.addEventListener('change', () => { paused = media.matches; updateMotionButton(); });
+  media.addEventListener('change', () => {
+    paused = media.matches;
+    document.body.classList.toggle('scan-reveal', !mobile && !paused && !window.profileSkipped);
+    updateMotionButton();
+  });
   function updateMotionButton() {
     $('motion-toggle').setAttribute('aria-pressed', String(paused));
     $('motion-toggle').setAttribute('aria-label', paused ? '自動の動きを再開する' : '自動の動きを止める');
@@ -310,61 +292,38 @@ async function start() {
     pointerY = event.clientY / height - .5;
   }, { passive: true });
   addEventListener('resize', () => {
-    const [nextWidth, nextHeight] = viewSize();
-    if (width === nextWidth && height === nextHeight) return;
-    width = nextWidth; height = nextHeight; mobile = width <= 760;
+    width = document.documentElement.clientWidth;
+    height = innerHeight;
+    mobile = matchMedia('(max-width: 760px)').matches;
+    document.body.classList.toggle('scan-reveal', !mobile && !media.matches && !window.profileSkipped);
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    placed = '';   // 板の置き場所と大きさを、次のコマで決め直す
     measure();
   });
   const observer = new ResizeObserver(measure);
-  sections.forEach(section => observer.observe(section));
+  [...sections, heroRoom, contactRoom, scanFigure].forEach(el => observer.observe(el));
+  function bounds(el) {
+    const rect = el.getBoundingClientRect();
+    return { top: scrollY + rect.top, height: rect.height, width: rect.width };
+  }
   function measure() {
-    for (const section of sections) {
-      const rect = section.getBoundingClientRect();
-      layout[section.id] = { top: scrollY + rect.top, height: rect.height };
-    }
+    for (const section of sections) layout[section.id] = bounds(section);
+    layout.heroRoom = bounds(heroRoom);
+    layout.contactRoom = bounds(contactRoom);
+    layout.scan = bounds(scanFigure);
   }
 
-  // 板の置き場所（スマホだけ）。毎コマ呼ぶが、値が変わったときだけ書き込む。
-  // 人物は、板の上から LOOK（画面の高さの7割）の所に描く。板の中での位置は、スクロールしても動かさない。
-  //   紺の場面まで：入れ物はページの頭から。はじめは画面に止まり、紺の場面の上から ABOUT_AT(275px) に人物が来たら、本文と一緒に流れだす
-  //   ご相談の場面：人物を、場面の上から CONTACT_AT(955px) に置いたまま流れる
-  // 275・955 は、前の形（毎コマずらしていたとき）の人物の位置と同じ。560 は style.css の紺の窓（上から 480〜560px で不透明になる）
-  let placed = '';
-  function placeCanvas(y) {
-    let mode = 'fixed', top = 0, trackH = 0, h = height;
-    if (mobile && layout.about && layout.contact) {
-      const look = height * LOOK, aboutEnd = layout.about.top + layout.about.height;
-      if (y + height / 2 < (aboutEnd + layout.contact.top) / 2) {
-        mode = 'about';
-        h = Math.ceil(Math.max(height, look + 560 - ABOUT_AT + 16));   // 流れだしたあとも、紺の窓の下まで板でふさぐ
-        trackH = Math.round(layout.about.top + ABOUT_AT - look) + h;
-      } else {
-        mode = 'contact';
-        top = Math.round(layout.contact.top + CONTACT_AT - look);
-        h = Math.ceil(Math.max(height, layout.contact.top + layout.contact.height - top + 2));   // 場面の下まで（その下は地の色のフッター）
-        trackH = h;
-      }
-    }
-    const key = `${mode}|${top}|${trackH}|${h}|${width}`;
-    if (key !== placed) {
-      placed = key;
-      if (mode === 'fixed') track.style.top = track.style.height = canvas.style.height = '';
-      else { track.style.top = top + 'px'; track.style.height = trackH + 'px'; canvas.style.height = h + 'px'; }
-      if (mode === 'about') {
-        // 見出しの固定が解ける位置を、3Dの板と同じスクロール位置にする。
-        const releaseAt = trackH - h;
-        document.documentElement.style.setProperty('--hero-pin-height', (layout.home.height - releaseAt) + 'px');
-      }
-      canvasH = h;
-      renderer.setSize(width, canvasH, false);
-    }
-    return mode;
+  // 仕事場と相談欄は何画面も離れている。両方とも画面外の所で3Dを次の欄へ移す。
+  // 紺の欄は独立した絵なので、境目では仕事場とスキャンの人物が同時に見える。
+  function sizeCanvas(slot, w, h) {
+    if (canvas.parentElement !== slot) slot.prepend(canvas);
+    w = Math.max(1, Math.round(w));
+    h = Math.max(1, Math.round(h));
+    if (w === renderWidth && h === renderHeight) return;
+    renderWidth = w; renderHeight = h;
+    renderer.setSize(w, h, false);
   }
 
+  let mobileScan = 0, lastScan = -1;
   function tick(time) {
     if (failed || window.profileSkipped) return;
     frame = requestAnimationFrame(tick);
@@ -372,47 +331,37 @@ async function start() {
     const rawDt = (time - (lastTime || time)) / 1000;
     const dt = Math.min(rawDt, .04);
     lastTime = time;
-    // スクロールに色が少し遅れてついてくる。パソコンではカメラも追いかける。
-    // スマホでは、板が流れだす前に紺への色の変化が終わるように遅れを制限する。
-    // 置き場所と、見せる・隠すは、遅らせない本当の位置（scrollY）で決める（下の …R）
-    // 追いかける速さは実際の経過時間で決める（描くのが遅い機械で、いつまでも追いつかないのを防ぐ）
-    smoothY = paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
-    if (mobile) smoothY = clamp(smoothY, scrollY - LAG_MAX, scrollY + LAG_MAX);
+    if (!layout.about) return;
+    smoothY = mobile || paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
     if (Math.abs(smoothY - scrollY) < .5) smoothY = scrollY;
     const y = smoothY;
-    if (!layout.about) return;
     const aboutTop = layout.about.top - y;
     const aboutBottom = aboutTop + layout.about.height;
     const contactTop = layout.contact.top - y;
     const heroProgress = clamp(y / Math.max(1, layout.home.height - height));
     const aboutProgress = clamp(-aboutTop / Math.max(1, layout.about.height - height));
-    // スマホでは、板と見出しが流れだす前に紺への色の変化を終える。
-    // 最初の画面から紺の場面まで、カメラと部屋の位置は固定する。
-    let enterAbout;
-    if (mobile) {
-      const end = height * LOOK - ABOUT_AT + SETTLE, start = end + height * .5;
-      enterAbout = smooth((start - aboutTop) / (start - end));
-    } else enterAbout = smooth((height * .72 - aboutTop) / Math.max(1, height * .72 - 115));
+    const enterAbout = mobile ? 0 : smooth((height * .72 - aboutTop) / Math.max(1, height * .72 - 115));
     const exitAbout = smooth((height * .65 - aboutBottom) / (height * .65));
     const contactProgress = smooth((height - contactTop) / height);
     const dark = enterAbout * (1 - exitAbout);
-    document.documentElement.style.setProperty('--hero-opacity', 1 - enterAbout);
-    heroPanel.classList.toggle('hero-faded', mobile && enterAbout === 1);
     const inAbout = dark > .12;
-    const aboutTopR = layout.about.top - scrollY, contactTopR = layout.contact.top - scrollY;
-    const sceneHidden = aboutTopR + layout.about.height < 0 && contactTopR > height;
-    const place = placeCanvas(scrollY);
-    let view;
+    let sceneHidden, view, stage;
     if (mobile) {
-      // 部屋と紺の場面を同じ視点で描く。ご相談の視点への切替は本文で板が隠れる位置で行う。
-      view = place === 'contact'
-        ? [2.2, 2.6, 7.7, 0, .68, 0]
-        : [3.5, 3.3, 8.7, 0, .7, 0];
+      const atContact = y + height / 2 > (layout.home.height + layout.contact.top) / 2;
+      const box = atContact ? layout.contactRoom : layout.heroRoom;
+      sizeCanvas(atContact ? contactRoom : heroRoom, box.width, box.height);
+      sceneHidden = box.top >= y + height || box.top + box.height <= y;
+      view = atContact ? [2.4, 2.7, 8.2, 0, 1.07, 0] : [3.5, 3.3, 8.7, 0, .99, 0];
+      stage = atContact ? (sceneHidden ? 'away' : 'contact') : 'home';
     } else {
+      sizeCanvas(document.body, width, height);
+      document.documentElement.style.setProperty('--hero-opacity', 1 - enterAbout);
+      sceneHidden = layout.about.top + layout.about.height < scrollY && layout.contact.top - scrollY > height;
       view = mix([5.0, 3.0, 6.3, 0, .85, 0], [2.7, 2.1, 6.0, 0, .9, 0], smooth(heroProgress));
       const aboutView = [Math.sin((aboutProgress - .5) * .22) * 5.9, 1.65, 5.9, 0, 1.0, 0];
       view = mix(view, aboutView, dark);
       if (contactProgress > 0) view = mix(view, [-2.8, 2.2, 6.5, 0, .8, 0], contactProgress);
+      stage = contactProgress > .6 ? 'contact' : inAbout ? 'about' : 'home';
     }
     if (!mobile && introStart >= 0) {
       const t = clamp((time - introStart) / 2800), far = Math.pow(1 - t, 4);
@@ -423,22 +372,21 @@ async function start() {
     easedY = THREE.MathUtils.damp(easedY, paused || mobile ? 0 : pointerY, 3, dt);
     camera.position.set(view[0] + easedX * .22, view[1] - easedY * .15, view[2]);
     camera.lookAt(view[3], view[4], view[5]);
-    const offsetX = mobile ? 0 : -.23 * width * (1 - dark);
-    // スマホ：人物は、いつも板の上から高さの7割の所。本文との位置合わせは、板ごとページが動かす（placeCanvas）
-    const offsetY = mobile ? -height * (LOOK - .5) : 0;
-    camera.setViewOffset(width, height, offsetX, offsetY, width, canvasH);
+    if (mobile) {
+      const fullHeight = renderHeight * 1.92;
+      camera.setViewOffset(renderWidth, fullHeight, 0, (fullHeight - renderHeight) / 2, renderWidth, renderHeight);
+    } else camera.setViewOffset(width, height, -.23 * width * (1 - dark), 0, width, height);
+    canvas.style.visibility = !mobile && sceneHidden ? 'hidden' : 'visible';
     scene.background.copy(cream).lerp(navy, dark);
     scene.fog.color.copy(scene.background);
-    canvas.style.visibility = sceneHidden ? 'hidden' : 'visible';
     room.visible = dark < .88;
-    room.scale.setScalar(mobile ? 1 : THREE.MathUtils.lerp(1, .88, dark));
-    room.position.y = mobile ? 0 : -dark * .30;
-    scanner.visible = inAbout && (!mobile || aboutTopR > -420);
-    avatar.visible = !mobile || !inAbout || aboutTopR > -420;
+    room.scale.setScalar(THREE.MathUtils.lerp(1, .88, dark));
+    room.position.y = -dark * .30;
+    scanner.visible = inAbout;
     ambient.intensity = THREE.MathUtils.lerp(2, 1.8, dark);
     sun.intensity = THREE.MathUtils.lerp(3.1, 2.4, dark);
     rim.intensity = THREE.MathUtils.lerp(1.2, 2.3, dark);
-    const scanProgress = smooth(mobile ? clamp((height * .65 - aboutTop) / (height * .75)) : clamp((aboutProgress - .05) / .62));
+    const scanProgress = smooth((aboutProgress - .05) / .62);
     const scanHeight = THREE.MathUtils.lerp(-.12, 2.5, scanProgress);
     normalClip.constant = inAbout ? -scanHeight : 10;
     holoClip.constant = scanHeight;
@@ -446,14 +394,23 @@ async function start() {
     beam.position.y = scanHeight;
     beam.visible = scanProgress > .01 && scanProgress < .99;
     ring.scale.setScalar(1 + (!paused ? Math.sin(elapsed * 1.5) * .01 : 0));
-    count.textContent = String(Math.round(scanProgress * 100)).padStart(3, '0');
-    bar.style.transform = `scaleX(${scanProgress})`;
-    // スキャンの進み具合に合わせて、プロフィールを順に出す
-    const revealAll = paused || !inAbout && aboutTop < 0;
-    for (const el of revealItems) el.classList.toggle('is-in', revealAll || scanProgress >= Number(el.dataset.r));
-    const stage = contactProgress > .6 ? 'contact' : inAbout ? 'about' : 'home';
+    if (mobile) {
+      if (!paused) mobileScan = smooth((y + height * .88 - layout.scan.top) / Math.max(1, layout.scan.height + height * .2));
+      if (media.matches && paused) mobileScan = 1;
+    }
+    const percent = Math.round((mobile ? mobileScan : scanProgress) * 100);
+    if (percent !== lastScan) {
+      lastScan = percent;
+      if (mobile) scanFigure.style.setProperty('--scan-top', (100 - percent) + '%');
+      count.textContent = String(percent).padStart(3, '0');
+      bar.style.transform = `scaleX(${percent / 100})`;
+    }
+    if (!mobile) {
+      const revealAll = paused || !inAbout && aboutTop < 0;
+      for (const el of revealItems) el.classList.toggle('is-in', revealAll || scanProgress >= Number(el.dataset.r));
+    }
     if (stage !== lastStage) {
-      if (!paused) { greetAt = 0; play(stage === 'contact' ? 'Wave' : stage === 'about' ? 'Nod' : 'Idle', stage !== 'home'); }
+      if (!paused) { greetAt = 0; play(stage === 'contact' ? 'Wave' : stage === 'about' ? 'Nod' : 'Idle', stage === 'contact' || stage === 'about'); }
       lastStage = stage;
     }
     if (!paused && greetAt && time >= greetAt) { greetAt = 0; if (activeAction === 'Type') play('Greet', true); }

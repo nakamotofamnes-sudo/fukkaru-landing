@@ -18,7 +18,8 @@
 
   // ── 題字：名前を1字ずつに分ける（読み上げは aria-label に任せる） ──
   const h1 = $('#hero-title');
-  if (on && h1) {
+  const titleMotion = on && !matchMedia('(max-width: 760px)').matches;
+  if (titleMotion && h1) {
     h1.setAttribute('aria-label', h1.textContent.trim());
     let n = 0;
     for (const line of [...h1.children]) {
@@ -77,13 +78,13 @@
   // fallback.js が読み込み画面を閉じるときに、ここを呼ぶ
   let introDone = false;
   const finishIntro = () => { introDone = true; root.classList.remove('mo-wait'); setTimeout(() => root.classList.remove('mo-play'), 4200); };
-  if (on) root.classList.add('mo-wait');
+  if (titleMotion) root.classList.add('mo-wait');
   setTimeout(() => { if (!introDone) { root.classList.remove('mo-wait'); introDone = true; } }, 24000);   // 万一呼ばれなくても、本文は必ず出す
   window.profileIntro = (pre, animate) => {
     if (introDone) { pre.hidden = true; return; }
     const dot = $('.name-dot');
     const r = dot && dot.getBoundingClientRect();
-    const usable = on && animate && r && r.width > 2 && r.top > 0 && r.bottom < innerHeight && scrollY < 40 && pre.animate;
+    const usable = titleMotion && animate && r && r.width > 2 && r.top > 0 && r.bottom < innerHeight && scrollY < 40 && pre.animate;
     if (!usable) { pre.hidden = true; root.classList.remove('mo-wait'); introDone = true; return; }
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, rad = r.width / 2;
     const far = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + 24;
