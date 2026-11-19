@@ -117,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
         {/* スマホのメニューボタン */}
         <button
-          className={`lg:hidden -mr-2 p-2 ${solid ? 'text-ink-900' : 'text-white'}`}
+          className={`lg:hidden -mr-[11px] p-[11px] ${solid ? 'text-ink-900' : 'text-white'}`}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label={isMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
           aria-expanded={isMenuOpen}

@@ -56,6 +56,12 @@
   ::selection {
     @apply bg-ink-900 text-white;
   }
+
+  /* 段落の最後の行が1〜2字だけにならないように（2026-11-19。Safari・Chrome とも効く。/nihongo-kumihan）。
+     見出しは、ことばのかたまりで区切る（components/Kugiri.tsx） */
+  p, li, dd, dt, figcaption, blockquote {
+    text-wrap: pretty;
+  }
 }
 
 @layer components {

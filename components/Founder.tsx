@@ -66,7 +66,7 @@ const Founder: React.FC = () => {
             </p>
             <a
               href="/profile.html"
-              className="mt-5 inline-flex items-center gap-3 border-b border-ink-900 pb-1 text-[14px] font-semibold text-ink-900 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+              className="relative mt-5 inline-flex items-center gap-3 border-b border-ink-900 pb-1 text-[14px] font-semibold text-ink-900 after:absolute after:-inset-x-1 after:-inset-y-2 after:content-[''] transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               詳しいプロフィールを見る
               <span aria-hidden="true">↗</span>

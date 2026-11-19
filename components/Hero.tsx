@@ -1,5 +1,6 @@
 import React from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
+import Kugiri from './Kugiri';
 
 /** Googleドライブの共有リンクを、そのまま表示できる画像URLに直します。 */
 const getOptimizedImageUrl = (url: string) => {
@@ -41,13 +42,14 @@ const Hero: React.FC = () => {
 
       <div className="shell relative z-30 pt-24 pb-16">
         <div className="w-full lg:w-[66%]">
-          <p className="mb-6 inline-flex items-center rounded border border-white/20 bg-white/10 px-3 py-1.5 text-[12px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
-            富士市・富士宮市・静岡市・沼津市に対応（市外もご相談ください）
+          {/* 「（市外もご相談ください）」は1つのかたまりで折り返す（幅393で「さい）」だけ次の行に落ちていた。2026-11-19） */}
+          <p className="mb-6 inline-block rounded border border-white/20 bg-white/10 px-3 py-1.5 text-[12px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
+            富士市・富士宮市・静岡市・沼津市に対応<span className="inline-block">（市外もご相談ください）</span>
           </p>
 
           {/* 1行が長いと折り返しが読みにくいので、行そのものを分けて置きます。 */}
           <h1 className="mb-6 text-[26px] font-bold leading-[1.5] tracking-tight text-white sm:text-[32px] lg:text-[38px] lg:leading-[1.45]">
-            <span className="block">年齢とともに、自分でやるのが大変に。</span>
+            <span className="block"><Kugiri text="年齢とともに、自分でやるのが大変に。" /></span>
             <span className="block">その力仕事と面倒ごとは、</span>
             <span className="block text-accent-line">私たちにお任せください。</span>
           </h1>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Phone, MessageCircle, Mail } from 'lucide-react';
 import Kyara from './Kyara';
+import Kugiri from './Kugiri';
 
 const Contact: React.FC = () => {
   return (
@@ -29,7 +30,7 @@ const Contact: React.FC = () => {
           >
             <MessageCircle size={22} className="text-accent-line" />
             <p className="mt-4 text-[20px] font-semibold tracking-tight text-white">LINEで相談する</p>
-            <p className="mt-1.5 text-[13px] text-white/60">24時間受付・写真を送るだけで概算をお伝えできます</p>
+            <p className="mt-1.5 text-[13px] text-white/60"><Kugiri text="24時間受付・写真を送るだけで概算をお伝えできます" /></p>
           </a>
 
           <a
@@ -44,7 +45,7 @@ const Contact: React.FC = () => {
 
         <a
           href="mailto:nakamoto.famnes@gmail.com"
-          className="mt-6 inline-flex items-center gap-2 text-[13px] text-white/60 transition-colors hover:text-white"
+          className="mt-6 inline-flex items-center gap-2 text-[13px] text-white/60 transition-colors hover:text-white relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']"
         >
           <Mail size={15} />
           メールでのご相談も受け付けています

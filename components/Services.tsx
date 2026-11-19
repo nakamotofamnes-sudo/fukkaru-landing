@@ -116,7 +116,7 @@ const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
                 {s.link && (
                   <>
                     {' '}
-                    <a href={s.link} className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2">
+                    <a href={s.link} className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2 relative after:absolute after:-inset-x-2 after:-inset-y-3 after:content-['']">
                       くわしく →
                     </a>
                   </>
