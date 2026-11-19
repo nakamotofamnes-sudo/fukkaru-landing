@@ -29,9 +29,9 @@ const groups: Group[] = [
   {
     id: 'akiya-chousa',
     title: '空き家調査',
-    note: '富士市・富士宮市・沼津市・静岡市は出張費無料／伺う前に金額をお伝えします',
+    note: '1回8,000円〜・写真でご報告',
     services: [
-      { title: '空き家調査', price: '8,000円〜', desc: '税込・1回。外まわりと、入れる場合は室内も確認し、写真でご報告。必要な作業はお見積り', link: '/blog/akiya/#chousa' },
+      { title: '空き家調査', price: '8,000円〜', desc: '税込・1回。外まわりと、入れる場合は室内も確認し、写真でご報告。4市は出張費無料', link: '/blog/akiya/#chousa' },
     ],
   },
   {
