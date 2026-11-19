@@ -168,9 +168,13 @@
   const rail = svgEl('path', { class: 'c-rail' });
   const tails = [svgEl('path', { class: 'c-tail t2' }), svgEl('path', { class: 'c-tail t1' })];
   const stems = svgEl('g', { class: 'c-stems' }), nodes = svgEl('g', { class: 'c-nodes' });
-  const label = svgEl('text', { class: 'c-label', 'text-anchor': 'middle' }); label.textContent = '直し続ける';
+  // 言葉は2枚重ね：後ろの1枚は、線を消すための太いふち（地の色）だけ。前の1枚は字だけ。
+  // 1枚の字にふちを付ける形（paint-order）だと、Safari は1字ずつ「ふち→字」と描くので、
+  // 次の字のふちが前の字を削って、「直し続ける」が読めなかった（2026-11-19。Chrome では出ない）
+  const labels = ['c-label c-label-halo', 'c-label'].map(cls => { const t = svgEl('text', { class: cls, 'text-anchor': 'middle' }); t.textContent = '直し続ける'; return t; });
   const head = svgEl('circle', { class: 'c-head', r: 4.5 });
-  svg.append(rail, stems, ...tails, nodes, label, head);
+  // 光の点は、言葉の後ろを通る（前を通ると、そのあいだ字が隠れる）
+  svg.append(rail, stems, ...tails, nodes, head, ...labels);
   grid.classList.add('has-circuit'); grid.prepend(svg);
   const toggle = document.createElement('button');
   toggle.type = 'button'; toggle.className = 'circuit-toggle'; toggle.setAttribute('aria-pressed', 'false');
@@ -203,7 +207,7 @@
         ? { x: b.x + b.w / 2, y: T, tx: b.x + b.w / 2, ty: b.y }
         : { x: b.x + b.w / 2, y: B, tx: b.x + b.w / 2, ty: b.y + b.h }));
     }
-    label.setAttribute('x', (L + R) / 2); label.setAttribute('y', B);   // 戻りの線の上に、言葉を1つだけ置く（字の真ん中を線に合わせる。CSS の dominant-baseline:central と組。2026-11-19、4px下にずれて線が字に当たっていた）
+    for (const t of labels) { t.setAttribute('x', (L + R) / 2); t.setAttribute('y', B); }   // 戻りの線の上に、言葉を1つだけ置く（字の真ん中を線に合わせる。CSS の dominant-baseline:central と組。2026-11-19、4px下にずれて線が字に当たっていた）
     for (const p of [rail, ...tails]) p.setAttribute('d', d);
     total = rail.getTotalLength();
     // それぞれの印が、輪のどの距離にあるか（いちばん近い点を探す）
