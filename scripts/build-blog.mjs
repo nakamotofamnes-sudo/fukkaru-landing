@@ -1174,7 +1174,7 @@ function renderServiceIndex(groups, pillars) {
   const bodyHtml = `${renderHero({
     cat: 'サービス',
     title: 'できることと料金｜富士市の便利屋フッ軽',
-    meta: '草むしり8,000円〜／家具の組み立て8,000円〜／物置の設置・解体15,000円〜／不用品の運搬・買取5,000円〜',
+    meta: '草むしり8,000円〜／家具の組み立て8,000円〜／物置の設置・解体15,000円〜／不用品の運搬・まだ使えるものの引き取り5,000円〜',
     kyara: 'mitsumori',
   })}
 <main>
@@ -1218,7 +1218,7 @@ function renderServiceIndex(groups, pillars) {
   return pageShell({
     extraHead: `<script type="application/ld+json">${JSON.stringify(faqLd)}</script>`,
     title: `できることと料金｜${SITE_NAME}`,
-    description: '富士市の便利屋フッ軽のサービスと料金の一覧です。草むしり8,000円〜、家具の組み立て8,000円〜、物置の設置・解体15,000円〜、不用品の運搬・買取5,000円〜。LINEで写真を送るだけのお見積りは無料です。',
+    description: '富士市の便利屋フッ軽のサービスと料金の一覧です。草むしり8,000円〜、家具の組み立て8,000円〜、物置の設置・解体15,000円〜、不用品の運搬・まだ使えるものの引き取り5,000円〜。LINEで写真を送るだけのお見積りは無料です。',
     canonical: `${SITE_URL}${SVC_PATH}`,
     ogType: 'website',
     bodyHtml: bodyHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
