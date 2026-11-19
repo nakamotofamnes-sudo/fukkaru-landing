@@ -203,7 +203,7 @@
         ? { x: b.x + b.w / 2, y: T, tx: b.x + b.w / 2, ty: b.y }
         : { x: b.x + b.w / 2, y: B, tx: b.x + b.w / 2, ty: b.y + b.h }));
     }
-    label.setAttribute('x', (L + R) / 2); label.setAttribute('y', B + 4);   // 戻りの線の上に、言葉を1つだけ置く
+    label.setAttribute('x', (L + R) / 2); label.setAttribute('y', B);   // 戻りの線の上に、言葉を1つだけ置く（字の真ん中を線に合わせる。CSS の dominant-baseline:central と組。2026-11-19、4px下にずれて線が字に当たっていた）
     for (const p of [rail, ...tails]) p.setAttribute('d', d);
     total = rail.getTotalLength();
     // それぞれの印が、輪のどの距離にあるか（いちばん近い点を探す）
