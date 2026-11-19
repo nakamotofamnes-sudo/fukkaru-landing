@@ -186,3 +186,6 @@ body[data-stage=business] .nav-pill{background:#f1ede4}
 .main-nav{color:var(--ink)}
 body[data-stage=about] .main-nav{color:#e7f6f8}
 body[data-stage=business] .main-nav{color:#f1ede4}
+/* スマホの紺の場面の文字は、ぼかし・切り抜きをやめて、ふわっと出るだけ（2026-11-19）。
+   すべらせると、出るとちゅうの「直し続ける。」が下半分で切れて、ぼやけて二重に重なって見えた */
+@media(max-width:760px){.scan-reveal #about [data-r],.scan-reveal #about [data-r].is-in{filter:none;clip-path:none}.scan-reveal #about [data-r]{transform:translateY(10px);transition:opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1)}.scan-reveal #about [data-r].is-in{transform:none}}

@@ -356,10 +356,11 @@ async function start() {
     const rawDt = (time - (lastTime || time)) / 1000;
     const dt = Math.min(rawDt, .04);
     lastTime = time;
-    // パソコンでは、スクロールにカメラが少し遅れてついてくる（かくかくしない）。
-    // スマホは3Dを本文の位置に合わせているので、遅らせない
+    // スクロールに、カメラと色が少し遅れてなめらかについてくる（かくかくしない）。
+    // スマホも同じ（2026-11-19）。板の置き場所はページが動かす（placeCanvas）ので、本文とずれない。
+    // 置き場所と、見せる・隠すは、遅らせない本当の位置（scrollY）で決める（下の …R）
     // 追いかける速さは実際の経過時間で決める（描くのが遅い機械で、いつまでも追いつかないのを防ぐ）
-    smoothY = mobile || paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
+    smoothY = paused ? scrollY : THREE.MathUtils.damp(smoothY, scrollY, 7, Math.min(rawDt, .5));
     if (Math.abs(smoothY - scrollY) < .5) smoothY = scrollY;
     const y = smoothY;
     if (!layout.about) return;
@@ -374,8 +375,9 @@ async function start() {
     const dark = enterAbout * (1 - exitAbout);
     document.documentElement.style.setProperty('--hero-opacity', 1 - enterAbout);
     const inAbout = dark > .12;
-    const sceneHidden = aboutBottom < 0 && contactTop > height;
-    const place = placeCanvas(y);
+    const aboutTopR = layout.about.top - scrollY, contactTopR = layout.contact.top - scrollY;
+    const sceneHidden = aboutTopR + layout.about.height < 0 && contactTopR > height;
+    const place = placeCanvas(scrollY);
     let view;
     if (mobile) {
       // 境目を往復しても視点が飛ばないよう、場面の色と一緒になめらかにつなぐ。
@@ -408,8 +410,8 @@ async function start() {
     room.visible = dark < .88;
     room.scale.setScalar(THREE.MathUtils.lerp(1, .88, dark));
     room.position.y = -dark * .30;
-    scanner.visible = inAbout && (!mobile || aboutTop > -420);
-    avatar.visible = !mobile || !inAbout || aboutTop > -420;
+    scanner.visible = inAbout && (!mobile || aboutTopR > -420);
+    avatar.visible = !mobile || !inAbout || aboutTopR > -420;
     ambient.intensity = THREE.MathUtils.lerp(2, 1.8, dark);
     sun.intensity = THREE.MathUtils.lerp(3.1, 2.4, dark);
     rim.intensity = THREE.MathUtils.lerp(1.2, 2.3, dark);
