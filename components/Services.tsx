@@ -25,6 +25,15 @@ const groups: Group[] = [
       { title: 'アパート・マンション共用部の清掃（月2回）', price: '月額9,900円〜', desc: '税込・合意した範囲と回数の床洗浄を含む。実施時期は汚れを見て写真で相談', link: 'https://fuji.creo-sumai.jp/#apartment' },
     ],
   },
+  // 空き家調査（2026-11-19）は画面にも出す。見積もりの予約（/yoyaku/）からも選べる（中元さん 11/20「予約の画面に出していい」）
+  {
+    id: 'akiya-chousa',
+    title: '空き家調査',
+    note: '1回8,000円〜・写真でご報告',
+    services: [
+      { title: '空き家調査', price: '8,000円〜', desc: '税込・1回。外まわりと、入れる場合は室内も確認し、写真でご報告。4市は出張費無料', link: '/blog/akiya/#chousa' },
+    ],
+  },
   {
     id: 'garden',
     title: '庭・外まわりのお手入れ',
