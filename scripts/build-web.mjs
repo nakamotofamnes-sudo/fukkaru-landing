@@ -131,7 +131,7 @@ const CONTACT = `
 
 const FOOTER = `
   <footer>
-    <a href="/web/">ホームページづくりの記事</a><a href="/web.html">ホームページ制作</a><a href="/profile.html">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
+    <a href="/web/">ホームページづくりの記事</a><a href="/web.html">ホームページ制作</a><a href="/profile">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
   </footer>
 </body>
 </html>
@@ -151,7 +151,7 @@ function renderArticle(a, entries, css) {
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: a.title,
     datePublished: a.publishDate, dateModified: a.updatedDate || a.publishDate,
-    author: { '@type': 'Person', name: '中元晋平', url: `${SITE_URL}/profile.html` },
+    author: { '@type': 'Person', name: '中元晋平', url: `${SITE_URL}/profile` },
     publisher: { '@type': 'Organization', name: 'フッ軽合同会社', url: `${SITE_URL}/` },
     mainEntityOfPage: url, image: `${SITE_URL}/web/share.jpg`,
   };
@@ -171,7 +171,7 @@ ${others.map((e) => `        <li><a href="/web/${esc(e.slug)}.html">${esc(e.titl
     <article>
       <p class="eyebrow">${esc(a.eyebrow)}</p>
       <h1>${h1Html(a.title)}</h1>
-      <p class="byline">書いた人：<a href="/profile.html">中元晋平</a>（フッ軽合同会社 代表・静岡県富士市で便利屋を営んでいます）／${wareki(a.publishDate)}</p>
+      <p class="byline">書いた人：<a href="/profile">中元晋平</a>（フッ軽合同会社 代表・静岡県富士市で便利屋を営んでいます）／${wareki(a.publishDate)}</p>
 
 ${(a.lead || []).map((p) => `      <p>${inline(p)}</p>`).join('\n')}
 
