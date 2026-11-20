@@ -2,6 +2,55 @@
 (() => {
   const status = document.getElementById('scene-status');
   const preloader = document.getElementById('preloader');
+  const pane = document.getElementById('profile-scroll');
+  const mobileScroll = matchMedia('screen and (max-width:760px)');
+  const scrollElement = () => mobileScroll.matches ? pane : document.scrollingElement;
+  function restorePosition(state = history.state) {
+    if (!mobileScroll.matches) return;
+    if (Number.isFinite(state?.profileScrollTop)) {
+      pane.scrollTo({ top: state.profileScrollTop, behavior: 'instant' });
+    } else {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant' });
+    }
+  }
+  const scrolling = window.profileScroll = {
+    get top() { return scrollElement().scrollTop; },
+    get height() { return scrollElement().clientHeight; },
+    restorePosition,
+    listen(callback) {
+      pane.addEventListener('scroll', callback, { passive: true });
+      addEventListener('scroll', callback, { passive: true });
+    },
+  };
+  // 本文内をスクロールする端末でも、ブラウザの「戻る」でリンクを押す前の位置に戻る。
+  const rememberPosition = () => {
+    if (mobileScroll.matches) history.replaceState({ ...history.state, profileScrollTop: pane.scrollTop }, '');
+  };
+  document.addEventListener('click', event => {
+    if (!event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && event.target.closest('a[href^="#"]')) rememberPosition();
+  });
+  addEventListener('pagehide', rememberPosition);
+  addEventListener('popstate', event => {
+    if (Number.isFinite(event.state?.profileScrollTop)) requestAnimationFrame(() => restorePosition(event.state));
+  });
+
+  let wasMobile = mobileScroll.matches, lastTop = scrolling.top;
+  if (wasMobile) pane.tabIndex = 0;
+  scrolling.listen(event => {
+    // Safari は幅の変更で古いスクロールを先に 0 に戻し、そのあと media query の変更を通知する。
+    if ((innerWidth <= 760) === wasMobile && (event.currentTarget === pane) === wasMobile) lastTop = scrolling.top;
+  });
+  mobileScroll.addEventListener('change', () => {
+    wasMobile = mobileScroll.matches;
+    if (wasMobile) pane.tabIndex = 0; else pane.removeAttribute('tabindex');
+    scrollElement().scrollTo({ top: lastTop, behavior: 'instant' });
+  });
+  const scrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+  document.addEventListener('keydown', event => {
+    if (mobileScroll.matches && event.target === document.body && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.altKey && scrollKeys.has(event.key)) {
+      pane.focus({ preventScroll: true });
+    }
+  });
   let timer, shown = 0;
   // 読み込み画面：数字は実際の進み具合を追いかけて、なめらかに増やす
   const closePreloader = (animate = false) => {
@@ -60,19 +109,25 @@
     .filter(s => s.el);
   const header = document.querySelector('.site-header');
   let scheduled = false;
+  let lastActive;
   function update() {
     scheduled = false;
-    const mid = innerHeight * .42, under = header ? header.offsetHeight : 0;
+    const mid = scrolling.height * .42, under = header ? header.offsetHeight : 0;
     let stage = 'home', band = 'home', active = 'home';
     for (const s of stages) {
       const top = s.el.getBoundingClientRect().top;
       if (top < mid) { stage = s.stage; active = s.navId; }
       if (top < (s.stage === 'about' ? mid : under)) band = s.stage;
     }
-    document.body.dataset.stage = stage;
-    document.body.dataset.band = band;
-    nav.forEach(link => { if (link.dataset.nav === active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); });
+    if (document.body.dataset.stage !== stage) document.body.dataset.stage = stage;
+    if (document.body.dataset.band !== band) document.body.dataset.band = band;
+    if (lastActive !== active) {
+      lastActive = active;
+      nav.forEach(link => { if (link.dataset.nav === active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); });
+    }
   }
-  addEventListener('scroll', () => { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } }, { passive: true });
+  const queueUpdate = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } };
+  scrolling.listen(queueUpdate);
+  addEventListener('resize', queueUpdate);
   update();
 })();
