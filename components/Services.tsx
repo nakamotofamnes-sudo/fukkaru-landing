@@ -11,7 +11,8 @@ type Service = { title: string; price: string; desc: string; popular?: boolean; 
 // 「あそこにあると普通の依頼が来なくなる」。管理は専用サイトで案内する）。
 type Group = { id: string; title: string; note: string; services: Service[]; defaultOpen?: boolean; hidden?: boolean };
 
-const groups: Group[] = [
+// 見積もりの予約（/yoyaku/）も、作業の名前をここから読む（2026-11-19）。写しを作らないため export
+export const groups: Group[] = [
   {
     id: 'regular-care',
     title: '空き家・マンションの管理',
@@ -57,7 +58,8 @@ const groups: Group[] = [
       { title: '家具の移動・模様替え', price: '8,000円〜', desc: '室内の移動、階をまたぐ移動', link: '/blog/kagu-kumitate/' },
       { title: '軽引越し', price: '15,000円〜', desc: '単身の方、少量のお引越しに', popular: true, link: '/blog/fuji-unpan-kaitori-guide/' },
       { title: '荷造り・荷解き', price: '1時間8,000円〜', desc: '箱詰めから、運んだ先での開梱まで', link: '/blog/fuji-unpan-kaitori-guide/' },
-      { title: '不用品の運搬・買取', price: '5,000円〜', desc: 'まだ使えるものは買取、運び出しも承ります', popular: true , link: '/blog/fuji-unpan-kaitori-guide/' },
+      // 2026-11-20 中元さん「買取は引取に変えて欲しい」。「まだ使える」は外さない（外すと、ごみの引き取りと読めて許認可の線を越える）
+      { title: '不用品の運搬・まだ使えるものの引き取り', price: '5,000円〜', desc: 'まだ使えるものは引き取り、運び出しも承ります', popular: true , link: '/blog/fuji-unpan-kaitori-guide/' },
       { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します', link: '/blog/fuji-unpan-kaitori-guide/' },
     ],
   },
