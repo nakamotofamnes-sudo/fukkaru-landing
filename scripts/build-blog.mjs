@@ -278,6 +278,8 @@ function renderBlock(block, regularCare = false) {
   if (block.type === 'photo') return renderPhoto(block);
   if (block.type === 'ba') return renderBA(block);
   // 草刈りの料金めやす（2026-09-19）。中身は public/tools/kusakari-calc.js
+  // 空き家のセルフチェック（2026-11-19）。中身は public/tools/akiya-check.js
+  if (block.type === 'akiyaCheck') return '<div data-akiya-check></div><script src="/tools/akiya-check.js?v=20261119" defer></script>';
   if (block.type === 'calc') return '<div data-kusakari-calc></div><script src="/tools/kusakari-calc.js?v=20261119" defer></script>';
   if (block.type === 'steps') return renderSteps(block);
   switch (block.type) {

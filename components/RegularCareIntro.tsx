@@ -5,17 +5,17 @@ const RegularCareIntro: React.FC = () => (
   <section id="regular-care" className="section border-t border-hairline bg-canvas">
     <div className="shell">
       <div className="max-w-3xl">
-        <span className="eyebrow">新しい定期サービスを始めました</span>
+        <span className="eyebrow">空き家調査を始めました</span>
         <h2 className="h-section text-balance">空き家・マンションの管理を、<br className="sm:hidden" />フッ軽にお任せください。</h2>
-        <p className="lede">定期的に見に行く。掃除する。小さな草を取る。作業前後は写真でLINEにご報告。離れたご実家も、アパート・マンションの共用部も、通う手間をフッ軽にお任せください。</p>
+        <p className="lede">まずは1回の空き家調査から。見たことを写真つきでLINEにご報告し、必要な作業はお見積りします。続けて見てほしい方には、毎月の見回りも。アパート・マンションの共用部の定期清掃もお任せください。</p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-2">
         <article className="card flex flex-col p-6 sm:p-8">
           <Home size={26} className="mb-5 text-ink-500" aria-hidden="true" />
-          <h3 className="text-[20px] font-semibold text-ink-900">空き家・ご実家の管理</h3>
-          <p className="mt-3 text-[15px] font-semibold text-ink-900">月1回・月額4,400円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
-          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">月1回、外まわりの確認・玄関清掃・決めた範囲の小さな草取り。室内の換気・通水を含むプランは<span className="whitespace-nowrap">月額6,600円〜（税込）</span>。庭全体の草刈り・剪定も別見積もりでご相談いただけます。</p>
-          <a href="https://fuji.creo-sumai.jp/#vacant" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-ink-900 underline underline-offset-4 relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']">作業範囲・料金を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
+          <h3 className="text-[20px] font-semibold text-ink-900">空き家調査</h3>
+          <p className="mt-3 text-[15px] font-semibold text-ink-900">1回8,000円〜<span className="ml-2 text-[12px] font-normal text-ink-500">税込</span></p>
+          <p className="mt-4 flex-1 text-[14px] leading-[1.9] text-ink-500">外まわりを見て、入れる場合は室内も。写真つきでLINEにご報告し、必要な作業はお見積りします。続けて見てほしい方は、毎月の見回り（<span className="whitespace-nowrap">月額4,400円〜</span>）も選べます。</p>
+          <a href="/blog/akiya/#chousa" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-ink-900 underline underline-offset-4 relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']">空き家調査の内容を見る<ArrowUpRight size={16} aria-hidden="true" /></a>
         </article>
         <article className="card flex flex-col p-6 sm:p-8">
           <Building2 size={26} className="mb-5 text-ink-500" aria-hidden="true" />
