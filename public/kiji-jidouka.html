@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ブログ記事の自動化｜AIが毎日1本書いて、出す前に確かめる｜フッ軽合同会社</title>
+  <meta name="description" content="ブログ記事を、毎日1本。AIが書き、出す前に見張りと人の目で確かめます。自社のブログで毎日動かしている仕組みを、あなたのサイト向けに。年内のお申し込みは初期費用が半額の15万円（税抜）、月額3万円（税抜）。">
+  <meta name="theme-color" content="#f5f1e9">
+  <link rel="canonical" href="https://fukkaru.creo-sumai.jp/kiji-jidouka">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="ブログ記事を、毎日1本。AIが書いて、出す前に確かめる。｜フッ軽合同会社">
+  <meta property="og:description" content="自社のブログで毎日動かしている記事の自動化を、あなたのサイトにも。年内のお申し込みは初期費用が半額です。">
+  <meta property="og:url" content="https://fukkaru.creo-sumai.jp/kiji-jidouka">
+  <meta property="og:image" content="https://fukkaru.creo-sumai.jp/web/share.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/web/style.css?v=20261031-2">
+  <style>
+    /* 記事の自動化のページだけの部品。色と字は /web/style.css の決めごとに合わせる */
+    .camp-tag{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);font-size:12px;font-weight:700;letter-spacing:.04em;padding:7px 14px;border-radius:3px;margin:0 0 22px}
+    .camp-tag b{color:#f0b07f;font-weight:800}
+    .hero-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin:0 0 26px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .hero-price p{margin:0;font-size:13px;font-weight:600}
+    .hero-price s{color:var(--muted);font-weight:500;margin-right:6px}
+    .hero-price strong{font-size:26px;letter-spacing:-.03em;color:#b44a17}
+    .hero-price small{font-size:11px;color:var(--muted);font-weight:500}
+    .log{position:relative;z-index:2;width:100%;background:var(--white);border:1px solid #bcbca8;border-radius:7px;box-shadow:0 20px 40px #352d1520;overflow:hidden;transform:rotate(-2deg)}
+    .log ol{list-style:none;margin:0;padding:18px 20px 20px;font-size:12.5px;line-height:1.8}
+    .log li{display:grid;grid-template-columns:46px 1fr;gap:10px;padding:9px 0;border-bottom:1px dashed #deddd3}
+    .log li:last-child{border-bottom:0}
+    .log time{font-family:ui-monospace,monospace;color:#8a8e80;font-size:11.5px;padding-top:1px}
+    .log .ok{color:var(--green);font-weight:700}
+    .log .ng{color:#b44a17;font-weight:700}
+    .hero-visual .log-note{position:absolute;bottom:-26px;left:0;font-size:10px;color:var(--muted)}
+    .proof{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);background:var(--white);border-radius:5px;margin-top:8px}
+    .proof>div{padding:28px 30px}
+    .proof>div+div{border-left:1px solid var(--line)}
+    .proof b{display:block;font-size:34px;letter-spacing:-.04em;line-height:1.3}
+    .proof b small{font-size:14px;letter-spacing:0;margin-left:3px}
+    .proof p{margin:8px 0 0;font-size:13px;color:var(--muted)}
+    .proof-note{font-size:11px;color:var(--muted);margin:16px 0 0}
+    .mistakes{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:10px}
+    .mistakes article{background:var(--white);border:1px solid #d6d8cb;border-radius:6px;padding:26px 26px 24px}
+    .mistakes .m-label{font-size:11px;letter-spacing:.06em;font-weight:700;color:#b44a17;margin:0 0 10px}
+    .mistakes h3{font-size:18px;margin:0 0 12px;letter-spacing:-.02em}
+    .mistakes p{font-size:13px;color:var(--muted);margin:0}
+    .mistakes .m-fix{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink)}
+    .mistakes .m-fix b{color:var(--green)}
+    .plan{display:grid;grid-template-columns:1.1fr 1fr;gap:0;margin-top:40px;border:2px solid var(--ink);border-radius:6px;background:var(--white);overflow:hidden}
+    .plan>div{padding:34px 36px}
+    .plan>div+div{border-left:1px solid var(--line);background:#fbf8f1}
+    .plan h3{font-size:15px;margin:0 0 6px}
+    .plan .p-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 14px;margin:0 0 4px}
+    .plan .p-old{font-size:14px;color:var(--muted)}
+    .plan .p-old s{text-decoration-thickness:2px}
+    .plan .p-new{font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1.3;color:#b44a17}
+    .plan .p-new small{font-size:16px;font-weight:700;margin-left:2px}
+    .plan .p-mon{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1.3}
+    .plan .p-mon small{font-size:15px;font-weight:700;margin-left:2px}
+    .plan .p-tax{font-size:12px;color:var(--muted);margin:0 0 22px}
+    .plan .p-limit{display:inline-block;background:var(--ink);color:var(--paper);font-size:12px;font-weight:700;padding:5px 12px;border-radius:3px;margin:0 0 18px}
+    .plan ul{list-style:none;margin:0;padding:0}
+    .plan li{font-size:13px;padding:9px 0 9px 24px;border-top:1px solid var(--line);position:relative}
+    .plan li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+    @media(max-width:800px){
+      .camp-tag{font-size:13px;line-height:1.7;margin-bottom:20px}
+      .hero-price p{font-size:15px}
+      .hero-price strong{font-size:28px}
+      .hero-price small{font-size:13px}
+      .log{transform:none}
+      .log ol{font-size:14px;padding:14px 16px 16px}
+      .log li{grid-template-columns:44px 1fr}
+      .log time{font-size:12px}
+      .hero-visual .log-note{font-size:12px;bottom:-34px}
+      .proof{grid-template-columns:1fr}
+      .proof>div{padding:22px}
+      .proof>div+div{border-left:0;border-top:1px solid var(--line)}
+      .proof p{font-size:16px;line-height:1.9}
+      .proof-note{font-size:14px;line-height:1.9}
+      .mistakes{grid-template-columns:1fr;gap:18px}
+      .mistakes article{padding:22px}
+      .mistakes .m-label{font-size:13px}
+      .mistakes h3{font-size:20px;line-height:1.6}
+      .mistakes p{font-size:16px;line-height:1.95}
+      .plan{grid-template-columns:1fr}
+      .plan>div{padding:26px 22px}
+      .plan>div+div{border-left:0;border-top:1px solid var(--line)}
+      .plan h3{font-size:17px}
+      .plan .p-old{font-size:15px}
+      .plan .p-new{font-size:40px}
+      .plan .p-tax{font-size:14px}
+      .plan .p-limit{font-size:14px}
+      .plan li{font-size:16px;line-height:1.85}
+    }
+  </style>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","name":"ブログ記事の自動化","serviceType":"記事作成の自動化","url":"https://fukkaru.creo-sumai.jp/kiji-jidouka","description":"AIで毎日1本のブログ記事を書き、出す前に見張りと人の目で確かめる仕組みを、ご依頼のサイト向けに作って運用します。","provider":{"@type":"Organization","name":"フッ軽合同会社","url":"https://fukkaru.creo-sumai.jp/"},"offers":[{"@type":"Offer","name":"初期費用（2026年12月31日までのお申し込み）","price":"150000","priceCurrency":"JPY","priceValidUntil":"2026-12-31"},{"@type":"Offer","name":"月額（毎日1本）","price":"30000","priceCurrency":"JPY"}]}</script>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ進む</a>
+  <header class="header">
+    <a class="brand" href="/profile" aria-label="フッ軽 中元のプロフィール"><span>フッ軽<span class="brand-arrow">↗</span></span><small>小さな会社の、Webと仕組みづくり。</small></a>
+    <nav aria-label="ページ内の移動"><a href="#jissai">動いている実物</a><a href="#dekiru">できること</a><a href="#price">費用</a><a href="#faq">よくある質問</a></nav>
+    <a class="header-cta" href="#contact">中元に相談する <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="camp-tag">年内のお申し込みで <b>初期費用 半額</b></p>
+        <h1 id="hero-title"><span class="type-phrase">ブログ記事を、</span><br><span class="hero-keyline"><span class="hero-highlight">毎日1本。</span></span><br><span class="type-phrase">AIが書いて、</span><wbr><span class="type-phrase">出す前に確かめる。</span></h1>
+        <p class="hero-lead"><span class="type-phrase">更新が止まったブログに、</span><wbr><span class="type-phrase">毎日あたらしい記事を。</span><br><span class="type-phrase">自社のブログで毎日動かしている仕組みを、</span><wbr><span class="type-phrase">あなたのサイト向けに作ります。</span></p>
+        <div class="hero-price" aria-label="費用">
+          <p>初期費用 <s>30万円</s><strong>15万円</strong> <small>（税抜）</small></p>
+          <p>月額 <strong>3万円</strong> <small>（税抜・毎日1本）</small></p>
+        </div>
+        <div class="hero-actions"><a class="button primary" href="#contact"><span class="cta-label">記事の自動化を<wbr>相談する</span> <span aria-hidden="true">↗</span></a><a class="inline-link" href="#jissai">まず、動いている実物を見る <span aria-hidden="true">↓</span></a></div>
+        <p class="micro">2026年12月31日までにお申し込みの方が対象です。</p>
+      </div>
+      <figure class="hero-visual">
+        <div class="visual-grid" aria-hidden="true"></div><span class="visual-label">フッ軽のブログで、毎日起きていること。</span>
+        <div class="log">
+          <div class="screen-bar" aria-hidden="true"><i></i><i></i><i></i><span>きょうの記事の記録</span></div>
+          <ol>
+            <li><time>10:00</time><span>狙う言葉を選び、AIが記事を書く</span></li>
+            <li><time>10:01</time><span><span class="ng">止めた</span>　題が、前の記事と似すぎ → 書き直し</span></li>
+            <li><time>10:02</time><span><span class="ok">○</span> 許可の線・作り話・数字の見張りを通過</span></li>
+            <li><time>10:03</time><span><span class="ok">公開</span>　トップ画像も自動で作成</span></li>
+            <li><time>13:00</time><span>前に出した記事を1本、書き直す</span></li>
+            <li><time>16:00</time><span>2本目の記事を書く</span></li>
+          </ol>
+        </div>
+        <span class="visual-seal">自社で<br>毎日運用</span>
+        <figcaption class="log-note">実際の記録の流れを、読みやすく書き直したものです。</figcaption>
+      </figure>
+    </section>
+
+    <div class="promise wrap" aria-label="大切にしていること"><p><span>01</span> 毎日1本、休まず書く</p><p><span>02</span> 出す前に、見張りと人の目</p><p><span>03</span> 月に1回、数字で報告</p></div>
+
+    <section class="section wrap intro" aria-labelledby="intro-title">
+      <div><p class="eyebrow">こんなところで、止まっていませんか。</p><h2 id="intro-title">ブログが大事なのは、<br>分かっている。<br>でも、書く時間がない。</h2></div>
+      <div class="intro-right"><ul class="concerns"><li>ブログを始めたけれど、数本で更新が止まっている。</li><li>本業が忙しくて、記事を書く時間が取れない。</li><li>AIに書かせてみたいけれど、間違ったことを書かれるのが怖い。</li><li>外注すると、1本ごとの費用が重くて続かない。</li></ul><p class="intro-answer">書くのはAIに任せて、間違いは仕組みで止める。<br>人がやるのは、最後に読むところだけにします。</p></div>
+    </section>
+
+    <section class="work-section" id="jissai" aria-labelledby="jissai-title"><div class="wrap section">
+      <div class="section-head"><div><p class="eyebrow">動いている実物</p><h2 id="jissai-title">説明より先に、<br>毎日の実物があります。</h2></div><p>フッ軽は、静岡県富士市の便利屋です。<br>自社のブログを、この仕組みで毎日動かしています。<br>お見せできるのは、その実物です。</p></div>
+      <div class="proof">
+        <div><b>160<small>本以上</small></b><p>この仕組みで動かしている、自社のブログの記事（2026年11月）</p></div>
+        <div><b>毎日<small>3本</small></b><p>新しい記事2本と、前に出した記事の書き直し1本</p></div>
+        <div><b>0<small>円〜</small></b><p>記事を動かす場所の費用。いまのフッ軽は無料の枠で動いています</p></div>
+      </div>
+      <p class="proof-note">検索の順位や問い合わせの件数は、お約束できるものではないため、ここには載せていません。</p>
+      <div style="margin-top:28px"><a class="inline-link" href="/blog/" target="_blank" rel="noopener">フッ軽のブログを見る <span aria-hidden="true">↗</span></a></div>
+    </div></section>
+
+    <section class="section wrap" aria-labelledby="mistake-title">
+      <div class="section-head"><div><p class="eyebrow">AIは、まちがえます</p><h2 id="mistake-title">AIが実際に書いた<br>まちがいと、止め方。</h2></div><p>AIは、それらしい作り話を書きます。<br>だから、書かせっぱなしにはしません。<br>フッ軽のブログで実際に起きたことです。</p></div>
+      <div class="mistakes">
+        <article><p class="m-label">作り話</p><h3>いない代表の名前を書いた</h3><p>名前を伝えていなかったら、AIは実在しない代表の名前を作って、記事に書きました。</p><p class="m-fix"><b>止め方</b>　書いてよい事実を、先に決めて渡す。事実に無いことは書かせない。</p></article>
+        <article><p class="m-label">言ってはいけないこと</p><h3>持っていない許可が<br>あるように読めた</h3><p>便利屋には、許可が要る仕事があります。AIは、その線を越える言い方を何度も書きました。</p><p class="m-fix"><b>止め方</b>　越えてはいけない言い方を見張りで止め、決まった言い方に機械で直す。</p></article>
+        <article><p class="m-label">似た記事</p><h3>地名だけ変えた<br>同じような記事</h3><p>放っておくと、地名だけを入れ替えた、題も中身も似た記事を書き続けます。</p><p class="m-fix"><b>止め方</b>　前の記事と似すぎた題を機械で弾き、書き直させる。</p></article>
+      </div>
+      <p class="work-note">業種ごとに「書いてはいけないこと」は違います。最初に伺って、あなたのサイト専用の見張りを作ります。</p>
+    </section>
+
+    <section class="section wrap" id="dekiru" aria-labelledby="dekiru-title" style="padding-top:0">
+      <div class="section-head"><div><p class="eyebrow">できること</p><h2 id="dekiru-title">はじめに作るもの、<br>毎月続けること。</h2></div><p>最初に、あなたのサイト専用の仕組みを作ります。<br>そのあとは、毎日の記事と、出す前の確認を続けます。</p></div>
+      <div class="services">
+        <article><div class="service-number">01 <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="21" cy="21" r="12"/><path d="m30 30 10 10"/></svg></div><p class="service-for">はじめに</p><h3>狙う言葉を<br>調べる。</h3><p>お客様がどんな言葉で探しているか、検索結果の上位に何が並んでいるかを見て、書く言葉の一覧を作ります。</p></article>
+        <article><div class="service-number">02 <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="4" width="30" height="40" rx="3"/><path d="M16 13h16m-16 7h10m-10 7h16m-16 7h8"/></svg></div><p class="service-for">はじめに</p><h3>書き方の決まりと、<br>見張りを作る。</h3><p>書いてよい事実、言ってはいけないこと、読みやすい長さ。あなたの業種に合わせて決め、サイトにつないで試し運転をします。</p></article>
+        <article><div class="service-number">03 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M38 17a16 16 0 1 0 1 12M38 7v11H27"/></svg></div><p class="service-for">毎月</p><h3>毎日1本、<br>出す前に確かめる。</h3><p>記事は毎日1本（月30本前後）。出す前の確認、不具合の直し、月に1回の数字の報告まで含みます。</p></article>
+      </div>
+    </section>
+
+    <section class="maker-section" aria-labelledby="maker-title"><div class="wrap maker">
+      <div class="maker-photo"><img src="https://res.cloudinary.com/dyclm0vti/image/upload/f_auto,q_auto:good,w_700,c_limit/v1782467437/IMG_1176_kcxykw_jkbh6n.webp" alt="フッ軽合同会社 代表 中元晋平" width="700" height="525" loading="lazy"><span>SHIMPEI NAKAMOTO</span></div>
+      <div class="maker-copy"><p class="eyebrow">作るのも、毎日見ているのも、中元です。</p><h2 id="maker-title">自分の商売で、<br>毎日使っている仕組みです。</h2><p>はじめまして。富士市でフッ軽合同会社を営む、中元晋平です。</p><p>便利屋の仕事をしながら、自社のホームページとブログを自分で作り、AIで記事を書く仕組みを毎日動かしています。</p><p>うまくいったことも、AIがまちがえたことも、全部自分の商売で起きたことです。その分だけ、使い続けるところまで一緒に考えられます。</p><div class="maker-sign"><span>フッ軽合同会社 代表 <strong>中元 晋平</strong></span><a class="inline-link" href="/profile">詳しいプロフィール <span aria-hidden="true">↗</span></a></div></div>
+    </div></section>
+
+    <section class="section wrap price-section" id="price" aria-labelledby="price-title">
+      <div class="price-head"><p class="eyebrow">費用のこと</p><h2 id="price-title"><span class="type-phrase">年内のお申し込みは、</span><wbr><span class="type-phrase">初期費用が半額です。</span></h2><p>2026年12月31日までにお申し込みの方は、初期費用30万円を15万円にします。<br>月額は、毎日1本で3万円です。</p></div>
+      <div class="plan">
+        <div>
+          <p class="p-limit">2026年12月31日までのお申し込み</p>
+          <h3>初期費用</h3>
+          <div class="p-row"><span class="p-old">通常 <s>30万円</s></span><span class="p-new">15万円<small>（税抜）</small></span></div>
+          <p class="p-tax">税込 16万5,000円</p>
+          <ul><li>狙う言葉の調査と、書く言葉の一覧づくり</li><li>書き方の決まり・見張りづくり（業種に合わせて）</li><li>サイトへのつなぎこみと、試し運転</li></ul>
+        </div>
+        <div>
+          <h3>月額</h3>
+          <div class="p-row"><span class="p-mon">3万円<small>（税抜）</small></span></div>
+          <p class="p-tax">税込 3万3,000円</p>
+          <ul><li>記事を毎日1本（月30本前後）</li><li>出す前の確認</li><li>不具合の直し</li><li>月に1回の数字の報告</li></ul>
+        </div>
+      </div>
+      <p class="price-note">サイトの作りや業種によって、はじめの手間が大きく変わる場合があります。医療・お金・法律にかかわる業種は、内容を伺ってから別にお見積もりします。AIの利用料などの実費の扱いは、お見積もりのときにご相談します。検索の順位や問い合わせの件数は、お約束できません。</p>
+      <div class="process-head"><h3>ご相談から、毎日の運用まで</h3><span>試し運転の記事を見てから、本番へ。</span></div>
+      <ol class="process"><li><span>01</span><h4>メールでご相談</h4><p>サイトの住所と、どんな仕事をしているかをお送りください。</p></li><li><span>02</span><h4>作りを確かめて、お見積もり</h4><p>サイトの作りと業種を確かめ、費用と進め方をお伝えします。</p></li><li><span>03</span><h4>試し運転</h4><p>決まりと見張りを作り、試しの記事を読んでいただきます。</p></li><li><span>04</span><h4>毎日の運用</h4><p>毎日1本。月に1回、数字をまとめてご報告します。</p></li></ol>
+    </section>
+
+    <section class="faq-section" id="faq"><div class="section wrap faq"><div><p class="eyebrow">よくあるご質問</p><h2>頼む前に、<br>気になること。</h2><p>ここにないことも、<br>そのままお聞かせください。</p></div><div>
+      <details><summary><span><span class="type-phrase">どんなサイトでも</span><wbr><span class="type-phrase">つなげられますか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>WordPressのサイトも、自前で作ったサイトも、まずは作りを確かめてからご案内します。つなぎ方によって、はじめの手間と費用が変わります。</p></details>
+      <details><summary><span><span class="type-phrase">記事の中身は、</span><wbr><span class="type-phrase">誰が確かめますか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>月額の中に、出す前の確認が入っています。そのうえで、どちらが最後に読んで公開するかは、お申し込みのときに決めておきます。AIは、事実に無いことを書くことがあるためです。</p></details>
+      <details><summary><span><span class="type-phrase">検索で上位に</span><wbr><span class="type-phrase">出られますか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>お約束はできません。フッ軽のブログでも、検索に載るまでに数週間かかった記事があります。記事を積み上げて、数字を見ながら直していく仕組みです。</p></details>
+      <details><summary><span><span class="type-phrase">どんな業種でも</span><wbr><span class="type-phrase">頼めますか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>多くの業種でご相談いただけます。医療・お金・法律にかかわる業種は、まちがいの責任が重いため、内容を伺ってから別にお見積もりします。</p></details>
+      <details><summary><span><span class="type-phrase">フッ軽の仕組みを、</span><wbr><span class="type-phrase">そのまま使うのですか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>いいえ。あなたのサイト専用に分けて作ります。書いてよい事実も、言ってはいけないことも、業種ごとに違うためです。</p></details>
+      <details><summary><span><span class="type-phrase">年内に始めないと、</span><wbr><span class="type-phrase">半額になりませんか？</span></span><span class="faq-mark" aria-hidden="true">＋</span></summary><p>2026年12月31日までにお申し込みいただければ、初期費用は15万円（税抜）です。運用の始まりが年明けになっても大丈夫です。</p></details>
+    </div></div></section>
+
+    <section class="contact-section" id="contact" aria-labelledby="contact-title"><div class="wrap contact-grid">
+      <div><p class="eyebrow">ブログ記事の自動化</p><h2 id="contact-title">「うちのサイトでも<br>できる？」から、どうぞ。</h2><p>まだ、まとまっていなくても大丈夫です。<br>サイトの作りを確かめて、<br>できるかどうかからお答えします。</p><span class="contact-sign">フッ軽合同会社 代表　中元 晋平</span></div>
+      <div class="contact-box"><h3>最初は、この2つだけ。</h3><ol class="contact-two"><li>サイトの住所（URL）</li><li>どんな仕事をしているか</li></ol><p class="contact-hint">月に何本くらいほしいかも、分かればどうぞ。</p><p class="interest" id="interest" hidden></p>
+        <a class="button mail-button primary" id="mail-link" href="mailto:nakamoto.famnes@gmail.com?subject=%E3%83%96%E3%83%AD%E3%82%B0%E8%A8%98%E4%BA%8B%E3%81%AE%E8%87%AA%E5%8B%95%E5%8C%96%E3%81%AE%E7%9B%B8%E8%AB%87&amp;body=%E3%82%B5%E3%82%A4%E3%83%88%E3%81%AE%E4%BD%8F%E6%89%80%EF%BC%88URL%EF%BC%89%EF%BC%9A%0A%0A%E3%81%A9%E3%82%93%E3%81%AA%E4%BB%95%E4%BA%8B%E3%82%92%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%81%8B%EF%BC%9A%0A" data-contact="email"><span>中元にメールで相談する</span><span aria-hidden="true">↗</span></a><p class="channel-note">メールアプリが開きます。下書きに書き足してお送りください。</p><p class="email-address">nakamoto.famnes@gmail.com</p><p class="copy-row"><button type="button" id="copy-email" hidden>メールアドレスをコピー</button><span role="status" id="copy-status" aria-live="polite"></span></p>
+      </div>
+    </div></section>
+  </main>
+  <footer class="wrap footer"><a class="brand" href="/profile">フッ軽<span class="brand-arrow">↗</span></a><div><a href="/hp-seisaku">ホームページ制作</a><a href="/web/">ホームページづくりの記事</a><a href="/profile">中元のプロフィール</a><a href="/">フッ軽のHP</a><a href="/privacy/">プライバシーポリシー</a></div><small>© フッ軽合同会社</small></footer>
+  <div class="mobile-cta"><span>年内のお申し込みは、初期費用が半額。</span><a href="#contact">中元に相談する <span aria-hidden="true">↗</span></a></div>
+  <script src="/web/page.js?v=20261031-1" defer></script>
+</body>
+</html>

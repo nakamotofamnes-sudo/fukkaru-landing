@@ -47,6 +47,16 @@
     ],
     "redirects": [
       {
+        "source": "/kiji-jidouka.html",
+        "destination": "/kiji-jidouka",
+        "type": 301
+      },
+      {
+        "source": "/web.html",
+        "destination": "/hp-seisaku",
+        "type": 301
+      },
+      {
         "source": "/profile.html",
         "destination": "/profile",
         "type": 301
@@ -136,6 +146,14 @@
       {
         "source": "/profile",
         "destination": "/profile.html"
+      },
+      {
+        "source": "/hp-seisaku",
+        "destination": "/web.html"
+      },
+      {
+        "source": "/kiji-jidouka",
+        "destination": "/kiji-jidouka.html"
       }
     ]
   }
