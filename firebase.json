@@ -9,6 +9,15 @@
     ],
     "headers": [
       {
+        "source": "/profile",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
         "source": "/assets/**",
         "headers": [
           {
@@ -37,6 +46,11 @@
       }
     ],
     "redirects": [
+      {
+        "source": "/profile.html",
+        "destination": "/profile",
+        "type": 301
+      },
       {
         "source": "/service",
         "destination": "/blog/service/",
@@ -116,6 +130,12 @@
         "source": "/service/fuji-gomi-dashikata/",
         "destination": "/blog/fuji-gomi-dashikata/",
         "type": 301
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/profile",
+        "destination": "/profile.html"
       }
     ]
   }
