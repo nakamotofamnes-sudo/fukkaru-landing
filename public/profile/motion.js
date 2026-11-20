@@ -7,6 +7,7 @@
 // （隠すのは、このファイルが動き出してから。読み込めなければ何も隠れません）。
 (() => {
   const root = document.documentElement;
+  const scrolling = window.profileScroll;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -83,7 +84,7 @@
     if (introDone) { pre.hidden = true; return; }
     const dot = $('.name-dot');
     const r = dot && dot.getBoundingClientRect();
-    const usable = on && animate && r && r.width > 2 && r.top > 0 && r.bottom < innerHeight && scrollY < 40 && pre.animate;
+    const usable = on && animate && r && r.width > 2 && r.top > 0 && r.bottom < innerHeight && scrolling.top < 40 && pre.animate;
     if (!usable) { pre.hidden = true; root.classList.remove('mo-wait'); introDone = true; return; }
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, rad = r.width / 2;
     const far = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + 24;
@@ -113,7 +114,7 @@
   let capQueued = false;
   const drawCaps = () => {
     capQueued = false;
-    const vh = innerHeight, max = Math.min(150, innerWidth * .13);
+    const vh = scrolling.height, max = Math.min(150, innerWidth * .13);
     for (const c of caps) {
       const top = c.el.getBoundingClientRect().top;
       const p = clamp((vh - top) / (vh * .72));
@@ -124,7 +125,7 @@
   };
   if (caps.length) {
     const queue = () => { if (!capQueued) { capQueued = true; requestAnimationFrame(drawCaps); } };
-    addEventListener('scroll', queue, { passive: true }); addEventListener('resize', queue); drawCaps();
+    scrolling.listen(queue); addEventListener('resize', queue); drawCaps();
   }
 
   // ── 上のメニュー：いまいる場所の印が、すべって移る ──

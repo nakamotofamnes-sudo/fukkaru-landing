@@ -11,6 +11,7 @@ const smooth = n => { n = clamp(n); return n * n * (3 - 2 * n); };
 const mix = (a, b, t) => a.map((v, i) => THREE.MathUtils.lerp(v, b[i], t));
 const assets = new URL('./', import.meta.url);
 const media = matchMedia('(prefers-reduced-motion: reduce)');
+const scrolling = window.profileScroll;
 const canvas = $('scene');
 const sections = ['home', 'about', 'business', 'contact'].map($);
 const [home, , , contact] = sections;
@@ -37,7 +38,7 @@ function measureViewport() {
     const smallHeight = parseFloat(getComputedStyle(probe).minHeight) || nextHeight;
     compact = smallHeight <= 730;
     home.classList.toggle('compact-view', compact);
-    home.style.setProperty('--profile-svh', (smallHeight / 100) + 'px');
+    document.documentElement.style.setProperty('--profile-svh', (smallHeight / 100) + 'px');
     heroPanel.style.setProperty('--hero-pin-height', Math.max(0, nextHeight * LOOK - ABOUT_AT) + 'px');
   }
   measuredWidth = nextWidth;
@@ -56,7 +57,7 @@ let person, hologram, roomModel, office;
 // 最初の場面：机で打っている → 幕が開いて少ししたら振り向く（greetAt＝振り向きはじめる時刻）
 let greetAt = 0, turnDone = 0, lookW = 0;
 // 幕開け：読み込み画面が閉じる瞬間に、引いた位置から寄っていく（motion.js が合図を出す）
-let introStart = -1, smoothY = scrollY;
+let introStart = -1, smoothY = scrolling.top;
 window.profileCameraIntro = () => {
   const now = performance.now();
   introStart = now;
@@ -258,15 +259,23 @@ async function start() {
       actionSets.push(Object.fromEntries(Object.values(built.clips).map(clip => [clip.name, mixer.clipAction(clip)])));
     }
     mixers[0].addEventListener('finished', () => play('Idle'));
-    // 人物のスキャンの描画も幕の裏で用意し、初めてスクロールしたコマでの準備を避ける。
     if (mobile) await renderer.compileAsync(scene, camera);
     if (window.profileSkipped || failed) { dispose(); return; }
+    if (mobile) {
+      // 実際に一度描かないと切り抜き用のシェーダーと頂点が用意されない。幕の裏で済ませる。
+      scanner.visible = hologram.visible = true;
+      camera.position.set(0, 1.55, 7.8);
+      camera.lookAt(0, .95, 0);
+      renderer.render(scene, camera);
+      scanner.visible = hologram.visible = false;
+    }
     play(paused ? 'Idle' : 'Type');
     if (!paused && !greetAt) greetAt = performance.now() + 4200;   // 幕開けの合図が来なくても、振り向く
     ready = true;
     lastStage = 'home';
     document.body.classList.add('scene-ready');
     if (!media.matches) document.body.classList.add('scan-reveal');
+    scrolling.restorePosition();
     window.profileLoaded?.();
     measure();
     document.fonts.ready.then(measure);
@@ -352,9 +361,10 @@ async function start() {
   const observer = new ResizeObserver(measure);
   sections.forEach(section => observer.observe(section));
   function measure() {
+    const y = scrolling.top;
     for (const section of sections) {
       const rect = section.getBoundingClientRect();
-      layout[section.id] = { top: scrollY + rect.top, height: rect.height };
+      layout[section.id] = { top: y + rect.top, height: rect.height };
     }
   }
 
@@ -389,7 +399,7 @@ async function start() {
     const dt = Math.min(rawDt, .04);
     lastTime = time;
     // スマホは各コマで一度だけ位置を読み、視点・部屋・文字・スキャンを同じ位置から描く。
-    const actualY = Math.max(0, window.scrollY);
+    const actualY = Math.max(0, scrolling.top);
     smoothY = mobile || paused ? actualY : THREE.MathUtils.damp(smoothY, actualY, 7, Math.min(rawDt, .5));
     if (Math.abs(smoothY - actualY) < .5) smoothY = actualY;
     const y = smoothY;
