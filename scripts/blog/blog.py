@@ -2198,6 +2198,21 @@ _IHIN_SHIKAKU_OK = re.compile(r"確か|選び|選ぶ|とは|民間|持ってい�
 # 2026-11-20：買取をやめた（中元さん）ので、お客様に収入が入る話は全部まちがい。「思わぬ収入につながる」「臨時収入」も外す。
 # ほかのお店で売る話（リサイクルショップ・フリマ）の収入は、本当なので残す
 _KANE_YAKUSOKU_OK = re.compile(r"ありません|できません|他社|会社もあ|業者|市の|自治体|ショップ|フリマ|オークション|売れば|売ると|売る")
+# 引き取りで片付けの費用が下がる・かからない（2026-11-20）。買取なら本当だったが、引き取りで下がるかは確かめていない（中元さんに伺う。
+# 下がるなら、この直しを外す）。同じ文に「引き取」があるか、「これにより」などで前の引き取りの文を受けるときだけ。
+# 自治体・ご自身・ほかのお店・量販店・打ち消しの文は残す
+_HIKITORI_YASUKU = re.compile(r"(?:費用|料金|処分費)[^。]{0,14}(?:抑え|下が|下げ|安く|節約|かからな|軽減|削減|減ら|減り|減る)")
+_HIKITORI_YASUKU_OK = re.compile(r"自治体|ご自身|ご自分|自分で|ショップ|フリマ|量販店|購入|ありません|できません|とは限|限らな|この記事|解説|ご紹介")
+_HIKITORI_UKE = re.compile(r"^\s*(?:これにより|これで|その分|そのぶん|そのため)")
+
+
+def _hikitori_yasuku(bun: list, i: int) -> bool:
+    b = bun[i]
+    if not _HIKITORI_YASUKU.search(b) or _HIKITORI_YASUKU_OK.search(b):
+        return False
+    return "引き取" in b or (i > 0 and "引き取" in bun[i - 1] and bool(_HIKITORI_UKE.match(b)))
+
+
 _KANE_YAKUSOKU = re.compile(r"プラスの?収入|収入になる|収入につなが|臨時収入|思わぬ収入|お金が(?:戻|入って)|黒字に|実質(?:無料|[0０]円|ゼロ)|"
                             r"費用(?:が|は)?(?:ゼロ|[0０]円)(?:に|で)|売却益|利益が出|(?:処分|運搬|片付け|作業)?(?:費用|料金)[^。]{0,6}相殺")
 
@@ -2217,8 +2232,8 @@ def _kyoka(s: str) -> str:
     s = hikitori_tasu(s)
     # それでも「処分を請け負う」と読める文は、**その文だけ外す**（残りが空になるなら外さない）
     bun = re.split(r"(?<=[。！？])", s)
-    nokosu = [b for b in bun
-              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b) or kaishu_yakusoku(b)
+    nokosu = [b for i, b in enumerate(bun)
+              if not (any(w in b for w in KYOKA_KINSHI) or kyoka_yakusoku(b) or kaishu_yakusoku(b) or _hikitori_yasuku(bun, i)
                       or _REI_KINGAKU.search(b) or (_KANE_YAKUSOKU.search(b) and not _KANE_YAKUSOKU_OK.search(b))
                       or (_IHIN_SHIKAKU.search(b) and not _IHIN_SHIKAKU_OK.search(b))
                       or _keitora_katazuke(b))]
@@ -2465,11 +2480,13 @@ _KAITORI_IIKATA = (("買い取ったり、引き取ったりでき", "引き取�
 # 本物のAIの試し運転（2026-11-20）で出た形：料金表の名前を縮めて「まだ使える」が抜ける（題名「不用品運搬・引き取りを頼むなら？」）。
 # ごみの引き取りと読めるので、運搬と並んだ「引き取り」にだけ「まだ使えるものの」を入れる。
 # 運搬の付かない「不用品の引き取り」は触らない（「不用品の引き取りはできません」に当たり、足すと逆の意味になる）
-_KAITORI_UNPAN = re.compile(r"不用品の?運搬(・|、|や)(?:お)?引き?取り")
+_KAITORI_UNPAN = re.compile(r"不用品の?運搬(・|、|や)(?:お)?(?:引き取り|引取り?)")   # 「引取」（り無し）も（4回目の試し運転）
 _KAITORI_UNPAN_GYAKU = re.compile(r"不用品の?(?:お)?(?:引き取り|引取り?)(・|、|や)運搬")   # 並びが逆（題名「不用品引取・運搬の頼み方」）
 # 物置だけの額（まだ使える物置の引き取り 8,000円〜）を、まだ使えるもの全体に付ける（2回目の試し運転「まだ使えるものの引き取りは8,000円〜」）。
-# 料金表では「不用品の運搬・まだ使えるものの引き取り」が 5,000円〜。すぐ後ろに額があるときだけ（物置の話がはさまる文は触らない）
-_KAITORI_8000 = re.compile(r"(まだ使えるもの(?:の|を)?引き取り(?:は|が|も|：|:)?\s*)8,000円")
+# 料金表では「不用品の運搬・まだ使えるものの引き取り」が 5,000円〜。すぐ後ろに額があるときだけ。
+# **額の前か、額のすぐ後ろ（次の「、」まで）に「物置」「サイズ」があれば触らない**（「物置の場合、まだ使えるものの引き取りは8,000円〜」
+# 「…8,000円〜（物置の場合）」は正しい＝出す前の見張り）。後ろの別の項目の物置（「…8,000円〜、家具・物置の解体は15,000円〜」）では止めない
+_KAITORI_8000 = re.compile(r"(「?まだ使えるもの」?(?:の|を)?引き取り(?:は|が|も|：|:)?、?[^。、円]{0,10}?)8,000円")   # 「状態によって」がはさまる形も・別の仕事の額がはさまる文は見ない
 # 題名だけ：運搬の付かない「不用品の引き取り」にも「まだ使えるものの」を入れる（題名に「まだ使え」が無いとき）
 _KAITORI_DAIMEI = re.compile(r"不用品の?(?:お)?(?:引き取り|引取り?)")
 # 「査定」は買い取りの言葉。引き取りの文の中だけ、言い換える・外す（ほかのお店の査定は触らない）
@@ -2477,11 +2494,17 @@ _KAITORI_SATEI = (("査定・引き取り", "引き取り"), ("査定いたし�
 _KAITORI_SATEI_HOKA = re.compile(r"店|ショップ|フリマ|業者|オークション")
 
 
+def _kaitori_8000(m) -> str:
+    mae, ato = m.string[:m.start()], re.match(r"[^、。]*", m.string[m.end():]).group(0)
+    return m.group(0) if re.search(r"物置|サイズ", mae + m.group(1) + ato) else m.group(1) + "5,000円"
+
+
 def _kaitori(s: str) -> str:
     s = _KAITORI_NAMAE.sub("不用品の運搬・まだ使えるものの引き取り", s)
     s = _KAITORI_UNPAN.sub(r"不用品の運搬\1まだ使えるものの引き取り", s)
     s = _KAITORI_UNPAN_GYAKU.sub(r"不用品の運搬\1まだ使えるものの引き取り", s)
-    s = _KAITORI_8000.sub(r"\g<1>5,000円", s)
+    if "8,000円" in s:
+        s = "".join(_KAITORI_8000.sub(_kaitori_8000, b) for b in re.split(r"(?<=[。！？\n])", s))
     if "査定" in s and "引き取" in s:
         bun = re.split(r"(?<=[。！？\n])", s)
         for i, b in enumerate(bun):
@@ -2494,8 +2517,11 @@ def _kaitori(s: str) -> str:
         return s
     bun = re.split(r"(?<=[。！？\n])", s)
     out = []
-    for b in bun:
-        if ("買取" in b or "買い取" in b) and _KAITORI_YOI.search(b) and not _KAITORI_HOKA.search(b):
+    for i, b in enumerate(bun):
+        # 前の文にだけ「まだ使える」がある形（「まだ使える物置の引き取りは…お受けしています。買取もご相談いただけます。」＝出す前の見張り）
+        yoi = _KAITORI_YOI.search(b) or (i > 0 and _KAITORI_YOI.search(bun[i - 1]))
+        if ("買取" in b or "買い取" in b) and yoi and not _KAITORI_HOKA.search(b):
+            mae_b = b
             for mae, ato in _KAITORI_IIKATA[:2]:
                 b = b.replace(mae, ato)
             b = _KAITORI_NARABI.sub("引き取り", b)
@@ -2504,6 +2530,9 @@ def _kaitori(s: str) -> str:
                 b = re.sub(r"買取り?", "引き取り", b)
             for mae, ato in _KAITORI_IIKATA[2:]:
                 b = b.replace(mae, ato)
+            # 直したせいで弁（何を引き取るのか）が新しく鳴るなら、直さない（「買取も承ります」→「引き取りも承ります」で記事が落ちる）
+            if kyoka_yakusoku(b) and not kyoka_yakusoku(mae_b):
+                b = mae_b
         out.append(b)
     return "".join(out)
 
