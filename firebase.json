@@ -47,6 +47,51 @@
     ],
     "redirects": [
       {
+        "source": "/contact",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/contact/",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/contact.html",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/contact.php",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/contact/index.html",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/inquiry",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/inquiry/",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/form",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
+        "source": "/form/",
+        "destination": "/#contact",
+        "type": 301
+      },
+      {
         "source": "/kiji-jidouka",
         "destination": "/autoblog",
         "type": 301
