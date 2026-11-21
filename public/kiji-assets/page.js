@@ -63,6 +63,17 @@ if ('IntersectionObserver' in window) {
     }
   }, { rootMargin: '0px 0px -8% 0px' });
   document.querySelectorAll('[data-reveal]').forEach(element => reveal.observe(element));
+  // 速くスクロールして見張りが拾い損ねたものも、画面より上に来たら出しておく（隠れたまま残さない）
+  let pending = false;
+  addEventListener('scroll', () => {
+    if (pending) return; pending = true;
+    requestAnimationFrame(() => {
+      pending = false;
+      document.querySelectorAll('[data-reveal]:not(.reveal-in)').forEach(el => {
+        if (el.getBoundingClientRect().top < innerHeight * 0.92) { el.classList.add('reveal-in'); reveal.unobserve(el); }
+      });
+    });
+  }, { passive: true });
 
   const quickContact = document.querySelector('.quick-contact');
   const footer = document.querySelector('.footer');
