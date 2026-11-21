@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { ChevronRight, Droplets, Home, MessageCircle, Sofa, Star, Trees, Warehouse, type LucideIcon } from 'lucide-react';
 import Kyara from './Kyara';
+import Kugiri from './Kugiri';
 
 // link を持つ項目は、作業ごとの詳細ページへ案内します（2026-09-04）。
 // トップに全部を書くと重くなるうえ、トップの中身は JavaScript の中にあって
@@ -87,60 +88,105 @@ export const groups: Group[] = [
   },
 ];
 
-const ServiceGroup: React.FC<{ group: Group }> = ({ group }) => {
-  const [isOpen, setIsOpen] = useState(Boolean(group.defaultOpen));
-  // 開け閉めのボタンと、開く中身を結びつけるための名前。
-  const panelId = `services-${group.id}`;
+// ── ここから下は見せ方だけ（2026-11-21 作り直し）──────────────────────────
+// 上の groups（料金のデータ）は触らない。記事の道具（blog.py）・記事読み（kiji_yomu.py）・
+// サービス一覧のページ（build-blog.mjs）が、上の書き方のまま文字として読んでいる。
+// この下に、上の料金の行と同じ書き方の文字を足すと、道具が金額として拾ってしまうので書かない。
+//
+// 中元さん（11/21）「口コミとサービスと料金のとこを、よりお客様が見やすく」。
+// 前の形は、分類ごとに開け閉めする箱で、5つのうち3つが閉じていた（高圧洗浄や物置の料金は、押さないと見えなかった）。
+// パソコンでは2列の箱の高さがそろわず、左に大きな空きが出ていた。
+// いまの形：作業の種類を札（タブ）で並べ、押すとその料金が出る。最初は「人気」の札が付いた作業を集めて見せる。
 
+// 分類ごとの線のアイコン。データの形を変えないため、見せる側で持つ
+const ICON: Record<string, LucideIcon> = {
+  'akiya-chousa': Home,
+  garden: Trees,
+  indoor: Sofa,
+  cleaning: Droplets,
+  other: Warehouse,
+};
+
+type Row = Service & { from?: string };
+type Tab = { key: string; title: string; note: string; Icon: LucideIcon; rows: Row[]; ninki?: boolean };
+
+const shown = groups.filter((group) => !group.hidden);
+const tabs: Tab[] = [
+  {
+    key: 'popular',
+    title: '人気の作業',
+    note: 'よくご依頼いただく作業です',
+    Icon: Star,
+    rows: shown.flatMap((group) => group.services.filter((s) => s.popular).map((s) => ({ ...s, from: group.title }))),
+    ninki: true,
+  },
+  ...shown.map((group) => ({ key: group.id, title: group.title, note: group.note, Icon: ICON[group.id] ?? Home, rows: group.services })),
+];
+
+// 札の名前は、最後の「の」のあとでだけ折り返す（「庭・外まわりのお手 / 入れ」のような切れ方を防ぐ）。
+// 画面の幅で変わる切れ目に任せると、機種によって切れ方が変わる
+const oriKaeshi = (title: string) => {
+  const i = title.lastIndexOf('の');
+  if (title.length <= 6 || i < 1) return title;
   return (
-    <div className="card overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-canvas sm:px-6 sm:py-5"
-      >
-        <span className="min-w-0">
-          <span className="block text-[16px] font-semibold tracking-tight text-ink-900">{group.title}</span>
-          <span className="mt-0.5 block truncate text-[13px] text-ink-500">{group.note}</span>
-        </span>
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-ink-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {/* 閉じていても中身は置いておく（AIが読めるように）。画面では隠す */}
-      <dl id={panelId} hidden={!isOpen} className="rule-list border-t border-hairline">
-          {group.services.map((s) => (
-            <div key={s.title} className="flex flex-wrap items-baseline justify-between gap-x-4 px-5 py-4 sm:px-6">
-              <dt className="min-w-0 flex-1 flex flex-wrap items-center gap-2 text-[15px] font-medium text-ink-900">
-                {s.title}
-                {s.popular && <span className="chip chip-accent">人気</span>}
-              </dt>
-              <dd className="shrink-0 text-[15px] font-semibold tabular-nums tracking-tight text-ink-900">
-                {s.price}
-              </dd>
-              {/* 説明は幅いっぱいにして、項目名と料金の下の行に回します。 */}
-              <dd className="mt-1 w-full text-[13px] leading-relaxed text-ink-500">
-                {s.desc}
-                {s.link && (
-                  <>
-                    {' '}
-                    <a href={s.link} className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2 relative after:absolute after:-inset-x-2 after:-inset-y-3 after:content-['']">
-                      くわしく →
-                    </a>
-                  </>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-    </div>
+    <span className="break-keep">
+      {title.slice(0, i + 1)}
+      <wbr />
+      {title.slice(i + 1)}
+    </span>
   );
 };
 
+// 料金の1行。行のどこを押しても、作業ごとのくわしいページへ。
+// スマホ：作業名／料金と「くわしく」／説明 の3段（説明を横いっぱいに使う。右に列を作ると説明が細くなり、最後の1字だけ次の行に落ちていた）
+// パソコン：作業名と料金を左右に、説明と「くわしく」をその下に
+// 作業名と説明は Kugiri で「、」「・」「。」のあとで区切り、1〜2字だけ次の行に落ちないようにする（/nihongo-kumihan）。
+// text-wrap: pretty は使わない（Safari では段落全体の行をそろえて細く見える。11/19 にトップで外した）
+const RyokinRow: React.FC<{ s: Row; ninki?: boolean }> = ({ s, ninki }) => (
+  <div className="relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 px-5 py-4 transition-colors hover:bg-canvas sm:gap-y-1.5 sm:px-6">
+    <dt className="col-span-2 text-[15px] font-semibold leading-[1.6] text-ink-900 sm:col-span-1">
+      {ninki && s.from && <span className="mb-0.5 block text-[12px] font-medium text-ink-500">{s.from}</span>}
+      <Kugiri text={s.title} />
+      {s.popular && !ninki && <span className="chip chip-accent ml-2 py-0.5 align-[1px]">人気</span>}
+    </dt>
+    <dd className="row-start-2 whitespace-nowrap text-[18px] font-bold leading-[1.5] tabular-nums tracking-tight text-ink-900 sm:col-start-2 sm:row-start-1 sm:text-right sm:text-[17px]">
+      {s.price}
+    </dd>
+    <dd className="col-span-2 row-start-3 text-[13px] leading-relaxed text-ink-500 sm:col-span-1 sm:row-start-2">
+      <Kugiri text={s.desc} ato="、・。" />
+    </dd>
+    {s.link && (
+      <dd className="col-start-2 row-start-2 self-center text-right text-[13px] leading-relaxed sm:self-end">
+        <a
+          href={s.link}
+          className="inline-flex items-center gap-0.5 whitespace-nowrap text-[13px] font-medium text-ink-900 underline underline-offset-2 after:absolute after:inset-0 after:content-['']"
+        >
+          くわしく
+          <ChevronRight size={14} aria-hidden="true" />
+        </a>
+      </dd>
+    )}
+  </div>
+);
+
 const Services: React.FC = () => {
+  const [active, setActive] = useState(tabs[0].key);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // 矢印キーでも札を選べるように（キーボードで使う人のため）
+  const onKeyDown = (e: React.KeyboardEvent, i: number) => {
+    const last = tabs.length - 1;
+    let to = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = i === last ? 0 : i + 1;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = i === 0 ? last : i - 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = last;
+    if (to < 0) return;
+    e.preventDefault();
+    setActive(tabs[to].key);
+    tabRefs.current[to]?.focus();
+  };
+
   return (
     <section id="services" className="section border-t border-hairline bg-canvas">
       <div className="shell">
@@ -152,10 +198,81 @@ const Services: React.FC = () => {
           </p>
         </div>
 
-        <div className="mt-12 grid items-start gap-5 lg:grid-cols-2">
-          {groups.filter((group) => !group.hidden).map((group) => (
-            <ServiceGroup key={group.id} group={group} />
-          ))}
+        <div className="mt-10 grid items-start gap-4 lg:mt-12 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8">
+          {/* 作業の種類の札。スマホは2列、パソコンは左に縦1列 */}
+          <div>
+            <p id="services-tabs-label" className="mb-3 text-[13px] font-medium text-ink-600">
+              作業の種類を選ぶと、料金が切り替わります
+            </p>
+            <div role="tablist" aria-labelledby="services-tabs-label" className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-1">
+              {tabs.map((t, i) => {
+                const on = t.key === active;
+                return (
+                  <button
+                    key={t.key}
+                    ref={(el) => {
+                      tabRefs.current[i] = el;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={`services-tab-${t.key}`}
+                    aria-selected={on}
+                    aria-controls={`services-${t.key}`}
+                    tabIndex={on ? 0 : -1}
+                    onClick={() => setActive(t.key)}
+                    onKeyDown={(e) => onKeyDown(e, i)}
+                    className={`flex min-h-[60px] items-center gap-2 rounded border bg-surface px-3 py-2.5 text-left transition-colors sm:gap-3 lg:px-4 lg:py-3 ${
+                      on ? 'border-ink-900' : 'border-hairline hover:border-ink-300'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border sm:h-9 sm:w-9 lg:h-10 lg:w-10 ${
+                        on ? 'border-ink-900 bg-ink-900 text-white' : 'border-hairline bg-canvas text-ink-500'
+                      }`}
+                    >
+                      <t.Icon size={18} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-[14px] font-semibold leading-snug lg:text-[15px] ${on ? 'text-ink-900' : 'text-ink-700'}`}>
+                        {oriKaeshi(t.title)}
+                      </span>
+                      <span className="mt-0.5 hidden text-[12px] leading-snug text-ink-500 lg:block">{t.note}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 料金。選ばれていない札の中身も置いておく（AIや検索が読めるように）。画面では隠す */}
+          <div>
+            {tabs.map((t) => (
+              <div
+                key={t.key}
+                role="tabpanel"
+                id={`services-${t.key}`}
+                aria-labelledby={`services-tab-${t.key}`}
+                hidden={t.key !== active}
+                className="card overflow-hidden"
+              >
+                <div className="flex items-center gap-3 border-b border-hairline px-5 py-4 sm:px-6 sm:py-5">
+                  <span className="icon-frame">
+                    <t.Icon size={20} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-[17px] font-semibold tracking-tight text-ink-900">{t.title}</h3>
+                    <p className="mt-0.5 text-[13px] leading-relaxed text-ink-500">{t.note}</p>
+                  </div>
+                </div>
+                {/* line-break: strict … 「ー」「。」「っ」が行の頭に来ないように（「アンカ／ー」と割れていた） */}
+                <dl className="rule-list [line-break:strict]">
+                  {t.rows.map((s) => (
+                    <RyokinRow key={s.title} s={s} ninki={t.ninki} />
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 2026-10-29：相談の箱を淡い琥珀にして、ボタンを指さす中元さんのキャラを立たせる（ブログの相談の箱と同じ形）。
@@ -167,9 +284,10 @@ const Services: React.FC = () => {
               <h3 className="text-[17px] font-semibold tracking-tight text-ink-900">
                 お見積もり・ご相談は無料です
               </h3>
+              {/* 2026-11-21：市の名前が「富士／宮市」と行をまたいで割れていたので、市の名前だけ折り返さない（文字は同じ） */}
               <p className="mt-2 max-w-2xl text-[14px] leading-[1.85] text-ink-600">
                 作業の内容や現場の状況によって、適切なプランと料金をご案内します。
-                まずは「こんなこと頼める？」とお声がけください。LINEで写真をお送りいただくお見積りは、エリアを問わず無料です。現地に伺う出張費も、富士市・富士宮市・静岡市・沼津市ならいただきません。{' '}
+                まずは「こんなこと頼める？」とお声がけください。LINEで写真をお送りいただくお見積りは、エリアを問わず無料です。現地に伺う出張費も、<span className="whitespace-nowrap">富士市</span>・<span className="whitespace-nowrap">富士宮市</span>・<span className="whitespace-nowrap">静岡市</span>・<span className="whitespace-nowrap">沼津市</span>ならいただきません。{' '}
                 <a href="/blog/service/" className="whitespace-nowrap font-medium text-ink-900 underline underline-offset-2">
                   できることと料金の一覧 →
                 </a>

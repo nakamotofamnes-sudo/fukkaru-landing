@@ -81,66 +81,84 @@ const reviews: Review[] = [
   }
 ];
 
-const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
+// 2026-11-21 作り直し（中元さん「口コミを、よりお客様が見やすく」）。
+// 前の形は、どの口コミも1行で「…」と切れていて、9件読むのに9回押す必要があった。
+// いまの形：本文を主役にして、名前と日付はカードの下にそろえる。本文はそのまま全部見せる。
+// 長い口コミだけ、はじめは6行まで見せて「続きを読む」で開く。
+// 長いかどうかは文字数で決める（画面の幅を測らない）。トップの前もって組み立てたHTMLと、画面の形がずれないように。
+// 行の頭に「。」「、」「ー」が来ないように line-break: strict。text-wrap: pretty は使わない（Safari では段落全体の行をそろえて細く見える。
+// 4〜5行の段落の最後が「す。」になるのは日本語ではふつう。/nihongo-kumihan）
+const NAGAI = 120;
+
+const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
+  const nagai = review.text.length > NAGAI;
   const [isOpen, setIsOpen] = useState(false);
-  // 開け閉めのボタンと、開く中身を結びつけるための名前。
-  const panelId = `review-${review.id}`;
+  const [replyOpen, setReplyOpen] = useState(false);
+  // ボタンと、開く中身を結びつけるための名前。
+  const bodyId = `review-${review.id}`;
+  const replyId = `review-${review.id}-reply`;
 
   return (
-    <div className="card overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-canvas"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-[13px] font-semibold text-ink-500">
+    <article className="card flex flex-col p-5 [line-break:strict] sm:p-6">
+      <div className="flex-1">
+        {/* 依頼内容の札が無い口コミも、本文の書き出しの高さを横の口コミとそろえる（札の高さぶん取っておく） */}
+        <div className="flex min-h-[31px] flex-wrap items-center justify-between gap-2">
+          <span className="flex gap-0.5 text-accent" role="img" aria-label="5段階評価のうち5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Star key={i} size={15} fill="currentColor" strokeWidth={0} />
+            ))}
+          </span>
+          {review.service && <span className="chip">{review.service}</span>}
+        </div>
+
+        <p
+          id={bodyId}
+          className={`mt-4 whitespace-pre-wrap text-[15px] leading-[1.9] text-ink-700 ${nagai && !isOpen ? 'line-clamp-6' : ''}`}
+        >
+          {review.text}
+        </p>
+
+        {nagai && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-expanded={isOpen}
+            aria-controls={bodyId}
+            className="mt-1 inline-flex items-center gap-1 py-2 text-[13px] font-medium text-ink-900 underline underline-offset-2"
+          >
+            {isOpen ? '閉じる' : '続きを読む'}
+            <ChevronDown size={15} aria-hidden="true" className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+
+        {review.reply && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setReplyOpen(!replyOpen)}
+              aria-expanded={replyOpen}
+              aria-controls={replyId}
+              className="inline-flex items-center gap-1 py-2 text-[13px] font-medium text-ink-600 underline underline-offset-2"
+            >
+              フッ軽合同会社からの返信
+              <ChevronDown size={15} aria-hidden="true" className={`transition-transform duration-200 ${replyOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {/* 閉じていても中身は置いておく（AIや検索が読めるように）。画面では隠す */}
+            <div id={replyId} hidden={!replyOpen} className="mt-2 border-l-2 border-accent pl-4">
+              <p className="whitespace-pre-wrap text-[13.5px] leading-[1.9] text-ink-600">{review.reply}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-5 flex items-center gap-3 border-t border-hairline pt-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-hairline bg-canvas text-[12px] font-semibold text-ink-500" aria-hidden="true">
           {review.author.slice(0, 1)}
         </span>
-
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[15px] font-semibold text-ink-900">{review.author}</span>
-            <span className="flex gap-0.5 text-accent" role="img" aria-label="5段階評価のうち5">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Star key={i} size={12} fill="currentColor" strokeWidth={0} />
-              ))}
-            </span>
-            <span className="text-[12px] text-ink-500">{review.date}</span>
-          </span>
-
-          {review.service && (
-            <span className="mt-2 flex">
-              <span className="chip">{review.service}</span>
-            </span>
-          )}
-
-          {!isOpen && (
-            <span className="mt-2 block truncate text-[13px] text-ink-500">{review.text}</span>
-          )}
-        </span>
-
-        <ChevronDown
-          size={17}
-          className={`mt-1 shrink-0 text-ink-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div id={panelId} className="border-t border-hairline px-5 py-5">
-          <p className="whitespace-pre-wrap text-[14px] leading-[1.9] text-ink-600">{review.text}</p>
-
-          {review.reply && (
-            <div className="mt-5 border-l-2 border-accent pl-4">
-              <p className="text-[12px] font-semibold tracking-[0.04em] text-ink-500">
-                フッ軽合同会社からの返信
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-ink-500">{review.reply}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+        <span className="min-w-0 flex-1 text-[14px] font-semibold text-ink-900">{review.author}</span>
+        <span className="shrink-0 text-[12px] text-ink-500">{review.date}</span>
+      </div>
+    </article>
   );
 };
 
@@ -152,13 +170,13 @@ const Testimonials: React.FC = () => {
           <span className="eyebrow">Reviews</span>
           <h2 className="h-section">お客様の声</h2>
           <p className="lede">
-            実際にご依頼いただいた方から届いた口コミです。見出しを押すと全文が開きます。
+            実際にご依頼いただいた方から届いた口コミです。長い口コミは「続きを読む」で全文が開きます。
           </p>
         </div>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
+        <div className="mt-10 grid gap-4 md:grid-cols-2 lg:mt-12 lg:grid-cols-3">
           {reviews.map((review) => (
-            <ReviewItem key={review.id} review={review} />
+            <ReviewCard key={review.id} review={review} />
           ))}
         </div>
 
