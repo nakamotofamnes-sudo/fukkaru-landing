@@ -470,3 +470,48 @@ details > p { padding: 0 30px 20px 0; color: var(--text-muted); }
   .chart-switch button { flex: 1; padding: 0 6px; font-size: .75rem; }
   .ticker-row { font-size: .8125rem; gap: 28px; }
 }
+
+/* 業種ごとの記事の例（11/21 中元さん「どの業種どんな仕事にも対応できるみたいなの必要」） */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.feed-label { margin: 0 0 2px; font-size: .6875rem; font-weight: 700; letter-spacing: .06em; color: var(--lime); }
+.ind-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+.ind-grid li { background: var(--paper); border: 1px solid #b1b4a1; padding: 18px 18px 20px; transition: transform .25s cubic-bezier(.23,1,.32,1), border-color .2s ease, background-color .2s ease; }
+.ind-name { display: inline-block; font-size: .75rem; font-weight: 700; color: var(--ink); background: var(--lime); padding: 2px 8px; margin-bottom: 10px; }
+.ind-grid b { display: block; font-size: .9375rem; line-height: 1.6; }
+@media (hover: hover) and (pointer: fine) { .ind-grid li:hover { transform: translateY(-4px); border-color: var(--ink); background: #fff; } }
+.ind-note { margin: 16px 0 0; font-size: .75rem; color: var(--text-muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .industries.is-on   @keyframes ind-roll {
+    0% { transform: translateY(0); } 11% { transform: translateY(-1.25em); } 22% { transform: translateY(-2.5em); }
+    33% { transform: translateY(-3.75em); } 44% { transform: translateY(-5em); } 55% { transform: translateY(-6.25em); }
+    66% { transform: translateY(-7.5em); } 77% { transform: translateY(-8.75em); } 88%, 100% { transform: translateY(-10em); }
+  }
+}
+/* 報告の上の3つの数字 */
+.kpis { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; border: 1px solid #b1b4a1; margin-bottom: 26px; }
+.kpis > div { padding: 16px 18px; display: grid; gap: 2px; }
+.kpis > div + div { border-left: 1px solid #b1b4a1; }
+.kpis > div:first-child { background: var(--ink); color: var(--paper); }
+.kpis > div:first-child em, .kpis > div:first-child span:first-child { color: #c8cfb9; }
+.kpis span:first-child { font-size: .75rem; font-weight: 700; color: var(--text-muted); }
+.kpis b { font-size: 1rem; font-weight: 700; }
+.kpis b .number { font: 600 clamp(1.8rem,3.2vw,2.6rem)/1.1 var(--number); letter-spacing: -.04em; margin: 0 2px; }
+.kpis > div:first-child b .number { color: var(--lime); }
+.kpis em { font-style: normal; font-size: .6875rem; color: var(--text-muted); }
+@media (max-width: 1100px) { .ind-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 760px) {
+  .ind-grid { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: 1fr; }
+  .kpis > div + div { border-left: 0; border-top: 1px solid #b1b4a1; }
+}
+
+/* 文字の置き場所の直し（11/21 中元さん「文字の置き場所全体的にチェック」） */
+.contact-card #copy-email { padding: 0; margin-top: 6px; }
+.nobr { display: inline-block; }
+.hero-price { flex-wrap: wrap; row-gap: 10px; }
+.hero-price > b:first-child { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+.ind-word { display: inline-block; color: var(--moss); transition: opacity .18s ease, transform .18s ease; }
+.ind-word.is-out { opacity: 0; transform: translateY(-.3em); transition-duration: .14s; }
+.ind-word.is-in { animation: word-in .38s cubic-bezier(.23,1,.32,1) both; }
+@keyframes word-in { from { opacity: 0; transform: translateY(.35em); } to { opacity: 1; transform: none; } }
+.contact h2 { font-size: clamp(2.6rem,5.4vw,5.4rem); }

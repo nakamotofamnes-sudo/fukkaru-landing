@@ -6,7 +6,7 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── 見えたら1回 .is-on を付ける（グラフ・流れ・料金）──
-  const onceSel = '[data-chart], .steps, .price-card';
+  const onceSel = '[data-chart], .steps, .price-card, .industries';
   const onceIO = 'IntersectionObserver' in window ? new IntersectionObserver((ents) => {
     for (const e of ents) {
       if (!e.isIntersecting) continue;
@@ -16,6 +16,28 @@
     }
   }, { threshold: 0.3 }) : null;
   document.querySelectorAll(onceSel).forEach((el) => onceIO ? onceIO.observe(el) : el.classList.add('is-on'));
+
+  // ── どの業種でも：業種の名前が入れ替わって、最後に「どんな」で止まる（1回だけ）──
+  const word = document.querySelector('.ind-word');
+  const indSec = document.querySelector('.industries');
+  if (word && indSec && !reduce) {
+    const list = word.dataset.words.split(',').concat(['どんな']);
+    let started = false;
+    indSec.addEventListener('seen', () => {
+      if (started) return; started = true;
+      let k = 0;
+      const swap = () => {
+        word.classList.add('is-out');
+        setTimeout(() => {
+          word.textContent = list[k];
+          word.classList.remove('is-out', 'is-in'); void word.offsetWidth; word.classList.add('is-in');
+          k += 1;
+          if (k < list.length) setTimeout(swap, k === list.length - 1 ? 1300 : 900);
+        }, 150);
+      };
+      swap();
+    });
+  }
 
   // ── グラフ ──
   // フッ軽のブログ（記事のページだけ）の週ごとの数字。サーチコンソールから 2026-11-21 に取った（11/19 まで）
