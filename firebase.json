@@ -47,8 +47,13 @@
     ],
     "redirects": [
       {
+        "source": "/kiji-jidouka",
+        "destination": "/autoblog",
+        "type": 301
+      },
+      {
         "source": "/kiji-jidouka.html",
-        "destination": "/kiji-jidouka",
+        "destination": "/autoblog",
         "type": 301
       },
       {
@@ -152,7 +157,7 @@
         "destination": "/web.html"
       },
       {
-        "source": "/kiji-jidouka",
+        "source": "/autoblog",
         "destination": "/kiji-jidouka.html"
       }
     ]

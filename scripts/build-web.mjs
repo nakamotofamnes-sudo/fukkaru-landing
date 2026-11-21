@@ -127,12 +127,12 @@ const CONTACT = `
       <p>普段お客様に説明していることを伺い、載せることの整理から一緒に進めます。費用は、必要なページを決めてからお見積もりします。</p>
       <a class="button" href="mailto:${MAIL}?subject=${encodeURIComponent('ホームページの相談')}">メールで相談する ↗</a>
       <p style="margin-top:16px"><a href="/hp-seisaku">ホームページ制作のページを見る</a></p>
-      <p style="margin-top:8px"><a href="/kiji-jidouka">ブログ記事を毎日1本、AIで書く仕組みも作れます（年内のお申し込みは初期費用が半額）</a></p>
+      <p style="margin-top:8px"><a href="/autoblog">ブログ記事を毎日1本、AIで書く仕組みも作れます（年内のお申し込みは初期費用が半額）</a></p>
     </section>`;
 
 const FOOTER = `
   <footer>
-    <a href="/web/">ホームページづくりの記事</a><a href="/hp-seisaku">ホームページ制作</a><a href="/kiji-jidouka">ブログ記事の自動化</a><a href="/profile">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
+    <a href="/web/">ホームページづくりの記事</a><a href="/hp-seisaku">ホームページ制作</a><a href="/autoblog">ブログ記事の自動化</a><a href="/profile">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
   </footer>
 </body>
 </html>

@@ -1346,7 +1346,7 @@ function buildSitemap(articles, pillars = []) {
     // サイトマップに無いあいだは、インデックスの道具からも見えなかった。
     { loc: `${SITE_URL}/profile`, priority: '0.6', lastmod: saishin },
     { loc: `${SITE_URL}/hp-seisaku`, priority: '0.7', lastmod: '2026-11-20' },
-    { loc: `${SITE_URL}/kiji-jidouka`, priority: '0.7', lastmod: '2026-11-20' },
+    { loc: `${SITE_URL}/autoblog`, priority: '0.7', lastmod: '2026-11-20' },
     // HP制作の記事と一覧 /web/（手作りの benriya-homepage.html も含む）。build-web.mjs が数える
     ...webSitemapEntries(),
     ...pillars.map((p) => ({ loc: pageUrl(p.basePath || 'blog', p.slug), priority: '0.9', lastmod: hiduke(p) })),
