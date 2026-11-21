@@ -371,3 +371,102 @@ details > p { padding: 0 30px 20px 0; color: var(--text-muted); }
   .report-grid { grid-template-columns: 1fr; }
   .bars { height: 220px; }
 }
+
+/* ── 2Dの動きと、押して見られるグラフ（11/21 中元さん「2Dモーション」「インタラクティブチャート」）── */
+/* 報告：グラフを横いっぱいに、報告の4つは下に並べる */
+.report-grid { grid-template-columns: 1fr; }
+.report-items { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0 clamp(16px,2.4vw,34px); border-top: 0; }
+.report-items li { border-top: 2px solid var(--ink); border-bottom: 0; }
+.chart-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 14px; }
+.chart-head .report-tag { margin-bottom: 10px; }
+.chart-head h3 { margin: 0; font-size: clamp(1.1rem,1.8vw,1.4rem); }
+.chart-switch { display: inline-flex; border: 1px solid var(--ink); }
+.chart-switch button { font: 700 .8125rem/1 var(--sans); padding: 0 14px; min-height: 44px; background: transparent; color: var(--ink); border: 0; cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.chart-switch button + button { border-left: 1px solid var(--ink); }
+.chart-switch button[aria-pressed="true"] { background: var(--ink); color: var(--lime); }
+@media (hover: hover) and (pointer: fine) { .chart-switch button[aria-pressed="false"]:hover { background: var(--lime); } }
+.chart { position: relative; touch-action: pan-y; outline-offset: 4px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.c-grid { stroke: #d6d6c8; stroke-width: 1; }
+.c-base { stroke: var(--ink); stroke-width: 1; }
+.c-ylab, .c-xlab { font: 600 11px var(--number); fill: var(--text-muted); }
+.c-area { fill: var(--moss); fill-opacity: .13; }
+.c-line { fill: none; stroke: var(--moss); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.c-partial { stroke-dasharray: 5 5; }
+.c-end { fill: var(--moss); stroke: var(--paper); stroke-width: 2; }
+.c-endlab { font: 700 13px var(--number); fill: var(--ink); }
+.c-cross { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; transition: opacity .15s ease; }
+.c-dot { fill: var(--lime); stroke: var(--ink); stroke-width: 2; opacity: 0; transition: opacity .15s ease; }
+.chart-tip { position: absolute; left: 0; top: 0; pointer-events: none; background: var(--ink); color: var(--paper); padding: 8px 12px; font-size: .75rem; line-height: 1.4; white-space: nowrap; opacity: 0; transition: opacity .15s ease; }
+.chart-tip b { display: block; font: 700 1.25rem/1.2 var(--number); color: var(--lime); }
+.chart-tip b small { font-size: .7rem; margin-left: 2px; color: var(--paper); }
+.chart.is-hover .c-cross, .chart.is-hover .c-dot, .chart.is-hover .chart-tip { opacity: 1; }
+.chart-cap { margin: 12px 0 0; font-size: .75rem; color: var(--text-muted); }
+.report-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 30px; margin-top: 22px; }
+.chart-table { margin-top: 18px; font-size: .8125rem; }
+.chart-table summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.table-wrap { overflow-x: auto; }
+.chart-table table { width: 100%; border-collapse: collapse; min-width: 420px; }
+.chart-table th, .chart-table td { padding: 7px 10px; border-bottom: 1px solid var(--rule); text-align: right; font-family: var(--number); }
+.chart-table th[scope="row"], .chart-table thead th:first-child { text-align: left; font-family: var(--sans); }
+
+/* 最初の画面：記事が公開されていく札（1回だけ。右下に重ねる） */
+.hero-feed { position: absolute; right: var(--gutter); bottom: 64px; width: min(360px, 32vw); display: grid; gap: 10px; z-index: 1; }
+.feed-card { background: rgba(245,243,235,.94); color: var(--ink); padding: 12px 14px; border-left: 3px solid var(--lime); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.feed-card b { display: block; font-size: .8125rem; line-height: 1.55; }
+.fc-meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: .6875rem; font-weight: 700; color: var(--moss); }
+.fc-time { font-family: var(--number); }
+.fc-st { position: relative; display: inline-grid; }
+.fc-st i { grid-area: 1/1; font-style: normal; text-align: right; }
+.fc-st i:last-child { color: var(--ink); background: var(--lime); padding: 0 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .feed-card { opacity: 0; transform: translateY(18px); animation: feed-in .7s cubic-bezier(.23,1,.32,1) both; animation-delay: calc(1.3s + var(--i) * .9s); }
+  .fc-st i:first-child { animation: st-out .2s ease both; animation-delay: calc(1.9s + var(--i) * .9s); }
+  .fc-st i:last-child { opacity: 0; animation: st-in .35s cubic-bezier(.23,1,.32,1) both; animation-delay: calc(2s + var(--i) * .9s); }
+  @keyframes feed-in { to { opacity: 1; transform: none; } }
+  @keyframes st-out { to { opacity: 0; } }
+  @keyframes st-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+}
+@media (prefers-reduced-motion: reduce) { .fc-st i:first-child { display: none; } }
+@media (max-width: 1100px) { .hero-feed { display: none; } }
+
+/* スクロールに合わせて流れる、実際の記事の題（ページと同じ流れで動くので揺れない。効かない画面では止まって見える） */
+.ticker { overflow: hidden; background: var(--ink); color: var(--paper); padding: 14px 0; display: grid; gap: 8px; }
+.ticker-row { display: flex; gap: 40px; white-space: nowrap; font-size: .9375rem; font-weight: 700; width: max-content; }
+.ticker-row span::before { content: "●"; color: var(--lime); font-size: .5em; vertical-align: .35em; margin-right: 14px; }
+.ticker-row-2 { color: #9aa38c; font-weight: 600; font-size: .8125rem; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ticker-row { animation: tick-l linear both; animation-timeline: view(); animation-range: cover; }
+    .ticker-row-2 { animation-name: tick-r; }
+    @keyframes tick-l { from { transform: translateX(0); } to { transform: translateX(-35%); } }
+    @keyframes tick-r { from { transform: translateX(-35%); } to { transform: translateX(0); } }
+  }
+}
+
+/* 流れ：見えたら上の線が左から引かれ、番号が順に出る */
+.steps { position: relative; }
+.steps::after { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: var(--moss); transform-origin: 0 50%; transform: scaleX(0); transition: transform 1.4s cubic-bezier(.77,0,.175,1) .2s; }
+.steps.is-on::after { transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .js .steps li::before { display: inline-block; opacity: 0; transform: translateY(10px); transition: opacity .5s cubic-bezier(.23,1,.32,1), transform .5s cubic-bezier(.23,1,.32,1); }
+  .js .steps.is-on li::before { opacity: 1; transform: none; }
+  .js .steps.is-on li:nth-child(2)::before { transition-delay: .35s; }
+  .js .steps.is-on li:nth-child(3)::before { transition-delay: .7s; }
+  .js .steps.is-on li:nth-child(4)::before { transition-delay: 1.05s; }
+}
+
+/* 料金：通常の値段に、見えたとき取り消し線が引かれる */
+.cost del { position: relative; text-decoration: none; }
+.cost del::after { content: ""; position: absolute; left: -2px; right: -2px; top: 52%; height: 2px; background: currentColor; transform-origin: 0 50%; transform: scaleX(0); transition: transform .5s cubic-bezier(.77,0,.175,1) .6s; }
+.price-card.is-on .cost del::after { transform: none; }
+@media (prefers-reduced-motion: reduce) { .cost del::after { transform: none; transition: none; } .steps::after { transform: none; transition: none; } }
+
+@media (max-width: 760px) {
+  .report-items { grid-template-columns: 1fr; }
+  .report-items li { border-top: 1px solid var(--rule); }
+  .report-sub { grid-template-columns: 1fr; }
+  .chart-switch { width: 100%; }
+  .chart-switch button { flex: 1; padding: 0 6px; font-size: .75rem; }
+  .ticker-row { font-size: .8125rem; gap: 28px; }
+}
