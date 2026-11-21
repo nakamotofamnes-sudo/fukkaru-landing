@@ -47,6 +47,21 @@
     ],
     "redirects": [
       {
+        "source": "/kiji-jidouka",
+        "destination": "/autoblog",
+        "type": 301
+      },
+      {
+        "source": "/kiji-jidouka.html",
+        "destination": "/autoblog",
+        "type": 301
+      },
+      {
+        "source": "/web.html",
+        "destination": "/hp-seisaku",
+        "type": 301
+      },
+      {
         "source": "/profile.html",
         "destination": "/profile",
         "type": 301
@@ -136,6 +151,14 @@
       {
         "source": "/profile",
         "destination": "/profile.html"
+      },
+      {
+        "source": "/hp-seisaku",
+        "destination": "/web.html"
+      },
+      {
+        "source": "/autoblog",
+        "destination": "/kiji-jidouka.html"
       }
     ]
   }

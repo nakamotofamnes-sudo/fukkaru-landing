@@ -114,7 +114,7 @@ function head({ title, description, canonical, ogType, css, ld }) {
 </head>
 <body>
   <header class="header">
-    <a class="brand" href="/web.html">フッ軽<small>小さな会社の、Webづくり。</small></a>
+    <a class="brand" href="/hp-seisaku">フッ軽<small>小さな会社の、Webづくり。</small></a>
     <a class="cta" href="#contact">相談する</a>
   </header>
 `;
@@ -126,12 +126,13 @@ const CONTACT = `
       <p>「文章を考える時間がない」「何を載せればいいか、一緒に考えてほしい」。そんな小さな商売をしている方のホームページづくりを、お手伝いしています。全国どこからでも、メールでご相談いただけます。</p>
       <p>普段お客様に説明していることを伺い、載せることの整理から一緒に進めます。費用は、必要なページを決めてからお見積もりします。</p>
       <a class="button" href="mailto:${MAIL}?subject=${encodeURIComponent('ホームページの相談')}">メールで相談する ↗</a>
-      <p style="margin-top:16px"><a href="/web.html">ホームページ制作のページを見る</a></p>
+      <p style="margin-top:16px"><a href="/hp-seisaku">ホームページ制作のページを見る</a></p>
+      <p style="margin-top:8px"><a href="/autoblog">ブログ記事を毎日1本、AIで書く仕組みも作れます（年内のお申し込みは初期費用が半額）</a></p>
     </section>`;
 
 const FOOTER = `
   <footer>
-    <a href="/web/">ホームページづくりの記事</a><a href="/web.html">ホームページ制作</a><a href="/profile">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
+    <a href="/web/">ホームページづくりの記事</a><a href="/hp-seisaku">ホームページ制作</a><a href="/autoblog">ブログ記事の自動化</a><a href="/profile">代表のプロフィール</a><a href="/">フッ軽のホームページ</a>
   </footer>
 </body>
 </html>
