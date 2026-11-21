@@ -80,11 +80,15 @@ if ('IntersectionObserver' in window) {
   const hero = document.querySelector('.hero');
   const contact = document.getElementById('contact');
   const quickVisibility = new IntersectionObserver(() => {
-    const visible = hero.getBoundingClientRect().bottom <= 0 &&
+    // かんたん見積もりの欄を見ている間も隠す（送るボタンに重ねない）
+    const est = document.getElementById('mitsumori');
+    const er = est ? est.getBoundingClientRect() : null;
+    const atEst = er && er.top < window.innerHeight && er.bottom > 0;
+    const visible = hero.getBoundingClientRect().bottom <= 0 && !atEst &&
       contact.getBoundingClientRect().top >= window.innerHeight;
     if (visible || document.activeElement !== quickContact) quickContact.hidden = !visible;
   });
-  [hero, contact, footer].forEach(element => quickVisibility.observe(element));
+  [hero, contact, footer, document.getElementById("mitsumori")].filter(Boolean).forEach(element => quickVisibility.observe(element));
   quickContact.addEventListener('blur', () => {
     if (hero.getBoundingClientRect().bottom > 0 ||
         contact.getBoundingClientRect().top < window.innerHeight) quickContact.hidden = true;

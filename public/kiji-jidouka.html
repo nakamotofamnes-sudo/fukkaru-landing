@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="/kiji-assets/style.css?v=20261121">
   <script src="/kiji-assets/page.js?v=20261121" defer></script>
   <script src="/kiji-assets/motion.js?v=20261121" defer></script>
+  <script src="/kiji-assets/soudan.js?v=20261121" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","name":"ブログ記事の自動化","serviceType":"記事作成の自動化","url":"https://fukkaru.creo-sumai.jp/kiji-jidouka","description":"AIで毎日1本のブログ記事を書き、まちがいは見張りで止め、出す前に確かめる仕組みを、ご依頼のサイト向けに作って運用します。","provider":{"@type":"Organization","name":"フッ軽合同会社","url":"https://fukkaru.creo-sumai.jp/"},"offers":[{"@type":"Offer","name":"初期費用（2026年12月31日までのお申し込み）","price":"150000","priceCurrency":"JPY","priceValidUntil":"2026-12-31"},{"@type":"Offer","name":"初期費用・ホームページづくり込み（2026年12月31日までのお申し込み）","price":"240000","priceCurrency":"JPY","priceValidUntil":"2026-12-31"},{"@type":"Offer","name":"月額（毎日1本）","price":"30000","priceCurrency":"JPY"}]}</script>
   <link rel="icon" href="https://res.cloudinary.com/dyclm0vti/image/upload/f_png,w_180,c_limit/v1772755587/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_t1ft1r.png">
   <link rel="apple-touch-icon" href="https://res.cloudinary.com/dyclm0vti/image/upload/f_png,w_180,c_limit/v1772755587/%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3_%E3%83%AD%E3%82%B3%E3%82%99%E3%83%95%E3%83%83%E8%BB%BD_t1ft1r.png">
@@ -41,7 +42,7 @@
         <a href="#price">料金</a>
         <a href="#faq">よくある質問</a>
       </nav>
-      <a class="button button-small button-outline" href="#contact">相談する</a>
+      <a class="button button-small button-outline" href="#mitsumori">無料で見積もる</a>
     </div>
   </header>
 
@@ -58,8 +59,13 @@
         <h1 id="hero-title"><span class="hero-line"><span>自動で、集客して</span></span><span class="hero-line"><span>いきませんか？</span></span></h1>
         <p class="hero-lead">あなたの仕事を、毎日1本の記事にして、検索する人に届けます。<br class="desktop"> AIが書き、人が確かめてから公開します。</p>
         <p class="hero-price"><b>全国対応</b><b>毎日1本</b><span>月額<strong class="number">3</strong>万円<small>（税抜）</small></span></p>
+        <ul class="hero-proof" aria-label="フッ軽の実績">
+          <li><b class="number">169</b>本<span>自社で書いた記事</span></li>
+          <li><small>週</small><b class="number">10</b>件ほど<span>最近の問い合わせ</span></li>
+          <li><b class="number">9</b>月から<span>毎日動かしています</span></li>
+        </ul>
         <div class="hero-actions">
-          <a class="button button-lime" href="#contact">記事の自動化を相談する</a>
+          <a class="button button-lime" href="#mitsumori">無料でかんたん見積もり</a>
           <a class="text-link" href="#jissai">実際の記事を見る</a>
         </div>
       </div>
@@ -72,7 +78,7 @@
       <div class="wrap hero-caption" aria-hidden="true"><span></span><span>THE DAILY EDITION</span></div>
     </section>
 
-    <aside class="offer" data-reveal aria-label="期間限定の初期費用">
+    <aside class="offer" aria-label="期間限定の初期費用">
       <div class="wrap offer-inner">
         <p><span class="offer-date">全国対応 ／ <time datetime="2026-12-31">2026.12.31</time> までのお申し込み</span><span class="offer-amount">初期費用 ホームページあり <del>30万円</del> <strong>15万円</strong> ／ なし <del>40万円</del> <strong>24万円</strong><small>（税抜）</small></span></p>
         <a class="text-link" href="#price">料金を見る</a>
@@ -302,6 +308,81 @@
       </div>
     </section>
 
+    <section class="section estimate" id="mitsumori" aria-labelledby="est-title">
+      <div class="wrap">
+        <header class="split-heading" data-reveal>
+          <div><p class="kicker">ご相談・お見積もりは無料</p><h2 id="est-title"><span class="nobr">かんたん見積もり。</span><span class="nobr">答えは、すぐ出ます。</span></h2></div>
+          <p>2つ選ぶだけで、その場で費用が分かります。そのまま、この欄・LINE・メールのどれからでも相談を送れます。全国対応です。</p>
+        </header>
+        <div class="est" data-reveal>
+          <ol class="est-steps">
+            <li class="est-q">
+              <p class="est-label"><span>1</span>いまホームページはありますか？</p>
+              <div class="est-choices" role="radiogroup" aria-label="ホームページの有無">
+                <button type="button" role="radio" aria-checked="false" data-hp="aru">ある</button>
+                <button type="button" role="radio" aria-checked="false" data-hp="nai">まだ無い</button>
+              </div>
+            </li>
+            <li class="est-q">
+              <p class="est-label"><span>2</span>業種を選んでください</p>
+              <div class="est-choices est-choices-wrap" role="radiogroup" aria-label="業種">
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="工務店・リフォーム">工務店・リフォーム</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="美容室・サロン">美容室・サロン</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="飲食店">飲食店</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="不動産">不動産</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="教室・スクール">教室・スクール</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="車・バイク">車・バイク</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="ペット">ペット</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="医療・お金・法律" data-kobetsu>医療・お金・法律</button>
+                <button type="button" role="radio" aria-checked="false" data-gyoushu="そのほか">そのほか</button>
+              </div>
+            </li>
+          </ol>
+          <div class="est-result" aria-live="polite">
+            <p class="est-empty">1と2を選ぶと、ここに費用が出ます。</p>
+            <div class="est-out" hidden>
+              <p class="est-tag">あなたの場合（2026年12月31日までのお申し込み）</p>
+              <dl class="est-cost">
+                <div><dt>初期費用</dt><dd><del data-est-old></del><b class="number" data-est-init></b>万円<small>（税抜）</small></dd></div>
+                <div><dt>月額</dt><dd><b class="number">3</b>万円<small>（税抜・毎日1本）</small></dd></div>
+                <div><dt>1本あたり</dt><dd>約<b class="number">1,000</b>円<small>（月30本の場合）</small></dd></div>
+              </dl>
+              <p class="est-note" data-est-note></p>
+              <p class="est-send-h">この内容で、無料で相談する</p>
+              <div class="est-send">
+                <button type="button" class="button button-dark" data-open-form>この欄から送る</button>
+                <a class="button button-line" data-line href="https://lin.ee/Bh5gFU6" target="_blank" rel="noopener">LINEで送る</a>
+                <a class="button button-outline-dark" data-mail href="mailto:nakamoto.famnes@gmail.com">メールで送る</a>
+              </div>
+            </div>
+          </div>
+          <form class="est-form" data-form hidden novalidate>
+            <p class="est-form-h">ご連絡先（<span class="req">必須</span>の2つだけで送れます）</p>
+            <div class="f-grid">
+              <label>お名前<span class="req">必須</span><input name="namae" autocomplete="name" maxlength="40" required></label>
+              <label>メールアドレス<span class="req">必須</span><input name="mail" type="email" autocomplete="email" maxlength="120" required></label>
+              <label>会社名・屋号<input name="kaisha" autocomplete="organization" maxlength="60"></label>
+              <label>サイトの住所（URL）<input name="url" type="url" inputmode="url" placeholder="https://" maxlength="200"></label>
+            </div>
+            <label class="f-wide">ご相談の内容<textarea name="hitokoto" rows="4" maxlength="800" placeholder="例：月に何本くらいほしいか、記事にしたいことなど"></textarea></label>
+            <fieldset class="f-renraku"><legend>お返事の受け方</legend>
+              <label><input type="radio" name="renraku" value="mail" checked> メール</label>
+              <label><input type="radio" name="renraku" value="denwa"> 電話</label>
+              <label class="f-denwa" hidden>電話番号<input name="denwa" type="tel" autocomplete="tel" maxlength="20"></label>
+            </fieldset>
+            <label class="f-trap" aria-hidden="true">この欄は空のままにしてください<input name="hp_trap" tabindex="-1" autocomplete="off"></label>
+            <p class="f-err" role="alert" hidden></p>
+            <button type="submit" class="button button-lime f-submit">無料で相談を送る</button>
+            <p class="f-small">送った内容は、ご相談のお返事にだけ使います。<a href="/privacy/">プライバシーポリシー</a></p>
+          </form>
+          <div class="est-done" data-done hidden tabindex="-1">
+            <p class="est-done-h">相談を受け付けました</p>
+            <p>番号 <b data-done-no></b>。内容を確かめて、メールでお返事します。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section onboarding" aria-labelledby="onboarding-title">
       <div class="wrap">
         <header class="split-heading" data-reveal>
@@ -322,7 +403,7 @@
         <div>
           <p class="kicker">FAQ</p>
           <h2 id="faq-title">よくある質問</h2>
-          <a class="text-link" href="#contact">メールで質問する</a>
+          <a class="text-link" href="#mitsumori">質問を送る</a>
         </div>
         <div class="faq">
           <details data-reveal><summary>遠くの地域でも頼めますか？</summary><p>はい、全国対応です。ご相談からお見積もり、試し運転、毎月の報告まで、メールでやりとりします。</p></details>
@@ -342,13 +423,15 @@
         <div class="contact-intro" data-reveal>
           <p class="kicker">全国どこからでも</p>
           <h2 id="contact-title"><span class="nobr">うちのサイトでも</span><br><span class="nobr">できる？</span></h2>
-          <p>全国どこからでも、メールでご相談いただけます。いまのお仕事とサイトの作りを伺って、始め方をご案内します。</p>
+          <p>ご相談・お見積もりは無料です。全国どこからでも。いまのお仕事とサイトの作りを伺って、始め方をご案内します。</p>
           <a class="text-link" href="/profile">代表のプロフィール</a>
         </div>
         <div class="contact-card" data-reveal>
-          <h3>ご相談はメールで</h3>
-          <p>サイトのURLと、事業内容をお送りください。記事にしたい題材があれば、あわせてお聞かせください。</p>
-          <a class="button button-dark" id="mail-link" href="mailto:nakamoto.famnes@gmail.com?subject=%E3%83%96%E3%83%AD%E3%82%B0%E8%A8%98%E4%BA%8B%E3%81%AE%E8%87%AA%E5%8B%95%E5%8C%96%E3%81%AE%E7%9B%B8%E8%AB%87&amp;body=%E3%82%B5%E3%82%A4%E3%83%88%E3%81%AE%E4%BD%8F%E6%89%80%EF%BC%88URL%EF%BC%89%EF%BC%9A%0A%0A%E3%81%A9%E3%82%93%E3%81%AA%E4%BB%95%E4%BA%8B%E3%82%92%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%81%8B%EF%BC%9A%0A">メールで相談する</a>
+          <h3>無料で相談する</h3>
+          <p>いちばん早いのは、かんたん見積もり。2つ選ぶと費用が出て、そのまま送れます。</p>
+          <a class="button button-lime" href="#mitsumori">かんたん見積もりへ</a>
+          <a class="button button-line" href="https://line.me/R/oaMessage/%40200rcmxs/?%E3%80%90%E8%A8%98%E4%BA%8B%E3%81%AE%E8%87%AA%E5%8B%95%E5%8C%96%E3%81%AE%E7%9B%B8%E8%AB%87%E3%80%91%0A%E3%82%B5%E3%82%A4%E3%83%88%EF%BC%9A%0A%E6%A5%AD%E7%A8%AE%EF%BC%9A" target="_blank" rel="noopener">LINEで相談する</a>
+          <a class="button button-outline-dark" id="mail-link" href="mailto:nakamoto.famnes@gmail.com?subject=%E3%83%96%E3%83%AD%E3%82%B0%E8%A8%98%E4%BA%8B%E3%81%AE%E8%87%AA%E5%8B%95%E5%8C%96%E3%81%AE%E7%9B%B8%E8%AB%87&amp;body=%E3%82%B5%E3%82%A4%E3%83%88%E3%81%AE%E4%BD%8F%E6%89%80%EF%BC%88URL%EF%BC%89%EF%BC%9A%0A%0A%E3%81%A9%E3%82%93%E3%81%AA%E4%BB%95%E4%BA%8B%E3%82%92%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%81%8B%EF%BC%9A%0A">メールで相談する</a>
           <p class="email-address">メールアプリが開きます。<br><span id="contact-email">nakamoto.famnes@gmail.com</span></p>
           <button type="button" class="text-link" id="copy-email" hidden>メールアドレスをコピー</button>
           <span id="copy-status" class="copy-status" role="status"></span>
@@ -369,6 +452,6 @@
       <small>© フッ軽合同会社</small>
     </div>
   </footer>
-  <a class="button button-lime quick-contact" href="#contact" hidden>記事の自動化を相談する</a>
+  <a class="button button-lime quick-contact" href="#mitsumori" hidden>無料でかんたん見積もり</a>
 </body>
 </html>

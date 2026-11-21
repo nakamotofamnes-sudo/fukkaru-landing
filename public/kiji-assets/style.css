@@ -515,3 +515,70 @@ details > p { padding: 0 30px 20px 0; color: var(--text-muted); }
 .ind-word.is-in { animation: word-in .38s cubic-bezier(.23,1,.32,1) both; }
 @keyframes word-in { from { opacity: 0; transform: translateY(.35em); } to { opacity: 1; transform: none; } }
 .contact h2 { font-size: clamp(2.6rem,5.4vw,5.4rem); }
+
+/* ── かんたん見積もりと3つの入口（11/21 中元さん「LINE」「お問合せフォーム」「答えが早くわかる見積前の予約みたいなの」）── */
+.button-line { color: #fff; background: #0A8138; }
+@media (hover: hover) and (pointer: fine) { .button-line:hover { background: #08682D; } }
+.button-outline-dark { color: var(--ink); background: transparent; border: 1px solid var(--ink); }
+@media (hover: hover) and (pointer: fine) { .button-outline-dark:hover { background: var(--ink); color: var(--paper); } }
+.contact-card .button + .button { margin-top: 10px; }
+.estimate { background: var(--forest); color: var(--paper); }
+.estimate .split-heading > p { color: #cdd3c3; }
+.estimate .kicker { color: var(--lime); }
+.est { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: clamp(20px,3.5vw,48px); align-items: start; }
+.est-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
+.est-label { display: flex; align-items: center; gap: 12px; font-weight: 700; margin: 0 0 12px; font-size: 1.0625rem; }
+.est-label span { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; background: var(--lime); color: var(--ink); display: grid; place-content: center; font: 700 .9rem/1 var(--number); }
+.est-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.est-choices-wrap { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.est-choices button { min-height: 52px; padding: 10px 12px; font: 700 .9375rem/1.4 var(--sans); color: var(--paper); background: transparent; border: 1px solid var(--dark-rule); cursor: pointer; text-align: center; transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .15s ease; }
+.est-choices button:active { transform: scale(.97); }
+.est-choices button[aria-checked="true"] { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+@media (hover: hover) and (pointer: fine) { .est-choices button[aria-checked="false"]:hover { border-color: var(--lime); } }
+.est-choices button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.est-result { background: var(--paper); color: var(--ink); padding: clamp(20px,3vw,36px); min-height: 100%; }
+.est-empty { color: var(--text-muted); margin: 0; }
+.est-tag { font-size: .8125rem; font-weight: 700; color: var(--moss); border-bottom: 1px solid #8c9970; padding-bottom: 10px; margin: 0 0 14px; }
+.est-cost { margin: 0; display: grid; gap: 10px; }
+.est-cost > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
+.est-cost dt { font-weight: 700; font-size: .9375rem; }
+.est-cost dd { margin: 0; font-weight: 700; }
+.est-cost dd b { font: 600 clamp(1.9rem,3.4vw,2.6rem)/1 var(--number); letter-spacing: -.04em; margin: 0 2px; }
+.est-cost dd del { color: var(--text-muted); font-weight: 500; margin-right: 8px; font-size: .875rem; }
+.est-cost dd small { font-size: .75rem; color: var(--text-muted); font-weight: 500; }
+.est-note { font-size: .8125rem; color: var(--text-muted); margin: 12px 0 0; }
+.est-send-h { margin: 20px 0 10px; font-weight: 700; }
+.est-send { display: grid; gap: 10px; }
+.est-send .button { width: 100%; }
+.est-form, .est-done { grid-column: 1 / -1; background: var(--paper); color: var(--ink); padding: clamp(20px,3vw,40px); }
+.est-form-h { font-weight: 700; margin: 0 0 14px; }
+.req { display: inline-block; margin-left: 6px; font-size: .6875rem; font-weight: 700; color: #fff; background: #9a3412; padding: 0 6px; vertical-align: 1px; }
+.f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.est-form label { display: block; font-size: .875rem; font-weight: 700; }
+.est-form label > input, .est-form label > textarea { display: block; margin-top: 6px; }
+.est-form input, .est-form textarea { font: 400 1rem/1.6 var(--sans); padding: 12px 14px; border: 1px solid #8d927f; background: #fff; color: var(--ink); width: 100%; min-height: 48px; }
+.est-form input:focus, .est-form textarea:focus { outline: 3px solid var(--moss); outline-offset: 1px; }
+.f-wide { margin-top: 14px; }
+.f-renraku { border: 0; padding: 0; margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.f-renraku legend { font-size: .875rem; font-weight: 700; margin-bottom: 6px; }
+.f-renraku > label:not(.f-denwa) { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; }
+.f-renraku input[type="radio"] { width: 20px; height: 20px; min-height: 0; accent-color: var(--moss); }
+.f-denwa { flex: 1 1 240px; }
+.f-trap { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.f-err { margin: 14px 0 0; padding: 10px 14px; background: #fde8e1; color: #7c2d12; font-weight: 700; font-size: .9375rem; }
+.f-submit { margin-top: 18px; width: 100%; min-height: 56px; font-size: 1.0625rem; }
+.f-submit:disabled { opacity: .6; cursor: progress; }
+.f-small { margin: 10px 0 0; font-size: .75rem; color: var(--text-muted); }
+.est-done-h { font: 700 1.4rem/1.4 var(--serif); margin: 0 0 6px; }
+.est-done:focus { outline: none; }
+/* 最初の画面の実績（数えた数字だけ） */
+.hero-proof { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.hero-proof li { font-weight: 700; font-size: .875rem; color: #dfe4d4; }
+.hero-proof b { font: 600 1.6rem/1 var(--number); color: var(--lime); margin: 0 2px; letter-spacing: -.03em; }
+.hero-proof small { font-size: .75rem; }
+.hero-proof span { display: block; font-size: .6875rem; font-weight: 600; color: #aeb69f; margin-top: 2px; }
+@media (max-width: 860px) {
+  .est { grid-template-columns: 1fr; }
+  .est-choices-wrap { grid-template-columns: 1fr 1fr; }
+  .f-grid { grid-template-columns: 1fr; }
+}
