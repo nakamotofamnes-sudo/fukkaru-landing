@@ -52,7 +52,7 @@ export const groups: Group[] = [
   {
     id: 'indoor',
     title: '室内・引越しのお手伝い',
-    note: '家具の組立・移動、軽貨物での運搬',
+    note: '家具の組立・移動、お部屋の片付け、軽貨物での運搬',
     defaultOpen: true,
     services: [
       { title: '家具・デスクの組み立て', price: '8,000円〜', desc: '複雑な家具や昇降デスクも承ります' , link: '/blog/kagu-kumitate/' },
@@ -61,6 +61,8 @@ export const groups: Group[] = [
       { title: '荷造り・荷解き', price: '1時間8,000円〜', desc: '箱詰めから、運んだ先での開梱まで', link: '/blog/fuji-unpan-kaitori-guide/' },
       // 2026-11-20 中元さん「買取は引取に変えて欲しい」。「まだ使える」は外さない（外すと、ごみの引き取りと読めて許認可の線を越える）
       { title: '不用品の運搬・まだ使えるものの引き取り', price: '5,000円〜', desc: 'まだ使えるものは引き取り、運び出しも承ります', popular: true , link: '/blog/fuji-unpan-kaitori-guide/' },
+      // 2026-11-22 中元さん「1R・1K 4万から〜出していい」「決まった書き方でいい」。許認可の線：「まだ使えるものは」を外さない。処分は許可を持つ回収業者と一緒に（フッ軽が処分・回収するとは書かない）
+      { title: 'お部屋の片付け・ゴミ屋敷・遺品整理', price: '40,000円〜', desc: '1R・1Kのめやす。広さと量で変わります。まだ使えるものは引き取り、それ以外は一般廃棄物の許可を持つ回収業者と一緒に片付けます' },
       { title: '法人向けの緊急運搬', price: '要お見積り', desc: '急ぎの配送・運送に対応します', link: '/blog/fuji-unpan-kaitori-guide/' },
     ],
   },

@@ -469,7 +469,7 @@ def setsumei(art: dict, n: dict, keshita: list, kai: int) -> str:
     return f"""HP制作の記事を自動で書きました（`scripts/web/web_kiji.py`）。
 
 - 狙う言葉：**{n['go']}**（読む人：{n['hito']}）
-- 住所：{SITE}/web/{art['slug']}.html （マージすると数分で出ます）
+- 住所（マージしてから数分で開けます。マージ前に開くと「見つかりません」になります。マージ前に見るときは、下のコメントに出る仮ページの住所から）：`{SITE}/web/{art['slug']}.html`
 - 本文：{honbun_nagasa(art)}字・見出し{len(art['sections'])}個・{kai}回目で書けました
 
 **はじめの2週間（2026-11-28 まで）は自動でマージしません。**読んで、よければマージしてください。
