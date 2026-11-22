@@ -2953,19 +2953,26 @@ def _kumi(run: list) -> tuple[list, int]:
 # 「お支払い方法」「お支払いについて」のような、ふつうの見出しは触らない（決まった1文が入っているときだけ）
 def shiharai_midashi_naosu(blocks: list) -> tuple[list, int]:
     katachi = (SHIHARAI_NAKAMI, TEIKI_SHIHARAI)
-    out, n = [], 0
-    for i, b in enumerate(blocks):
+
+    def midashi(b):
         t = b.get("text") if isinstance(b, dict) else None
-        if not (isinstance(b, dict) and b.get("type") in ("h2", "h3") and isinstance(t, str)
-                and any(k in t for k in katachi)):
+        if isinstance(b, dict) and b.get("type") in ("h2", "h3") and isinstance(t, str):
+            return next((k for k in katachi if k in t), None)
+        return None
+    # 残る場所は、見出しでないブロックだけで数える（同じ1文の見出しが2つあると、互いを「残る場所」と数えて、
+    # 両方とも外れて1文が記事から消えた。別の目が見つけた・2026-11-22）
+    nokoru = "\n".join(x for b in blocks if not midashi(b) for x in _mojiretsu(b))
+    out, n, dashita = [], 0, set()
+    for b in blocks:
+        k = midashi(b)
+        if not k:
             out.append(b)
             continue
-        k = next(k for k in katachi if k in t)
-        hoka = "\n".join(x for j, c in enumerate(blocks) if j != i for x in _mojiretsu(c))
         n += 1
-        if k in hoka:
+        if k in nokoru or k in dashita:
             continue
-        out.append({"type": "p", "text": t})
+        dashita.add(k)
+        out.append({"type": "p", "text": b["text"]})
     return out, n
 
 
@@ -3974,6 +3981,19 @@ def _kn_zenbun(a: dict) -> str:
     return "\n".join(_mojiretsu(a.get("blocks") or []))
 
 
+_KN_YURE = [("引っ越", "引越"), ("見積もり", "見積"), ("見積り", "見積"), ("お見積", "見積"), ("片づけ", "片付け"), ("片付", "片付"),
+            ("買い取", "買取"), ("引き取", "引取"), ("取り付け", "取付"), ("組み立て", "組立"), ("組立て", "組立"),
+            ("申し込", "申込"), ("問い合わせ", "問合せ"), ("立ち会", "立会"), ("立ち合", "立会"), ("立会い", "立会"),
+            ("ゴミ", "ごみ"), ("ベット", "ベッド")]
+
+
+def _kn_yure(s: str) -> str:
+    s = str(s).translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+    for a, b in _KN_YURE:
+        s = s.replace(a, b)
+    return s
+
+
 def _kn_title_kotoba(t: str) -> list[str]:
     t = _KN_TITLE_OTOSU.sub(" ", _KN_SHI.sub(" ", t))
     return list(dict.fromkeys(re.findall(r"[一-龥々]{2,}|[ァ-ヶー]{3,}|[0-9０-９一二三四五六七八九]つ", t)))
@@ -3987,15 +4007,29 @@ def kakinaoshi_zure(art: dict, mae: dict) -> list[str]:
     mz, az = _kn_zenbun(mae), _kn_zenbun(art)
     tshi = set(_KN_SHI.findall(t))
     shin = set(_KN_SHI.findall(am)) - set(_KN_SHI.findall(mm)) - tshi
-    # 「富士宮市・沼津市にも伺います」のような見出しは止めない。題名の市が、元の見出しにあったのに消えたときだけ
-    if tshi and shin and any(x in mm and x not in am for x in tshi):
-        ng.append("見出しに、題名に無い市（%s）を書いています。題名は「%s」のままなので、元の記事と同じ市（%s）の話として書いてください"
-                  % ("・".join(sorted(shin)), t, "・".join(sorted(tshi))))
-    for x in sorted(tshi):
-        if mz.count(x) and az.count(x) * 2 < mz.count(x):
+    # 鳴らすのは、題名の市が本文で元の半分より少なくなったときだけ（見出しから【富士市】を外しただけ・
+    # 「富士宮市・沼津市の出張費」の節を足しただけの書き直しは止めない。別の目が見つけた・2026-11-22）
+    herita = [x for x in sorted(tshi) if mz.count(x) and az.count(x) * 2 < mz.count(x)]
+    for x in herita:
+        if shin and x in mm and x not in am:
+            ng.append("見出しに、題名に無い市（%s）を書き、題名の市（%s）が本文でほとんど出てきません（元は%d回・いまは%d回）。"
+                      "題名は「%s」のままなので、元の記事と同じ市の話として書いてください"
+                      % ("・".join(sorted(shin)), x, mz.count(x), az.count(x), t))
+        else:
             ng.append("題名の市（%s）が、本文でほとんど出てきません（元は%d回・いまは%d回）。ほかの市の話に変えないでください"
                       % (x, mz.count(x), az.count(x)))
-    kie = [w for w in _kn_title_kotoba(t) if w in mm and w not in am and az.count(w) * 2 <= mz.count(w)]
+    # 表記のゆれ（引越し／引っ越し・３つ／3つ・見積もり／見積り）では鳴らさない。漢字3字以上のかたまり（物置解体）は、
+    # 2字ずつのどれかが見出しにあれば消えたと見ない（「解体でよくあるトラブル」）
+    mmy, amy, mzy, azy = (_kn_yure(x) for x in (mm, am, mz, az))
+
+    def kieta(w):
+        w = _kn_yure(w)
+        if w not in mmy or w in amy or azy.count(w) * 2 > mzy.count(w):
+            return False
+        if re.fullmatch(r"[一-龥々]{3,}", w) and any(w[i:i + 2] in amy for i in range(len(w) - 1)):
+            return False
+        return True
+    kie = [w for w in _kn_title_kotoba(t) if kieta(w)]
     if kie:
         ng.append("題名の言葉（%s）が、見出しから消えています。題名は「%s」のままなので、元の記事の見出しの組み立て"
                   "（題名に答える節）を残して書き直してください" % ("・".join(kie), t))
