@@ -1500,5 +1500,65 @@ SAGYO_NOKOSU = [
 kazoeru('作業で出た枝・草：直す文 %d' % len(SAGYO_NAOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a, w in SAGYO_NAOSU if m._kyoka(a) != w])
 kazoeru('作業で出た枝・草：残す文 %d' % len(SAGYO_NOKOSU), ['%s → 出た: %s' % (a, m._kyoka(a)) for a in SAGYO_NOKOSU if m._kyoka(a) != a])
 
+# ━━ 2026-11-22：書き直しの道具を3つ直した ━━
+# ① 支払いの1文が見出しになる（#469）
+_SB = m.SHIHARAI_BUN
+_sm = lambda bl: m.shiharai_midashi_naosu(bl)
+_r, _n = _sm([{'type': 'h3', 'text': _SB}, {'type': 'h2', 'text': '次の節'}, {'type': 'p', 'text': '流れ。' + _SB}])
+onaji('支払いの見出し：本文に同じ1文があれば、見出しを外す', ([b['type'] for b in _r], _n), (['h2', 'p'], 1))
+_r, _n = _sm([{'type': 'h3', 'text': _SB}, {'type': 'h2', 'text': '次の節'}])
+onaji('支払いの見出し：本文に無ければ、段落にする', (_r[0], _n), ({'type': 'p', 'text': _SB}, 1))
+_r, _n = _sm([{'type': 'h2', 'id': 'x', 'text': '作業の流れ・' + m.SHIHARAI_NAKAMI}])
+onaji('支払いの見出し：見出しつきの形も段落に（id は付けない）', _r, [{'type': 'p', 'text': '作業の流れ・' + m.SHIHARAI_NAKAMI}])
+_r, _n = _sm([{'type': 'h3', 'text': m.TEIKI_SHIHARAI}, {'type': 'p', 'text': m.TEIKI_SHIHARAI}])
+onaji('支払いの見出し：定期の1文も同じ', ([b['type'] for b in _r], _n), (['p'], 1))
+for _t in ['お支払い方法', 'お支払いについて', '作業完了・ご確認・お支払い', '料金とお支払い']:
+    onaji('支払いの見出し：ふつうの見出しは触らない「%s」' % _t, _sm([{'type': 'h3', 'text': _t}, {'type': 'p', 'text': _SB}]),
+          ([{'type': 'h3', 'text': _t}, {'type': 'p', 'text': _SB}], 0))
+_ol = [{'type': 'ol', 'items': ['**作業完了・お支払い**：確認します。' + _SB]}, {'type': 'p', 'text': _SB}]
+onaji('支払いの見出し：番号つきの手順の中は触らない', _sm(_ol), (_ol, 0))
+onaji('支払いの見出し：変な形でも止まらない', _sm([5, 'x', {'type': 'h3'}, {'type': 'h3', 'text': 3}, {'type': 'h2', 'text': _SB}])[1], 1)
+
+# ② 題名と中身のずれ・市の入れ替わり（#398 #460 #416）
+def _zk(title, midashi, hon):
+    bl = []
+    for h in midashi:
+        bl.append({'type': 'h2', 'text': h})
+        bl.append({'type': 'p', 'text': hon})
+    return {'title': title, 'blocks': bl}
+_t = '【静岡市】草刈りはいくら？当日までに決めておくこと'
+_z = m.kakinaoshi_zure(_zk(_t, ['【富士市】草刈りの料金', '【富士市】決めておくこと'], '富士市の草刈り。'),
+                       _zk(_t, ['【静岡市】草刈りの料金', '【静岡市】決めておくこと'], '静岡市の草刈り。'))
+onaji('ずれ：市が入れ替わった（見出し・本文の両方で鳴る）', len(_z), 2)
+_t = '富士市で物置解体、失敗例と正しい進め方'
+_z = m.kakinaoshi_zure(_zk(_t, ['物置の引き取り', 'まだ使える物置'], '富士市の物置の引き取り。'),
+                       _zk(_t, ['物置解体の失敗例', '失敗１：自分で'], '富士市の物置解体。失敗例です。'))
+kazoeru('ずれ：題名の言葉（失敗例）が見出しから消えた', [] if (len(_z) == 1 and '失敗例' in _z[0]) else [str(_z)])
+_t = '沼津市で遺品整理、何から？家族で決める３つのこと'
+_z = m.kakinaoshi_zure(_zk(_t, ['沼津市での費用', '流れ'], '沼津市の家族の遺品整理。'),
+                       _zk(_t, ['家族で決める３つの柱', '沼津市ならでは'], '沼津市の家族の遺品整理。'))
+kazoeru('ずれ：「３つ」が見出しと本文から消えた（家族は本文に残るので問わない）', [] if (len(_z) == 1 and '３つ' in _z[0] and '家族・' not in _z[0]) else [str(_z)])
+ZURE_NOKOSU = [   # 止めない書き直し（2026-11-22 にマージした12本の形）
+    ('【沼津市】空き家草刈り、いくら？当日までの流れ', ['【沼津市】空き家の草刈り、当日までの流れ'], '沼津市。当日は立ち会い不要。当日の流れ。',
+     ['【沼津市】空き家の草刈り、作業完了までの流れ'], '沼津市。当日は立ち会い不要。当日の流れ。'),
+    ('富士市で家具解体はいくら？代表が担当', ['家具解体の料金', '代表が担当します'], '富士市の家具解体。',
+     ['富士市の家具解体の料金', '最初から最後まで担当'], '富士市の家具解体。'),
+    ('【富士市】防草シート', ['防草シートとは'], '富士市の防草シート。', ['防草シートの選び方', '富士宮市・沼津市にも伺います'], '富士市の防草シート。'),
+    ('草刈りの料金', ['草刈りの料金'], '富士市の草刈り。', ['沼津市の草刈りの料金'], '富士市の草刈り。'),
+    ('富士宮市で物置組立', ['富士宮市で物置組立'], '富士宮市の物置。', ['物置組立の料金'], '富士宮市の物置。'),
+]
+kazoeru('ずれ：止めない書き直し %d' % len(ZURE_NOKOSU),
+        ['%s → %s' % (t, z) for t, mm, mh, am, ah in ZURE_NOKOSU for z in [m.kakinaoshi_zure(_zk(t, am, ah), _zk(t, mm, mh))] if z])
+onaji('ずれ：富士宮市を富士市と取り違えない', m._KN_SHI.findall('富士宮市と富士市と清水町'), ['富士宮市', '富士市', '清水町'])
+onaji('ずれ：変な形でも止まらない', m.kakinaoshi_zure({'blocks': [3, {'type': 'h2'}]}, {'title': 5, 'blocks': None}), [])
+
+# ③ 人の手で整えた記事は、書き直しに選ばない（#448）
+_k5 = [_kiji('fukkaru-toha-fuji-benriya', '「フッ軽」とは？読み方と、富士市で身軽に動く便利屋の中身', '2026-08-01'),
+       _kiji('fuji-hoka', '【富士市】草刈り', '2026-08-02')]
+onaji('人の記事：「フッ軽」とは は選ばない', [x['art']['slug'] for x in m.kakinaoshi_kouho(_k5, {}, set(), None)], ['fuji-hoka'])
+import glob as _glob, json as _json
+_aru = {_json.load(open(f, encoding='utf-8')).get('slug') for f in _glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'content', 'articles', '*.json'))}
+kazoeru('人の記事：一覧の住所が、実在する記事', [s for s in m.KAKINAOSHI_TEDE if _aru and s not in _aru])
+
 print('\nちがったもの 合計:', NG)
 sys.exit(1 if NG else 0)

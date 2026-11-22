@@ -2946,6 +2946,29 @@ def _kumi(run: list) -> tuple[list, int]:
     return out, n
 
 
+# ── 支払いの1文が、見出し（h2・h3）になる（2026-11-22）──
+# #469 の書き直しで「お支払いは、現金・振り込み・クレジットカード・PayPay などに対応しています。」が h3 になり、
+# 中身の無い見出しのまま次の h2 に続いていた（同じ文は、流れの節の段落にもあった）。
+# 見出しの文字に決まった1文（定期の1文も）が入っていたら：本文のほかの所に同じ1文があれば見出しを外す。無ければ段落（p）にする。
+# 「お支払い方法」「お支払いについて」のような、ふつうの見出しは触らない（決まった1文が入っているときだけ）
+def shiharai_midashi_naosu(blocks: list) -> tuple[list, int]:
+    katachi = (SHIHARAI_NAKAMI, TEIKI_SHIHARAI)
+    out, n = [], 0
+    for i, b in enumerate(blocks):
+        t = b.get("text") if isinstance(b, dict) else None
+        if not (isinstance(b, dict) and b.get("type") in ("h2", "h3") and isinstance(t, str)
+                and any(k in t for k in katachi)):
+            out.append(b)
+            continue
+        k = next(k for k in katachi if k in t)
+        hoka = "\n".join(x for j, c in enumerate(blocks) if j != i for x in _mojiretsu(c))
+        n += 1
+        if k in hoka:
+            continue
+        out.append({"type": "p", "text": t})
+    return out, n
+
+
 def renzoku_naosu(blocks: list) -> tuple[list, int]:
     out, n, run = [], 0, []
 
@@ -3279,6 +3302,9 @@ def seikei(art: dict) -> int:
     naoshita += n
     # 定期の見回り・巡回清掃の記事と、空き家の税の倍の話（2026-10-20）。支払いの1文を直すので、支払いの直し（_shiharai）より後
     atarashii, n = teiki_naosu(art, atarashii)
+    naoshita += n
+    # 支払いの1文が見出しになったもの（2026-11-22）。定期の言い換え（teiki_naosu）より後
+    atarashii, n = shiharai_midashi_naosu(atarashii)
     naoshita += n
     if naoshita:
         art["blocks"] = atarashii
@@ -3629,6 +3655,15 @@ _KAKINAOSHI_HIKAE = re.compile(r"剪定|伐採")
 # 人が入れたブロック（実物の写真・料金の計算・前後の写真）。AIに書き直させると、置き場所がずれたり消えたりするので、
 # この記事は選ばない
 _KAKINAOSHI_TE = {"photo", "calc", "ba"}
+# 人が手で書いた・整えた記事（AIの書いた記事ではない）。書き直すと、決めて書いた言い方が崩れ、決めていない約束が入る
+# （2026-11-22 #448「フッ軽」とは：現地調査も無料・保険で対応・専門業者を紹介、が入った。閉じた）。①②③のどれでも選ばない。
+# 人が記事を手で足したら、ここにも1行足す（記事が最初に入ったコミットが「ブログ記事を…」でないものが、人の記事）
+KAKINAOSHI_TEDE = {
+    "fukkaru-toha-fuji-benriya": "社名で探した人の受け皿（#178・人が書いた）",
+    "fuji-monooki-kotei-shisanzei": "物置の固定資産税（市の基準を原文で・#279）",
+    "fuji-monooki-anchor-kotei-taifu": "物置のアンカー固定（総点検で人が足した・#325）",
+    "hikkoshi-ikea-kagu-kotowarareru-riyuu": "引越し業者がIKEAの家具を嫌がる理由（#471・人が書いた）",
+}
 
 # ①：9/23 より前の書き方。許可が無いという断りから入って、処分・回収を「行っていない」「お受けしていない」と言い切る形。
 # 9/23 からは「まだ使えるものは引き取る／それ以外は、許可を持つ回収業者と一緒に片付ける」（RULES 2-2）
@@ -3909,6 +3944,61 @@ def kakinaoshi_ng(art: dict, mae: dict) -> list[str]:
     if u:
         ng.append("お受けできないもの（液体・汚泥・汚物・医療にかかわるもの）を、回収業者と一緒に片付けると書いています："
                   "%s。これらは「お受けできません」と書き、回収業者と一緒に片付けるものの例に入れないでください" % u[0][:50])
+    ng += kakinaoshi_zure(art, mae)
+    return ng
+
+
+# ── 書き直しで、題名と中身がずれる・市が入れ替わる（2026-11-22）──
+# 題名は変えない（トップ画像に焼き込んである）のに、AIが中身だけ別の話にした：
+#   #398「【静岡市】草刈りはいくら？」→ 見出しと本文がまるごと【富士市】に（静岡市 13回→2回）
+#   #460「富士市で物置解体、失敗例と正しい進め方」→ 失敗例が消えて、物置の引き取りの記事に（「失敗」6回→0回）
+#   #416「沼津市で遺品整理、何から？家族で決める３つのこと」→ ３つの柱が消えて、費用の記事に
+# 見るのは3つ（どれも、元の記事と比べる。元から無いものは問わない）：
+#   ①題名に市があるのに、元の見出しに無かった別の市が見出しに出て、題名の市が見出しから消えた（「富士宮市・沼津市にも伺います」は止めない）
+#   ②題名の市が、本文で元の半分より少なくなった
+#   ③題名の言葉（漢字2字以上・カタカナ3字以上・「３つ」）のうち、元の見出しにあったものが、見出しから消え、本文でも元の半分以下になった
+#     （③で「本文でも半分以下」を足したのは、#407「当日までの流れ」→「作業完了までの流れ」を止めないため。「当日」は本文に5→3回残っていた。
+#      止めると、やり直しに1回ぶんAIを使う＝CLAUDE.md 17）
+# 書き直しの12本（マージしたもの）では1つも鳴らず、閉じた3本と #416 で鳴った（2026-11-22 に、PRの最初のコミットで当てた）
+_KN_SHI = re.compile(r"(?:富士宮|富士|沼津|三島|静岡|裾野|御殿場|伊東|熱海|伊豆の国|伊豆|焼津|藤枝|島田|浜松|磐田|掛川|下田|"
+                     r"長泉|函南|小山|清水)(?:市|町)")
+_KN_TITLE_OTOSU = re.compile(r"フッ?カル|フッ軽|合同会社|便利屋|代表")
+
+
+def _kn_midashi(a: dict) -> str:
+    return "\n".join(str(b.get("text", "")) for b in a.get("blocks") or []
+                     if isinstance(b, dict) and b.get("type") in ("h2", "h3"))
+
+
+def _kn_zenbun(a: dict) -> str:
+    return "\n".join(_mojiretsu(a.get("blocks") or []))
+
+
+def _kn_title_kotoba(t: str) -> list[str]:
+    t = _KN_TITLE_OTOSU.sub(" ", _KN_SHI.sub(" ", t))
+    return list(dict.fromkeys(re.findall(r"[一-龥々]{2,}|[ァ-ヶー]{3,}|[0-9０-９一二三四五六七八九]つ", t)))
+
+
+def kakinaoshi_zure(art: dict, mae: dict) -> list[str]:
+    """書き直した中身が、題名（変えない）からずれていないか。ずれていれば、やり直しの理由を返す"""
+    ng = []
+    t = str(mae.get("title", ""))
+    mm, am = _kn_midashi(mae), _kn_midashi(art)
+    mz, az = _kn_zenbun(mae), _kn_zenbun(art)
+    tshi = set(_KN_SHI.findall(t))
+    shin = set(_KN_SHI.findall(am)) - set(_KN_SHI.findall(mm)) - tshi
+    # 「富士宮市・沼津市にも伺います」のような見出しは止めない。題名の市が、元の見出しにあったのに消えたときだけ
+    if tshi and shin and any(x in mm and x not in am for x in tshi):
+        ng.append("見出しに、題名に無い市（%s）を書いています。題名は「%s」のままなので、元の記事と同じ市（%s）の話として書いてください"
+                  % ("・".join(sorted(shin)), t, "・".join(sorted(tshi))))
+    for x in sorted(tshi):
+        if mz.count(x) and az.count(x) * 2 < mz.count(x):
+            ng.append("題名の市（%s）が、本文でほとんど出てきません（元は%d回・いまは%d回）。ほかの市の話に変えないでください"
+                      % (x, mz.count(x), az.count(x)))
+    kie = [w for w in _kn_title_kotoba(t) if w in mm and w not in am and az.count(w) * 2 <= mz.count(w)]
+    if kie:
+        ng.append("題名の言葉（%s）が、見出しから消えています。題名は「%s」のままなので、元の記事の見出しの組み立て"
+                  "（題名に答える節）を残して書き直してください" % ("・".join(kie), t))
     return ng
 
 
@@ -4137,7 +4227,7 @@ def kakinaoshi_kouho(done: list[dict], kiroku: dict[str, str], pr_kiji: set[str]
     kouho, konpo = [], 0
     for a in done:
         s, t = str(a.get("slug", "")), str(a.get("title", ""))
-        if not s or s in KAKINAOSHI_MATSU or s in pr_kiji or _KAKINAOSHI_SHINAI.search(t):
+        if not s or s in KAKINAOSHI_MATSU or s in KAKINAOSHI_TEDE or s in pr_kiji or _KAKINAOSHI_SHINAI.search(t):
             continue
         if {b.get("type") for b in a.get("blocks") or [] if isinstance(b, dict)} & _KAKINAOSHI_TE:
             continue
