@@ -200,6 +200,37 @@
   to { opacity: 1; }
 }
 
+/* 2026-11-22 中元さん「スクロールしてスライドでシュッと出てきた方が見やすい」。
+   節の見出しとカードだけ、画面に入るときに 32px 下から出します。
+   - CSS だけ（JS も部品も足さない＝重さはほぼ0）。ページと同じ流れで動くので揺れない
+   - 効かない古いスマホでは、止まった形のまま全部見えます（最初から隠しておかない）
+   - 最初の画面・LINEと電話のボタン・下の固定バー・お問い合わせ欄は動かしません
+   - 下の固定バー（電話・LINE）の高さ60pxを過ぎてから動き始め、300px で出きる（背の高いカードでも、薄いまま読むことがない）。
+     ゆるみは弱い ease-out。強い ease-out だと画面の下の端で40pxのうちに終わって、動きが見えなかった（11/22 実測） */
+@supports (animation-timeline: view()) {
+  /* #root と main の overflow-x: hidden は「スクロールしない入れ物」になり、
+     view() がそちらを基準にして、何も動かなかった（11/22 実測）。
+     はみ出しを切るのは同じで、入れ物にならない clip に替える（この中＝新しいブラウザだけ） */
+  #root,
+  #root > main {
+    overflow-x: clip;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .section .h-section,
+    .section .card {
+      animation: shutto both;
+      animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1);
+      animation-timeline: view();
+      animation-range: entry 60px entry 300px;
+    }
+  }
+}
+
+@keyframes shutto {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* 動きを減らす設定の人には、動かしません。 */
 @media (prefers-reduced-motion: reduce) {
   *,
