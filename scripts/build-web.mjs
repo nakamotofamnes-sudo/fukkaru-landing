@@ -120,7 +120,17 @@ function head({ title, description, canonical, ogType, css, ld }) {
 `;
 }
 
-const CONTACT = `
+// 2026-11-23 中元さん「記事の自動化は他県で売っていきたい。田舎の方でいい」→ 全国の業種向けの記事から /autoblog へつなぐ。
+// 数字はフッ軽のブログのサーチコンソール（/autoblog のグラフと同じ。2026-11-21 に取った）。数字を変えるときは両方そろえる
+const AUTOBLOG = `
+    <section class="contact" aria-labelledby="autoblog-title" style="margin-bottom:24px">
+      <h2 id="autoblog-title">ホームページはあるのに、問い合わせが来ない方へ</h2>
+      <p>ホームページは、作ったあと記事が増えないと、検索に出てきません。フッ軽では、御社の仕事の記事を、AIで毎日1本書いてホームページに足していく仕組みを作っています。</p>
+      <p>同じ仕組みで書いている富士市の便利屋のブログは、8月末には検索結果に出ていませんでしたが、11月には週に800回前後、検索結果に出るようになりました。全国どこの会社でも、メールとオンラインでお手伝いできます。</p>
+      <a class="button" href="/autoblog">ブログ記事の自動化を見る</a>
+    </section>`;
+
+const CONTACT = AUTOBLOG + `
     <section class="contact" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title">作る時間がない方へ</h2>
       <p>「文章を考える時間がない」「何を載せればいいか、一緒に考えてほしい」。そんな小さな商売をしている方のホームページづくりを、お手伝いしています。全国どこからでも、メールでご相談いただけます。</p>
