@@ -248,7 +248,7 @@ function withDekinaiSoudan(blocks) {
   return out;
 }
 
-const SOUDAN_TEXT = 'どれに当たるか分からないときは、写真を公式LINEに送ってください。「運び出し」「買取」「出し方のご案内」のどれになるか、お答えします。';
+const SOUDAN_TEXT = 'どれに当たるか分からないときは、写真を公式LINEに送ってください。「運び出し」「まだ使えるものの引き取り」「出し方のご案内」のどれになるか、お答えします。';
 
 function renderSoudan() {
   return `<div class="soudan"><p>${esc(SOUDAN_TEXT)}</p><a class="soudan-link" href="${LINE_URL}" target="_blank" rel="noopener">LINEで聞いてみる</a></div>`;
