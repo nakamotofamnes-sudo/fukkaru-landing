@@ -472,8 +472,7 @@ def setsumei(art: dict, n: dict, keshita: list, kai: int) -> str:
 - 住所（マージしてから数分で開けます。マージ前に開くと「見つかりません」になります。マージ前に見るときは、下のコメントに出る仮ページの住所から）：`{SITE}/web/{art['slug']}.html`
 - 本文：{honbun_nagasa(art)}字・見出し{len(art['sections'])}個・{kai}回目で書けました
 
-**はじめの2週間（2026-11-28 まで）は自動でマージしません。**読んで、よければマージしてください。
-直したいところがあれば、この枝の `content/web/{art['slug']}.json` を直します。
+{'**このPRは、自動でマージします**（2026-11-28〜・中元さん）。公開したあとで読んで、直したいところがあれば、`content/web/' + art['slug'] + '.json` を直します。' if AUTOMERGE else '**自動でマージしない設定です。**読んで、よければマージしてください。直したいところがあれば、この枝の `content/web/' + art['slug'] + '.json` を直します。'}
 
 ## 道具が消した文（AIが書いてはいけないことを書いたので、文ごと外しました）
 {rows}
@@ -543,7 +542,7 @@ def main() -> int:
             except Exception as e:
                 log("  ・取り込めませんでした：%s（PRに残っています）" % e)
         else:
-            log("  （はじめの2週間は自動でマージしません。読んでからマージしてください）")
+            log("  （自動でマージしない設定です。読んでからマージしてください）")
     except Exception as e:
         log("✗ git のところで失敗しました：%s" % e)
         return 1
