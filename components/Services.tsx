@@ -39,12 +39,13 @@ export const groups: Group[] = [
   {
     id: 'garden',
     title: '庭・外まわりのお手入れ',
-    note: '草むしりから伐採、防草シートまで',
+    note: '草むしりから伐採・抜根、防草シートまで',
     defaultOpen: true,
     services: [
       { title: '草むしり（手作業）', price: '8,000円〜', desc: '根元から丁寧に抜き取ります', popular: true , link: '/blog/kusakari/' },
       { title: '草刈り（機械使用）', price: '10,000円〜', desc: '草刈機で広い範囲に対応します', link: '/blog/kusakari/' },
       { title: '木の伐採', price: '9,000円〜', desc: '地上からの作業', link: '/blog/kusakari/' },
+      { title: '抜根（切り株の掘り起こし）', price: '9,000円〜', desc: '1株あたり。根の太さ・張り方で変わります。掘った根の持ち込みは別料金。大きな切り株は協力会社と一緒に作業します', link: '/blog/kusakari/' },
       { title: '防草シート・砂利敷き', price: '10,000円〜', desc: '資材費は別途', link: '/blog/kusakari/' },
       { title: '刈った草・木の持ち込み', price: '8,000円〜', desc: '軽トラック1車ぶん・富士市', link: '/blog/kusakari/' },
     ],
