@@ -44,7 +44,7 @@ jobs:
           GH_PAT: ${{ secrets.BLOG_PAT }}
           FUKKARU_REPO: ${{ github.workspace }}
           FUKKARU_WEB_MODE: ${{ (inputs.mode == 'dry' && 'dry') || 'on' }}
-          # **はじめの2週間（2026-11-28 まで）は自動でマージしない。**読んでから人がマージする。
-          # よければ '1' にすると、書いたその場で公開する
-          FUKKARU_WEB_AUTOMERGE: '0'
+          # はじめの2週間（2026-11-28 まで）は自動でマージしなかった（読んでから人がマージ）。
+          # 2026-11-27 中元さん「読んでマージ・以後は自動」→ 11/28 から、書いたその場で公開する（'0' に戻すとPRで止まる）
+          FUKKARU_WEB_AUTOMERGE: '1'
         run: python3 scripts/web/web_kiji.py
